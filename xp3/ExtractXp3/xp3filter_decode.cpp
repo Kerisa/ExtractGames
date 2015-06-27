@@ -12,8 +12,6 @@ extern void xp3filter_decode_dec(struct xp3filter *);
 static const char *xp3filter_decode_parameter;
 static void (*xp3filter_decode_handler)(struct xp3filter *);
 
-static const char *unencry_game [] = {"kamitsure"};
-
 void xp3filter_decode(char *game, WCHAR *name, BYTE *buf, DWORD len, DWORD offset, DWORD total_len, DWORD hash)
 {
 	struct xp3filter xp3filter;
@@ -33,10 +31,6 @@ void xp3filter_decode(char *game, WCHAR *name, BYTE *buf, DWORD len, DWORD offse
 	xp3filter.offset = offset;
 	xp3filter.total_length = total_len;
 	xp3filter.hash = hash;
-
-	for (int i=0; i<sizeof(unencry_game)/sizeof(unencry_game[0]); ++i)		// 头大....这是过滤数据完全没加密的游戏的
-		if (!strcmp(game, unencry_game[i]))
-			return;
 
 	(*xp3filter_decode_handler)(&xp3filter);
 }

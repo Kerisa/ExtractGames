@@ -78,10 +78,10 @@
     <ClInclude Include="error.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="types.h" />
+    <ClInclude Include="xp3.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cxdec\11eyes_cxdec.cpp" />
-    <ClCompile Include="cxdec\amakoi_cxdec.cpp" />
     <ClCompile Include="cxdec\beniten_cxdec.cpp" />
     <ClCompile Include="cxdec\ConcertoNote_cxdec.cpp" />
     <ClCompile Include="cxdec\cxdec.cpp" />
@@ -91,9 +91,7 @@
     <ClCompile Include="cxdec\fanta_cxdec.cpp" />
     <ClCompile Include="cxdec\FHA_cxdec.cpp" />
     <ClCompile Include="cxdec\haruiro_cxdec.cpp" />
-    <ClCompile Include="cxdec\kamitsure_cxdec.cpp" />
     <ClCompile Include="cxdec\kinomino_cxdec.cpp" />
-    <ClCompile Include="cxdec\kuranokunchi_cxdec.cpp" />
     <ClCompile Include="cxdec\kurenai_cxdec.cpp" />
     <ClCompile Include="cxdec\lovebattle_cxdec.cpp" />
     <ClCompile Include="cxdec\lovelaby_cxdec.cpp" />
@@ -111,7 +109,8 @@
     <ClCompile Include="cxdec\tenshinTrial_cxdec.cpp" />
     <ClCompile Include="cxdec\tenshin_cxdec.cpp" />
     <ClCompile Include="cxdec\towa_cxdec.cpp" />
-    <ClCompile Include="extractxp3.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="xp3.cpp" />
     <ClCompile Include="xp3filter_decode.cpp" />
   </ItemGroup>
   <ItemGroup>

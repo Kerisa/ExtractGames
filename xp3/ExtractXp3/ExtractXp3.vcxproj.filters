@@ -30,15 +30,15 @@
     <ClInclude Include="cxdec\cxdec.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="xp3.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cxdec\cxdec.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="xp3filter_decode.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="extractxp3.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="cxdec\sakurasaki_cxdec_callback.cpp">
@@ -122,14 +122,11 @@
     <ClCompile Include="cxdec\towa_cxdec.cpp">
       <Filter>源文件\game_callback</Filter>
     </ClCompile>
-    <ClCompile Include="cxdec\kuranokunchi_cxdec.cpp">
-      <Filter>源文件\game_callback</Filter>
+    <ClCompile Include="xp3.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="cxdec\amakoi_cxdec.cpp">
-      <Filter>源文件\game_callback</Filter>
-    </ClCompile>
-    <ClCompile Include="cxdec\kamitsure_cxdec.cpp">
-      <Filter>源文件\game_callback</Filter>
+    <ClCompile Include="main.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

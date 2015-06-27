@@ -38,8 +38,8 @@ void AppendMsg(PTSTR szBuffer)
 		return;
 	}
 	SendMessage(hEdit, EM_SETSEL, (WPARAM)&dwPos, (LPARAM)&dwPos);
+	lstrcat(szBuffer, TEXT("\r\n"));
 	SendMessage(hEdit, EM_REPLACESEL, 0, (LPARAM)szBuffer);
-	SendMessage(hEdit, EM_REPLACESEL, 0, (LPARAM)TEXT("\r\n"));
 	SendMessage(hEdit, EM_GETSEL, 0, (LPARAM)&dwPos);
 	return;
 }

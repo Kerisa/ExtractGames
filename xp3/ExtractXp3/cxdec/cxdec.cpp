@@ -166,7 +166,7 @@ static int cxdec_init(void)
 {
 	cxdec.xcode = (BYTE *)VirtualAlloc(NULL, 128 * 100, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 	if (!cxdec.xcode)
-		return -ERR_MEM;
+		return ERR_MEM;
 
 	memset(cxdec.address_list, 0, sizeof(cxdec.address_list));
 	cxdec.current_count = 0;
@@ -264,16 +264,7 @@ static void cxdec_decode(struct cxdec_callback *callback, DWORD hash, DWORD offs
 }
 
 
-static void cxdec_simple_decode(struct cxdec_callback *callback, DWORD hash, DWORD offset, PBYTE buf, DWORD len)
-{
-	for (int i=0; i<len; ++i)
-		buf[i] ^= (BYTE)hash ^ callback->key[0];	// 0xCD不同游戏可能不同
-}
-
 /* TODO: put new callback here */
-extern struct cxdec_callback kamitsure_cxdec_callback;
-extern struct cxdec_callback amakoi_cxdec_callback;
-extern struct cxdec_callback kuranokunchi_cxdec_callback;
 extern struct cxdec_callback sakurasaki_cxdec_callback;
 extern struct cxdec_callback fanta_cxdec_callback;
 extern struct cxdec_callback FairChildTrial_cxdec_callback;
@@ -309,9 +300,6 @@ extern struct cxdec_callback tenshin_cxdec_callback;
 extern struct cxdec_callback kurenai_cxdec_callback;
 
 static struct cxdec_callback *cxdec_callback_list[] = {
-	&kamitsure_cxdec_callback,
-	&amakoi_cxdec_callback,
-	&kuranokunchi_cxdec_callback,
 	&sakurasaki_cxdec_callback
 /*	&kurenai_cxdec_callback,
 	&tenshin_cxdec_callback,
@@ -348,9 +336,6 @@ static struct cxdec_callback *cxdec_callback_list[] = {
 	NULL,*/
 };
 
-// Modified
-#define SIMPLE_DECODE 3		// 索引号小于它的用简单解码，不用生成解密函数(即直接xor哈希值的最低位)
-
 static void __xp3filter_decode_cxdec(const char *name, BYTE *buf, DWORD len, DWORD offset, DWORD hash)
 {
 	for (DWORD i = 0; cxdec_callback_list[i]; i++)
@@ -358,10 +343,7 @@ static void __xp3filter_decode_cxdec(const char *name, BYTE *buf, DWORD len, DWO
 		struct cxdec_callback *callback = cxdec_callback_list[i];
 		if (!strcmpi(callback->name, name))
 		{
-			if (i < SIMPLE_DECODE)
-				cxdec_simple_decode(callback, hash, offset, buf, len);
-			else
-				cxdec_decode(callback, hash, offset, buf, len);
+			cxdec_decode(callback, hash, offset, buf, len);
 			break;
 		}
 	}
