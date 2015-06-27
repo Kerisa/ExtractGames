@@ -30,12 +30,12 @@ struct file_entry
 	wchar_t file_name[128];
 };
 
-static const char *unencry_game [] = {"kamitsure", "startlight"};
+static const char *unencry_game [] = {"kamitsure", "startlight", "amatarasu"};		// 数据没有加密的游戏
 static const struct _SIMPLE_XOR
 {
 	char *name;
 	u8 key;
-}simple_xor_game [] = {"kuranokunchi", 0xCD, "amakoi", 0x0};
+}simple_xor_game [] = {"kuranokunchi", 0xCD, "amakoi", 0x0};					// 数据xor过的游戏
 
 extern void AppendMsg(PTSTR szBuffer);
 

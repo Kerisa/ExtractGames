@@ -265,6 +265,7 @@ static void cxdec_decode(struct cxdec_callback *callback, DWORD hash, DWORD offs
 
 
 /* TODO: put new callback here */
+extern struct cxdec_callback colorfulcure_cxdec_callback;
 extern struct cxdec_callback sakurasaki_cxdec_callback;
 extern struct cxdec_callback fanta_cxdec_callback;
 extern struct cxdec_callback FairChildTrial_cxdec_callback;
@@ -300,6 +301,7 @@ extern struct cxdec_callback tenshin_cxdec_callback;
 extern struct cxdec_callback kurenai_cxdec_callback;
 
 static struct cxdec_callback *cxdec_callback_list[] = {
+	&colorfulcure_cxdec_callback,
 	&sakurasaki_cxdec_callback
 /*	&kurenai_cxdec_callback,
 	&tenshin_cxdec_callback,

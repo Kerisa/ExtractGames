@@ -83,6 +83,7 @@
   <ItemGroup>
     <ClCompile Include="cxdec\11eyes_cxdec.cpp" />
     <ClCompile Include="cxdec\beniten_cxdec.cpp" />
+    <ClCompile Include="cxdec\colorfulcure_cxdec.cpp" />
     <ClCompile Include="cxdec\ConcertoNote_cxdec.cpp" />
     <ClCompile Include="cxdec\cxdec.cpp" />
     <ClCompile Include="cxdec\EXE_cxdec.cpp" />

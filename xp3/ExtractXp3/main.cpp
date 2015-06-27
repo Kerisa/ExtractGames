@@ -56,6 +56,7 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static thread_param tp[THREAD_NUM];
 	static HMODULE hZlib;
+	static bool thread_paused;
 	UNCOM tmp = 0;
 	TCHAR szBuffer[MAX_PATH];
 
@@ -80,7 +81,7 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		AppendMsg(TEXT("选择对应游戏后拖放xp3文件到此处..."));
 //----------------------------------------------------------
 		hCombo = GetDlgItem(hDlg, IDC_COMBO);
-		for (int i=IDS_STRING100; i<=IDS_STRING104; ++i)	// 改为对应游戏数量
+		for (int i=IDS_STRING100; i<=IDS_STRING106; ++i)	// 改为对应游戏数量
 		{
 			LoadString((HINSTANCE)GetWindowLong(hDlg, GWL_HINSTANCE), i, szBuffer, MAX_PATH);
 			SendMessage(hCombo, CB_ADDSTRING, 0, (LPARAM)szBuffer);
@@ -115,6 +116,25 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		InitializeCriticalSection(&cs);
 		return TRUE;
 
+	case WM_COMMAND:
+		if (LOWORD(wParam) == IDC_PAUSE)
+		{
+			if (thread_paused)
+			{
+				for (int i=0; i<THREAD_NUM; ++i)
+					ResumeThread(tp[i].hThread);
+				SetDlgItemText(hDlg, IDC_PAUSE, TEXT("暂停(&P)"));
+			}
+			else
+			{
+				for (int i=0; i<THREAD_NUM; ++i)
+					SuspendThread(tp[i].hThread);
+				SetDlgItemText(hDlg, IDC_PAUSE, TEXT("继续(&R)"));
+			}
+			thread_paused ^= 1;
+		}
+		return TRUE;
+				
 	case WM_DROPFILES:
 		OnDropFiles((HDROP)wParam, hDlg, tp);
 		return TRUE;
