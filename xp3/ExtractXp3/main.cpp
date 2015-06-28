@@ -81,7 +81,7 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		AppendMsg(TEXT("选择对应游戏后拖放xp3文件到此处..."));
 //----------------------------------------------------------
 		hCombo = GetDlgItem(hDlg, IDC_COMBO);
-		for (int i=IDS_STRING100; i<=IDS_STRING107; ++i)	// 改为对应游戏数量
+		for (int i=IDS_STRING100; i<=IDS_STRING108; ++i)	// 改为对应游戏数量
 		{
 			LoadString((HINSTANCE)GetWindowLong(hDlg, GWL_HINSTANCE), i, szBuffer, MAX_PATH);
 			SendMessage(hCombo, CB_ADDSTRING, 0, (LPARAM)szBuffer);

@@ -2,7 +2,7 @@
 #include "TLGDecoder.h"
 #include "resource.h"
 
-#define RECORDLIMIT 131072		// 一次处理的文件数上限
+#define MAX_PATH 350
 
 HWND hEdit;
 CRITICAL_SECTION cs;
@@ -137,13 +137,9 @@ int ExpandDirectory(PTSTR lpszPath, CallBack callback, struct CB* pcb)
 DWORD AppendFileToQueue(PTSTR pInBuf, CallBack callback, struct CB *pcb)
 {	
 	if (FILE_ATTRIBUTE_DIRECTORY == GetFileAttributes(pInBuf))
-	{
 		ExpandDirectory(pInBuf, callback, pcb);
-	}
 	else
-	{
 		callback(pcb, pInBuf);
-	}
 	return 0;
 }
 
@@ -179,7 +175,7 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_INITDIALOG:
 		hEdit = GetDlgItem(hDlg, IDC_EDIT);
 		SendMessage(hEdit, EM_LIMITTEXT, -1, 0);
-		AppendMsg(TEXT("拖放tlg文件至此处..."));
+		AppendMsg(TEXT("拖放tlg文件至此处...\r\n"));
 
 		for (int i=0; i<4; ++i)
 		{
@@ -258,17 +254,19 @@ DWORD WINAPI Thread(PVOID pv)
 
 		CloseHandle(hFile);
 		
+		if (FileLen <= 5) goto FILE_FORMAT_ERR;
 		PVOID p = FileBuf;
 		while ((PBYTE)p-(PBYTE)FileBuf < FileLen-5 && memcmp(p, "TLG6.0", 6) && memcmp(p, "TLG5.0", 6))
 			p = (PBYTE)p + 1;
 
 		if ((PBYTE)p-(PBYTE)FileBuf >= FileLen-5)
 		{
+FILE_FORMAT_ERR:
 			wsprintf(szBuffer, TEXT("文件不对错误，跳过%s"), CurrentFile);
 			MessageBox(0, szBuffer, TEXT("提示"), MB_ICONWARNING);
 			GlobalFree(FileBuf);
 			++dwNowProcess;
-			continue;
+			goto _NEXT;
 		}
 //		PVOID p = (unsigned char*)FileBuf + 0xF;	// 去掉头部 "TLG0.0..." 一段
 
@@ -280,7 +278,7 @@ DWORD WINAPI Thread(PVOID pv)
 			MessageBox(0, szBuffer, TEXT("提示"), MB_ICONWARNING);
 			GlobalFree(FileBuf);
 			++dwNowProcess;
-			continue;
+			goto _NEXT;
 		}
 		
 		*Receive = 0;
@@ -330,7 +328,7 @@ DWORD WINAPI Thread(PVOID pv)
 		if (*Receive) free(*Receive);
 		free(Receive);
 		GlobalFree(FileBuf);
-
+_NEXT:
 		EnterCriticalSection(&cs);
 		{
 			ptp->front = (ptp->front + 1) % ptp->QUEUE_SIZE;
