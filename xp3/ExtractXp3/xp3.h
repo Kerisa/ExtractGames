@@ -41,7 +41,7 @@ typedef void (*_XOR_DECODE)(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DW
  void xor_decode_prettycation	(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DWORD len);
 
 
-static const char *unencry_game [] = {"kamitsure", "startlight", "amatarasu"};		// 数据没有加密的游戏
+static const char unencry_game [] = "Unencrypted";		// 数据没有加密的游戏
 static const struct _SIMPLE_XOR		// 数据xor过的游戏
 {
 	char *name;			// 游戏名

@@ -226,21 +226,16 @@ int xp3_extract_file_save(HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *file_num,
 	p += 0x4;
 	p += *(u32*)p + 0x8;	// skip the protection warning
 	
-	for (int i=0; i<sizeof(unencry_game)/sizeof(unencry_game[0]); ++i)	// 决定解密使用的函数
-		if (!strcmp(game, unencry_game[i]))
-		{
-			p_decode = 0;
-			goto NEXT;
-		}
-	for (int i=0; i<sizeof(simple_xor_game)/sizeof(simple_xor_game[0]); ++i)
+	if (!strcmp(game, unencry_game))	// 决定解密使用的函数
+		p_decode = 0;
+	else for (int i=0; i<sizeof(simple_xor_game)/sizeof(simple_xor_game[0]); ++i)
 		if (!strcmp(game, simple_xor_game[i].name))
 		{
 			p_decode = simple_xor_game[i].p_decode;
 			game_idx = i;
-			goto NEXT;
+			break;
 		}
 
-NEXT:
 	while(p < idx_end)
 	{
 		p = get_file_thunk(p, fe, &split_file, idx_end);

@@ -2,7 +2,7 @@
 #include "TLGDecoder.h"
 #include "resource.h"
 
-#define MAX_PATH 350
+#define MAX_PATH 400
 
 HWND hEdit;
 CRITICAL_SECTION cs;
@@ -71,8 +71,12 @@ int callback(struct CB* pcb, PTSTR path)
 	while(len>=0 && path[len-1] != '.') --len;
 	if (!lstrcmp(&path[len], pcb->filter))
 	{
-		while (pcb->ptp[pcb->cnt].front == pcb->ptp[pcb->cnt].tail+1)		// 队列满，转下一个
-			pcb->cnt = (pcb->cnt+1)%4;
+		if (pcb->ptp[pcb->cnt].front == pcb->ptp[pcb->cnt].tail+1)
+		{
+			MessageBox(0, TEXT("文件数量太多，请分批拖放...."), TEXT("提示"), MB_ICONINFORMATION);
+			while (pcb->ptp[pcb->cnt].front == pcb->ptp[pcb->cnt].tail+1)		// 队列满，转下一个
+				pcb->cnt = (pcb->cnt+1)%4;
+		}
 
 		EnterCriticalSection(&cs);
 		{
