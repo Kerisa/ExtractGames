@@ -30,15 +30,25 @@ struct file_entry
 	wchar_t file_name[128];
 };
 
-static const char *unencry_game [] = {"kamitsure", "startlight", "amatarasu"};		// 数据没有加密的游戏
-static const struct _SIMPLE_XOR
-{
-	char *name;
-	u8 key;
-}simple_xor_game [] = {"kuranokunchi", 0xCD, "amakoi", 0x0};					// 数据xor过的游戏
-
 extern void AppendMsg(PTSTR szBuffer);
 
 int is_xp3_file(HANDLE hFile);
 u8* uncompress_xp3_idx(HANDLE hFile, u32 *idx_len, UNCOM unCom);
 int xp3_extract_file_save(HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *file_num, char *game, UNCOM unCom, wchar_t *cur_dir);
+
+typedef void (*_XOR_DECODE)(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DWORD len);
+ void xor_decode				(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DWORD len);
+ void xor_decode_prettycation	(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DWORD len);
+
+
+static const char *unencry_game [] = {"kamitsure", "startlight", "amatarasu"};		// 数据没有加密的游戏
+static const struct _SIMPLE_XOR		// 数据xor过的游戏
+{
+	char *name;			// 游戏名
+	void (*p_decode)(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DWORD len);	
+	u8    extend_key;	// 除去hash的额外的key
+	u32   offset;		// 从数据的offset字节开始解码
+}
+simple_xor_game [] = {"kuranokunchi",	xor_decode,					0xCD, 0x0,
+					   "amakoi",		xor_decode,					 0x0, 0x0,
+					   "prettycation",	xor_decode_prettycation,	 0x0, 0x5};

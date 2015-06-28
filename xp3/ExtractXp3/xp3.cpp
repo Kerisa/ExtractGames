@@ -42,9 +42,17 @@ u8* uncompress_xp3_idx(HANDLE hFile, u32 *idx_len, UNCOM unCom)
 	ReadFile(hFile,     &idx_flag, 1, &ByteRead, NULL);
 	ReadFile(hFile,  &idx_size_lo, 4, &ByteRead, NULL);
 	ReadFile(hFile,  &idx_size_hi, 4, &ByteRead, NULL);
-	ReadFile(hFile, &idx_uncom_lo, 4, &ByteRead, NULL);
-	ReadFile(hFile, &idx_uncom_hi, 4, &ByteRead, NULL);
-
+	if (idx_flag)
+	{
+		ReadFile(hFile, &idx_uncom_lo, 4, &ByteRead, NULL);
+		ReadFile(hFile, &idx_uncom_hi, 4, &ByteRead, NULL);
+	}
+	else
+	{
+		idx_uncom_lo = idx_size_lo;
+		idx_uncom_hi = idx_size_hi;
+	}
+	
 	u8 * idx	 = (u8*)VirtualAlloc(NULL,  idx_size_lo, MEM_COMMIT, PAGE_READWRITE);
 	u8 * idx_raw = (u8*)VirtualAlloc(NULL, idx_uncom_lo, MEM_COMMIT, PAGE_READWRITE);
 	if (!idx || !idx_raw)
@@ -205,18 +213,12 @@ static int SplitFileNameAndSave(wchar_t *cur_dir, wchar_t *file_name, void* unpa
 	return ret;
 }
 
-static void xor_decode(DWORD hash, u8 extend_key, PBYTE buf, DWORD len)
-{
-	for (int i=0; i<len; ++i)
-		buf[i] ^= (BYTE)hash ^ extend_key;
-	return;
-}
-
 int xp3_extract_file_save(HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *file_num, char *game, UNCOM unCom, wchar_t *cur_dir)
 {
+	_XOR_DECODE p_decode = (_XOR_DECODE)0x80000000;
 	struct file_entry fe[4];
 	u8 *p, *idx_end;
-	u32 R, split_file, offset_hi, cnt_savefile = 0;
+	u32 R, split_file, game_idx, offset_hi, cnt_savefile = 0;
 
 	p		= xp3_idx;
 	idx_end = xp3_idx + idx_len;
@@ -224,6 +226,21 @@ int xp3_extract_file_save(HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *file_num,
 	p += 0x4;
 	p += *(u32*)p + 0x8;	// skip the protection warning
 	
+	for (int i=0; i<sizeof(unencry_game)/sizeof(unencry_game[0]); ++i)	// 决定解密使用的函数
+		if (!strcmp(game, unencry_game[i]))
+		{
+			p_decode = 0;
+			goto NEXT;
+		}
+	for (int i=0; i<sizeof(simple_xor_game)/sizeof(simple_xor_game[0]); ++i)
+		if (!strcmp(game, simple_xor_game[i].name))
+		{
+			p_decode = simple_xor_game[i].p_decode;
+			game_idx = i;
+			goto NEXT;
+		}
+
+NEXT:
 	while(p < idx_end)
 	{
 		p = get_file_thunk(p, fe, &split_file, idx_end);
@@ -257,24 +274,16 @@ int xp3_extract_file_save(HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *file_num,
 			unCom(unpack, &unpack_len, cipher, file_pkg_len);
 		else
 			memcpy(unpack, cipher, file_org_len);
-
+//*****************************************************************************//
 		do{
-			for (int i=0; i<sizeof(unencry_game)/sizeof(unencry_game[0]); ++i)		// 过滤数据完全没加密的游戏
-				if (!strcmp(game, unencry_game[i]))
-					goto _OUT;
-
-			for (int i=0; i<sizeof(simple_xor_game)/sizeof(simple_xor_game[0]); ++i)	// 过滤异或加密的游戏
-			{
-				if (!strcmp(game, simple_xor_game[i].name))
-				{
-					xor_decode(fe[0].crc, simple_xor_game[i].key, unpack, file_org_len);
-					goto _OUT;
-				}
-			}
-			xp3filter_decode(game, fe[0].file_name, unpack, file_org_len, unpack_offset, file_org_len, fe[0].crc);
+			if (!p_decode) break;
+			else if (p_decode == (_XOR_DECODE)0x80000000)
+				xp3filter_decode(game, fe[0].file_name, unpack, file_org_len, unpack_offset, file_org_len, fe[0].crc);
+			else
+				p_decode(fe[0].crc, simple_xor_game[game_idx].extend_key, simple_xor_game[game_idx].offset, unpack, file_org_len);
 
 		}while(0);
-_OUT:
+//*****************************************************************************//
 		if (!SplitFileNameAndSave(cur_dir, fe[0].file_name, unpack, file_org_len))
 			++cnt_savefile;
 
@@ -285,4 +294,18 @@ _OUT:
 	}
 
 	return cnt_savefile;
+}
+
+static void xor_decode(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DWORD len)	// 从offset开始解
+{
+	for (int i=offset; i<len; ++i)
+		buf[i] ^= (BYTE)hash ^ extend_key;
+	return;
+}
+
+static void xor_decode_prettycation(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DWORD len)
+{
+	for (int i=offset; i<len; ++i)
+		buf[i] ^= (BYTE)(hash>>0xc);
+	return;
 }
