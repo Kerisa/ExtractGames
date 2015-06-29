@@ -2,7 +2,7 @@
 #include "TLGDecoder.h"
 #include "resource.h"
 
-#define MAX_PATH 400
+#define MAX_PATH 402
 
 HWND hEdit;
 CRITICAL_SECTION cs;
@@ -179,7 +179,7 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_INITDIALOG:
 		hEdit = GetDlgItem(hDlg, IDC_EDIT);
 		SendMessage(hEdit, EM_LIMITTEXT, -1, 0);
-		AppendMsg(TEXT("拖放tlg文件至此处...\r\n"));
+		AppendMsg(TEXT("拖放tlg文件至此处...\r\n[注意：文件路径须小于200个字符]\r\n"));
 
 		for (int i=0; i<4; ++i)
 		{
@@ -303,7 +303,8 @@ FILE_FORMAT_ERR:
 
 		hFile = CreateFile(CurrentFile, GENERIC_WRITE, 0, NULL,
 									CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
-		if (hFile == INVALID_HANDLE_VALUE || (err = GetLastError()))
+		err = GetLastError();
+		if (hFile == INVALID_HANDLE_VALUE || err && err != ERROR_ALREADY_EXISTS)
 		{
 			wsprintf(szBuffer, TEXT("无法创建文件%s，跳过"), CurrentFile);
 			MessageBox(0, szBuffer, TEXT("提示"), MB_ICONWARNING);

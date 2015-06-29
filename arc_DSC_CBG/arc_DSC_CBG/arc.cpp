@@ -128,7 +128,8 @@ int SplitFileNameAndSave(wchar_t *cur_dir, wchar_t *file_name, void* unpack, u32
 			ret = ERR_FILE_ERITE;
 			break;
 		}
-		if (!GetLastError())
+		int t = GetLastError();
+		if (!t || t == ERROR_ALREADY_EXISTS)
 			wsprintfW(buf2, L"[ÒÑ±£´æ]%s", p);
 		else
 		{
