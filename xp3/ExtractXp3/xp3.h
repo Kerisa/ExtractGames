@@ -46,7 +46,7 @@ static const struct _SIMPLE_XOR		// 数据xor过的游戏
 {
 	char *name;			// 游戏名
 	void (*p_decode)(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DWORD len);	
-	u8    extend_key;	// 除去hash的额外的key
+	u8    extend_key;	// 除去hash外的额外的key
 	u32   offset;		// 从数据的offset字节开始解码
 }
 simple_xor_game [] = {"kuranokunchi",	xor_decode,					0xCD, 0x0,

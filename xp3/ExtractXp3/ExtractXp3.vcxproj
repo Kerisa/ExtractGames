@@ -82,6 +82,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cxdec\11eyes_cxdec.cpp" />
+    <ClCompile Include="cxdec\anioka_cxdec_callback.cpp" />
     <ClCompile Include="cxdec\beniten_cxdec.cpp" />
     <ClCompile Include="cxdec\colorfulcure_cxdec.cpp" />
     <ClCompile Include="cxdec\ConcertoNote_cxdec.cpp" />
