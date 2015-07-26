@@ -215,10 +215,10 @@ static int SplitFileNameAndSave(wchar_t *cur_dir, wchar_t *file_name, void* unpa
 	return ret;
 }
 
-int xp3_extract_file_save(HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *file_num, char *game, UNCOM unCom, wchar_t *cur_dir)
+int xp3_extract_file_save(const HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *file_num, char *game, UNCOM unCom, wchar_t *cur_dir)
 {
 	_XOR_DECODE p_decode = (_XOR_DECODE)0x80000000;
-	struct file_entry fe[4];
+	struct file_entry fe[20];	// 目前看到的最多分成5段(segm长度0x8c)，没个准头
 	u8 *p, *idx_end;
 	u32 R, split_file, game_idx, offset_hi, cnt_savefile = 0;
 

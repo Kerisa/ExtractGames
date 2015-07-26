@@ -131,9 +131,6 @@
     <ClCompile Include="cxdec\colorfulcure_cxdec.cpp">
       <Filter>源文件\game_callback</Filter>
     </ClCompile>
-    <ClCompile Include="cxdec\anioka_cxdec_callback.cpp">
-      <Filter>源文件\game_callback</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="main.rc">
