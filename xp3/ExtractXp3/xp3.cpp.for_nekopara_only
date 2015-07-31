@@ -1,0 +1,151 @@
+#include "xp3.h"
+
+static u8* get_file_thunk(u8 *pointer, struct file_entry *fe, u32 *split_file, u8 *idx_end)
+{
+	static const u32 _elif = 0x46696c65;
+	static const u32 _file = 0x656c6946;
+	static const u32 _adlr = 0x726c6461;
+	static const u32 _segm = 0x6d676573;
+	static const u32 _info = 0x6f666e69;
+
+	if (*((u32*)pointer) != _elif)	// eliF块后跟着文件名
+	{
+		AppendMsg(TEXT("文件索引表错误，提取终止"));
+		return 0;
+	}
+	pointer += 0x10;
+	int buf_size = (int)*((u16*)pointer);
+	if(buf_size >= sizeof(fe->file_name)/sizeof(fe->file_name[0]))
+	{
+		MessageBox(0, TEXT("文件名超出缓冲区长度"), TEXT("提示"), MB_ICONWARNING | MB_OK);
+		buf_size = sizeof(fe->file_name)/sizeof(fe->file_name[0]) - 1;
+	}
+	pointer += 0x2;
+	lstrcpyW(fe->file_name, (wchar_t*)pointer);
+	fe->file_name[buf_size] = '\0';
+	pointer += buf_size * 2 + 2;
+
+	u8* first_end = pointer + *((u32*)(pointer+4)) + 0xc;
+
+	if (first_end > idx_end)
+	{
+		AppendMsg(TEXT("文件索引表读取错误，提取终止"));
+		return 0;
+	}
+	pointer += 0x8;
+
+	while (pointer < first_end)
+	{
+		switch (*(u32*)pointer)
+		{
+		default:
+			++pointer;
+			break;
+
+		case _adlr:
+			pointer += 0xC;
+			fe->crc = *((u32*)pointer);
+			pointer += 4;
+			break;
+
+		case _segm:				// 没有分段(应该)
+			if (*(u32*)(pointer+4) % 0x1c == 0)
+			{
+				*split_file = *(u32*)(pointer+4) / 0x1c;
+				pointer += 0xC;
+				for (int i=0; i<*split_file; ++i)
+				{
+					fe[i].compress_flag = *(u32*)pointer;   	pointer += 4;	// 1 compressed
+					fe[i].offset		= *(u64*)pointer;		pointer += 8;
+					fe[i].orig_length   = *(u64*)pointer;		pointer += 8;
+					fe[i].pkg_length    = *(u64*)pointer;		pointer += 8;
+				}
+			}
+			else
+			{
+				AppendMsg(TEXT("错误的文件索引"));
+				*split_file = 0;
+				while(*(u32*)pointer != _file) ++pointer;	// 跳过这个索引
+			}
+			break;
+
+		case _info:		// 单纯地跳过
+			pointer += 0x4;
+			pointer += *(u32*)pointer + 0x8;
+			break;
+		}
+	}
+	return pointer;
+}
+
+void _xor_decode(u8 *unpack, u32 file_len, u32 hash)		// nekopara用的解密函数
+{
+	u32 r = hash ^ 0x1548E29C;
+	u8 key = (u8)(r>>24 ^ r>>16 ^ r>>8 ^ r);
+	if (!key) key = 0xd7;
+	for (int i=0; i<file_len; ++i)
+		*(unpack++) ^= key;
+}
+
+int xp3_extract_file_save(const HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *file_num, char *game, UNCOM unCom, wchar_t *cur_dir)
+{
+	_XOR_DECODE p_decode = (_XOR_DECODE)0x80000000;
+	struct file_entry fe[20];	// 目前看到的最多分成5段(segm长度0x8c)，没个准头
+	u8 *p, *idx_end;
+	u32 R, split_file, game_idx, offset_hi, cnt_savefile = 0;
+
+	p		= xp3_idx;
+	idx_end = xp3_idx + idx_len;
+	
+	p += 0x4;
+	p += *(u32*)p + 0x8 + 0x4;
+	p += *(u32*)p + 0x8;	// skip the protection warning
+	
+	while(p < idx_end)
+	{
+		p = get_file_thunk(p, fe, &split_file, idx_end);
+		if (!p) break;
+		if (split_file) ++(*file_num);
+
+		u32 file_pkg_len = 0;
+		u32 file_org_len = 0;
+		for (int i=0; i<split_file; ++i)
+		{
+			file_pkg_len += fe[i].pkg_length;
+			file_org_len += fe[i].orig_length;
+		}
+
+		u32 file_read = 0;
+		u8 *cipher = (u8*)VirtualAlloc(NULL, file_pkg_len, MEM_COMMIT, PAGE_READWRITE);
+
+		for (int i=0; i<split_file; ++i)
+		{
+			offset_hi = (fe[i].offset >> 32) & 0xFFFFFFFF;
+			SetFilePointer(hFile, fe[i].offset & 0xFFFFFFFF, (PLONG)&offset_hi, FILE_BEGIN);
+			int err = ReadFile(hFile, cipher+file_read, fe[i].pkg_length&0xFFFFFFFF, &R, NULL);
+			err = GetLastError();
+			file_read += fe[i].pkg_length;
+		}
+
+		u8* unpack		  = (u8*) VirtualAlloc(NULL, file_org_len, MEM_COMMIT, PAGE_READWRITE);
+		u32 unpack_len	  = file_org_len & 0xFFFFFFFF;
+		u32 unpack_offset = 0;
+
+		if (fe[0].compress_flag)
+			unCom(unpack, &unpack_len, cipher, file_pkg_len);
+		else
+			memcpy(unpack, cipher, file_org_len);
+
+		_xor_decode(unpack, file_org_len, fe[0].crc);
+
+		if (!SplitFileNameAndSave(cur_dir, fe[0].file_name, unpack, file_org_len))
+			++cnt_savefile;
+
+		VirtualFree(unpack, file_org_len, MEM_DECOMMIT);
+		VirtualFree(unpack, 0, MEM_RELEASE);
+		VirtualFree(cipher, file_pkg_len, MEM_DECOMMIT);
+		VirtualFree(cipher, 0, MEM_RELEASE);
+	}
+
+	return cnt_savefile;
+}
