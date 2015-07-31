@@ -2,7 +2,7 @@
 
 int Is_CBG(const u8* in)
 {
-	return !memcmp(in, "CompressedBG___", 16);
+	return memcmp(in, "CompressedBG___", 16) == 0 ? *(u16*)(in+0x2E) : 0;	// 返回CBG的版本（1或2）
 }
 
 struct ARR2
@@ -159,9 +159,9 @@ int DecodeCBG(u8** raw_data, u8* in, int in_size)
 		do
 		{
 			al = *buf_p++;
-			ebp |= ((al & 0x7f) << (u8)esi);
+			ebp |= ((al & 0x7f) << /*(u8)*/esi);
 			esi += 7;
-		}while(al & 0x80);
+		}while(al & 0x80 && buf_p - buf < buf_size);
 		arr1[edx] = ebp;
 	}
 	free(buf);

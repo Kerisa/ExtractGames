@@ -21,10 +21,10 @@
     <ClCompile Include="dsc.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="cbg.cpp">
+    <ClCompile Include="arc.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="arc.cpp">
+    <ClCompile Include="cbg_v1.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -51,6 +51,9 @@
     </ClInclude>
     <ClInclude Include="arc.h">
       <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CBG_v2.h">
+      <Filter>源文件</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

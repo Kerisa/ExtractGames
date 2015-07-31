@@ -1,5 +1,5 @@
 #include "arc.h"
-
+#include "CBG_v2.h"
 
 GET_IDX get_arc_idx[ARC_FILE_TYPE] = {get_arc_idx_0, get_arc_idx_1};
 
@@ -20,8 +20,13 @@ int Is_arc(HANDLE hFile)
 
 int arc_extract_file_save(HANDLE hFile,const struct IDX * const idx, int file_num, u32 correct, wchar_t *cur_dir)
 {
+	CBG _cbg;
+	bool succees_v2 = false;
+
 	u8 *raw_data;
 	u32 R, file_processsed = 0;
+
+	wchar_t tmp[160];
 
 	for (int i=0; i<file_num; ++i)
 	{
@@ -31,6 +36,7 @@ int arc_extract_file_save(HANDLE hFile,const struct IDX * const idx, int file_nu
 		SetFilePointer(hFile, correct + idx[i].offset, 0, FILE_BEGIN);
 		ReadFile(hFile, file, idx[i].size, &R, 0);
 
+		int cbg_ver = 0;
 		int raw_len = idx[i].size;
 		raw_data = 0;
 		if (Is_DSC(file))
@@ -56,11 +62,18 @@ int arc_extract_file_save(HANDLE hFile,const struct IDX * const idx, int file_nu
 				}
 			}
 		}
-		else if (Is_CBG(file))
+		else if (cbg_ver = Is_CBG(file))
 		{
-			raw_len = DecodeCBG(&raw_data, file, idx[i].size);
-			strcat((char*)idx[i].name, ".bmp");
-			R = GetLastError();
+			if (cbg_ver == 1)
+			{
+				raw_len = DecodeCBG(&raw_data, file, idx[i].size);
+				strcat((char*)idx[i].name, ".bmp");
+				R = GetLastError();
+			}
+			else if (cbg_ver == 2)
+			{
+				succees_v2 = _cbg.Uncompress((s8*)file, idx[i].size);
+			}
 		}
 		else
 		{
@@ -71,7 +84,25 @@ int arc_extract_file_save(HANDLE hFile,const struct IDX * const idx, int file_nu
 		wchar_t wfilename[96];
 		MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, (PCSTR)idx[i].name, lstrlenA((PCSTR)idx[i].name), wfilename, 32);
 		wfilename[lstrlenA((PCSTR)idx[i].name)] = '\0';
-		if (!SplitFileNameAndSave(cur_dir, wfilename, (void*)raw_data, raw_len))
+		if (cbg_ver == 2)
+		{
+			if (succees_v2)
+			{
+				wcscat(wfilename, L".bmp");
+				if (!SplitFileNameAndSave(cur_dir, wfilename, _cbg.BmpData, _cbg.Size))
+					++file_processsed;
+			}
+			else
+			{
+				wcscpy(tmp, wfilename);
+				wcscat(tmp, L"解码失败！错误原因：");
+				wcscat(tmp, _cbg.GetError());
+				wcscat(tmp, L"\n");
+				AppendMsg(tmp);
+			}
+			succees_v2 = false;
+		}
+		else if (!SplitFileNameAndSave(cur_dir, wfilename, raw_data, raw_len))
 			++file_processsed;
 
 		if (raw_data) free(raw_data);
@@ -133,7 +164,7 @@ int SplitFileNameAndSave(wchar_t *cur_dir, wchar_t *file_name, void* unpack, u32
 			wsprintfW(buf2, L"[已保存]%s", p);
 		else
 		{
-			wsprintfW(buf2, L"[无法保存]%s", p);
+			wsprintfW(buf2, L"[无法保存]%s,错误码%d", p, GetLastError());
 			ret = ERR_FILE_OTHERS;
 		}
 	}while(0);
