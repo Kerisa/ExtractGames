@@ -61,7 +61,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="arc.cpp" />
-    <ClCompile Include="cbg.cpp" />
+    <ClCompile Include="cbg_v1.cpp" />
     <ClCompile Include="dsc.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -71,6 +71,7 @@
   <ItemGroup>
     <ClInclude Include="arc.h" />
     <ClInclude Include="cbg.h" />
+    <ClInclude Include="CBG_v2.h" />
     <ClInclude Include="dsc.h" />
     <ClInclude Include="error.h" />
     <ClInclude Include="resource.h" />

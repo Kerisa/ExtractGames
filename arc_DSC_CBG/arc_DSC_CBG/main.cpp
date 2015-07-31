@@ -4,8 +4,7 @@
 #include "arc.h"
 #include "resource.h"
 
-//#define RECORDLIMIT 131072		// 一次处理的文件数上限
-#define MAX_PATH 350
+#define MAX_PATH 400
 
 HWND hEdit;
 CRITICAL_SECTION cs;
@@ -13,7 +12,7 @@ CRITICAL_SECTION cs;
 struct thread_param
 {
 	enum {QUEUE_SIZE = 1500};
-	PTSTR *queue;
+	wchar_t **queue;
 	DWORD front, tail;
 	HANDLE hEvent;
 	HANDLE hThread;
@@ -182,7 +181,7 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_INITDIALOG:
 		hEdit = GetDlgItem(hDlg, IDC_EDIT);
 		SendMessage(hEdit, EM_LIMITTEXT, -1, 0);
-		AppendMsg(TEXT("拖放arc文件至此处...\r\n"));
+		AppendMsg(TEXT("拖放arc文件至此处...\r\n【注意】文件路径须小于200个字符\r\n"));
 
 		for (int i=0; i<4; ++i)
 		{
@@ -196,7 +195,7 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				AppendMsg(TEXT("内存分配错误！"));
 				EndDialog(hDlg, 0);
 			}
-			if (!(*(tp[i].queue) = (PTSTR)VirtualAlloc(NULL, tp[i].QUEUE_SIZE*MAX_PATH, MEM_COMMIT, PAGE_READWRITE)))
+			if (!(*(tp[i].queue) = (wchar_t*)VirtualAlloc(NULL, tp[i].QUEUE_SIZE*MAX_PATH, MEM_COMMIT, PAGE_READWRITE)))
 			{
 				AppendMsg(TEXT("内存分配错误！"));
 				EndDialog(hDlg, 0);

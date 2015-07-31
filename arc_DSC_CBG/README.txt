@@ -8,3 +8,9 @@ cbg.cpp/h	- 解码CompressedBG___类型文件
 dsc.cpp/h	- 解码DSC FORMAT 1.00类型文件
 error.h
 type.h
+
+***************************************
+CBG v2
+原来CompressedBG___还是有Ver.2的...*(short*)(file_head_ptr + 0x2e)
+原先的cbg.cpp 改为 cbg_v1.cpp
+新增的则是CBG_v2.h 
