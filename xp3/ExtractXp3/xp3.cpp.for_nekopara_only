@@ -1,3 +1,8 @@
+/*
+ * 嘛 其实也就是个索引有点不同，不过还没想好该怎么合并就先单独放着吧
+ *
+ */
+ 
 #include "xp3.h"
 
 static u8* get_file_thunk(u8 *pointer, struct file_entry *fe, u32 *split_file, u8 *idx_end)
