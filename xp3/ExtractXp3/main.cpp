@@ -248,7 +248,7 @@ void OnDropFiles(HDROP hDrop, HWND hDlg, thread_param* ptp)
 		MessageBox(hDlg, TEXT("请先选择对应的游戏"), TEXT("提示"), MB_ICONINFORMATION);
 		return;
 	}
-	LoadStringA((HINSTANCE)GetWindowLong(hDlg, GWL_HINSTANCE), idx+500, szBuffer, 128);
+	LoadStringA((HINSTANCE)GetWindowLong(hDlg, GWL_HINSTANCE), idx+499, szBuffer, 128);
 	for (int i=0; i<THREAD_NUM; ++i)
 		strcpy(ptp[i].ChooseGame, szBuffer);
 
