@@ -244,6 +244,12 @@ int xp3_extract_file_save(const HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *fil
 		if (!p) break;
 		if (split_file) ++(*file_num);
 
+		if (split_file > sizeof(fe)/sizeof(fe[0]))
+		{
+			MessageBox(0, L"文件分段数量过多，提取中止！", 0, MB_ICONERROR);
+			break;
+		}
+
 		u32 file_pkg_len = 0;
 		u32 file_org_len = 0;
 		for (int i=0; i<split_file; ++i)
@@ -257,14 +263,14 @@ int xp3_extract_file_save(const HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *fil
 
 		for (int i=0; i<split_file; ++i)
 		{
-			offset_hi = (fe[i].offset >> 32) & 0xFFFFFFFF;
-			SetFilePointer(hFile, fe[i].offset & 0xFFFFFFFF, (PLONG)&offset_hi, FILE_BEGIN);
-			ReadFile(hFile, cipher+file_read, fe[i].pkg_length&0xFFFFFFFF, &R, NULL);
+			offset_hi = (u32)(fe[i].offset >> 32);
+			SetFilePointer(hFile, (u32)fe[i].offset, (PLONG)&offset_hi, FILE_BEGIN);
+			ReadFile(hFile, cipher+file_read, (u32)fe[i].pkg_length, &R, NULL);
 			file_read += fe[i].pkg_length;
 		}
 
 		u8* unpack		  = (u8*) VirtualAlloc(NULL, file_org_len, MEM_COMMIT, PAGE_READWRITE);
-		u32 unpack_len	  = file_org_len & 0xFFFFFFFF;
+		u32 unpack_len	  = (u32)file_org_len;
 		u32 unpack_offset = 0;
 
 		if (fe[0].compress_flag)
@@ -284,9 +290,7 @@ int xp3_extract_file_save(const HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *fil
 		if (!SplitFileNameAndSave(cur_dir, fe[0].file_name, unpack, file_org_len))
 			++cnt_savefile;
 
-		VirtualFree(unpack, file_org_len, MEM_DECOMMIT);
 		VirtualFree(unpack, 0, MEM_RELEASE);
-		VirtualFree(cipher, file_pkg_len, MEM_DECOMMIT);
 		VirtualFree(cipher, 0, MEM_RELEASE);
 	}
 
