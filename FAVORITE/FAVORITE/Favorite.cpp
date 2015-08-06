@@ -97,6 +97,10 @@ int MakeBmpFile(PBYTE RawData, DWORD FileLen, DWORD BppType, DWORD Height, DWORD
 			if (!(p[i] & 0xff000000))
 				p[i] = 0x00ffffff;
 	}
+	else
+	{
+
+	}
 
 	return 0;
 }
