@@ -3,6 +3,79 @@
 
 _UNCOM gfnUncompress;
 
+int SeparateBmp::SetValue(DWORD h, DWORD w, DWORD b, PBYTE buf, DWORD cch)
+{
+	Height = h;
+	Width  = w;
+	Bpp    = b;
+	FileSize = h * w * (b >> 3);
+	FileNum  = cch / FileSize;
+	FileSize += 54;	// 加上BMP文件头
+
+	PBYTE p = buf, p_end = buf + cch;
+
+	if (Data = (BYTE*)VirtualAlloc(NULL, cch, MEM_COMMIT, PAGE_READWRITE))
+		memcpy(Data, buf, cch);
+	else
+		AppendMsg(L"SeparateBmp中内存分配失败！\r\n");
+	return 0;
+}
+
+int SeparateBmp::SaveToFile(const wchar_t *dir, const wchar_t *NameWithoutSuffix)
+{
+	DWORD R;
+	wchar_t format[MAXPATH] = {0};
+	wchar_t newname[MAXPATH] = {0};
+	wchar_t buf[MAXPATH] = {0};
+	BYTE bmp[sizeof(BmpHeader)];
+	wcscpy(format, dir);
+	wcscat(format, L"\\");
+	wcscat(format, NameWithoutSuffix);
+	wcscat(format, L"_%03d.bmp");
+
+	memcpy(bmp, BmpHeader, sizeof(BmpHeader));
+	*(PDWORD)(bmp +  0x2) = FileSize;
+	*(PDWORD)(bmp + 0x22) = FileSize - 54;
+	*(PDWORD)(bmp + 0x12) = Width;
+	*(PDWORD)(bmp + 0x16) = -Height;
+	*(PBYTE) (bmp + 0x1C) = Bpp;
+
+	// 把Alpha通道为透明(0x0)的像素换成白色
+	PDWORD p = (PDWORD)(Data + 54);
+	for (int i=0; i<((FileSize-54)>>2); ++i)
+		if (!(p[i] & 0xff000000))
+			p[i] = 0x00ffffff;
+
+	DWORD FileSaved = 0;
+	for (int i=0; i<FileNum; ++i)
+	{
+		wsprintf(newname, format, i);
+
+		HANDLE hSave = CreateFile(newname, GENERIC_WRITE, 0, 0, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+		if (hSave == INVALID_HANDLE_VALUE)
+		{
+			wsprintf(buf, L"[创建失败] %s\r\n", newname);
+			AppendMsg(buf);
+			continue;
+		}
+
+		if (!WriteFile(hSave, bmp, sizeof(bmp), &R, 0) ||
+			!WriteFile(hSave, Data+i*(FileSize-54), FileSize-54, &R, 0)
+			)
+		{
+			wsprintf(buf, L"[写入失败] %s\r\n", newname);
+			AppendMsg(buf);
+		}
+		else ++FileSaved;
+
+		CloseHandle(hSave);
+
+		wsprintf(buf, L"[已保存]%s\r\n", newname);
+		AppendMsg(buf);
+	}
+	return FileSaved;
+}
+
 int GetPackageIndex(HANDLE hFile, PPACKAGEINDEX* PackageIdx, char** FileNameTable)
 {
 	PACKAGEHEADER PackHeader;
@@ -43,7 +116,7 @@ int GetPackageIndex(HANDLE hFile, PPACKAGEINDEX* PackageIdx, char** FileNameTabl
 	return PackHeader.TotalFileNum;
 }
 
-int Exactehzc1File(PBYTE PackageData, PBYTE *OriginalData, DWORD PackageDataLen) /*需要调用 gfnUncompress*/
+int Exactehzc1File(PBYTE PackageData, PBYTE *OriginalData, DWORD PackageDataLen, SeparateBmp & sb) /*需要调用 gfnUncompress*/
 {
 	Phzc1HEADER Hzc1 = (Phzc1HEADER)PackageData;
 	PNVSGHEADER Nvsg = (PNVSGHEADER)(PackageData + sizeof(hzc1HEADER));
@@ -63,17 +136,15 @@ int Exactehzc1File(PBYTE PackageData, PBYTE *OriginalData, DWORD PackageDataLen)
 				  PackageData + Hzc1->FileInfoLen + sizeof(hzc1HEADER),
 				  PackageDataLen - Hzc1->FileInfoLen - sizeof(hzc1HEADER));
 
-	MakeBmpFile(RawData, Hzc1->OriginalFileLen, Nvsg->BppType, Nvsg->Height, Nvsg->Width);
+	MakeBmpFile(RawData, Hzc1->OriginalFileLen, Nvsg->BppType, Nvsg->Height, Nvsg->Width, sb);
 
 	*OriginalData = RawData;
 	return Hzc1->OriginalFileLen + 54;
 }
 
-int MakeBmpFile(PBYTE RawData, DWORD FileLen, DWORD BppType, DWORD Height, DWORD Width)
+int MakeBmpFile(PBYTE RawData, DWORD FileLen, DWORD BppType, DWORD Height, DWORD Width, SeparateBmp & sb)
 {
 	bool bNeedSeparate = false;
-	memcpy(RawData, BmpHeader, sizeof(BmpHeader));
-
 	BYTE Bpp;
 	if (BppType == 0)		Bpp = 24;
 	else if (BppType == 1)	Bpp = 32;
@@ -86,6 +157,8 @@ int MakeBmpFile(PBYTE RawData, DWORD FileLen, DWORD BppType, DWORD Height, DWORD
 	}
 	if (!bNeedSeparate)
 	{
+		memcpy(RawData, BmpHeader, sizeof(BmpHeader));
+
 		*(PDWORD)(RawData + 0x2)  = FileLen + 54;
 		*(PDWORD)(RawData + 0x22) = FileLen;
 		*(PDWORD)(RawData + 0x12) = Width;
@@ -99,7 +172,7 @@ int MakeBmpFile(PBYTE RawData, DWORD FileLen, DWORD BppType, DWORD Height, DWORD
 	}
 	else
 	{
-
+		sb.SetValue(Height, Width, Bpp, RawData+54, FileLen);	// 最初RawData里为Bmp头留出了空间
 	}
 
 	return 0;
@@ -153,14 +226,23 @@ int Enterence(wchar_t *PackageName, wchar_t *CurrentDir)
 		{
 			PBYTE OriginalData = 0;
 			DWORD FileLen = 0;
+			SeparateBmp sb;
 			wcscat(szFileNameBuf, L".bmp");
-			if (!(FileLen = Exactehzc1File(PackData, &OriginalData, PackIdx[i].FileLength)))
+			if (!(FileLen = Exactehzc1File(PackData, &OriginalData, PackIdx[i].FileLength, sb)))
 			{
-				wsprintf(szBuf, L"文件解码失败！ - %s\r\n", &FileNameTable[PackIdx[i].FileNameOffset]);
+				wsprintf(szBuf, L"文件解码失败！ - %s\r\n", szFileNameBuf);
 				AppendMsg(szBuf);
 			}
-			else if (!SplitFileNameAndSave(CurrentDir, szFileNameBuf, OriginalData, FileLen))
-				++SavedFileNum;
+			else
+			{
+				if (sb.QueryFileNum())
+				{
+					szFileNameBuf[wcslen(szFileNameBuf)-4] = 0;	// 截掉bmp后缀....
+					SavedFileNum += !!sb.SaveToFile(CurrentDir, szFileNameBuf);
+				}
+				else if (!SplitFileNameAndSave(CurrentDir, szFileNameBuf, OriginalData, FileLen))
+					++SavedFileNum;
+			}
 			VirtualFree(OriginalData, 0, MEM_RELEASE);
 		}
 	}
