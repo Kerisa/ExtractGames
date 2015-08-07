@@ -76,44 +76,44 @@ int SeparateBmp::SaveToFile(const wchar_t *dir, const wchar_t *NameWithoutSuffix
 	return FileSaved;
 }
 
-int GetPackageIndex(HANDLE hFile, PPACKAGEINDEX* PackageIdx, char** FileNameTable)
+PackageInfo::PackageInfo(HANDLE hF):H_TotalFileNum(0), IdxOffset(0), NameOffset(0), IdxPtr(0), NamePtr(0)
 {
-	PACKAGEHEADER PackHeader;
-	DWORD R, SizeOfIdx, SizeOfName;
-	PBYTE FNT, PI;
-
-	*PackageIdx = 0;
-	*FileNameTable = 0;
-	if (hFile == INVALID_HANDLE_VALUE)
+	DWORD R;
+	if (hF == INVALID_HANDLE_VALUE)
 	{
 		AppendMsg(L"无效的文件句柄！\r\n");
-		return 0;
+		return;
 	}
-
+	hFile = hF;
 	SetFilePointer(hFile, 0, 0, FILE_BEGIN);
-	ReadFile(hFile, &PackHeader, sizeof(PackHeader), &R, 0);
+	ReadFile(hFile, &H_TotalFileNum, 4, &R, 0);
 
-	SizeOfIdx = PackHeader.TotalFileNum * sizeof(PACKAGEINDEX);
-	if (!(PI = (PBYTE)VirtualAlloc(0, SizeOfIdx, MEM_COMMIT, PAGE_READWRITE)))
-	{
-		AppendMsg(L"内存无法分配\r\n");
-		return 0;
-	}
+	IdxPtr  = IdxOffset  = sizeof(PACKAGEHEADER);
+	NamePtr = NameOffset = sizeof(PACKAGEHEADER) + H_TotalFileNum * sizeof(PACKAGEINDEX);
 
-	ReadFile(hFile, PI, SizeOfIdx, &R, 0);
+	return;
+}
 
-	SizeOfName = ((PPACKAGEINDEX)PI)[0].FileOffset - SizeOfIdx - sizeof(PACKAGEHEADER);
-	if (!(FNT = (PBYTE)VirtualAlloc(0, SizeOfName, MEM_COMMIT, PAGE_READWRITE)))
-	{
-		AppendMsg(L"内存无法分配\r\n");
-		return 0;
-	}
+int PackageInfo::GetNextIdx(PackageInfo::PPACKAGEINDEX pi, char *out, int cch)
+{
+	DWORD R;
 
-	ReadFile(hFile, FNT, SizeOfName, &R, 0);
+	if (!pi || !out || !cch) return -1;
+	
+	SetFilePointer(hFile, IdxPtr, 0, FILE_BEGIN);
+	ReadFile(hFile, pi, sizeof(PackageInfo::PACKAGEINDEX), &R, 0);
 
-	*PackageIdx = (PPACKAGEINDEX)PI;
-	*FileNameTable = (char*)FNT;
-	return PackHeader.TotalFileNum;
+	SetFilePointer(hFile, NamePtr, 0, FILE_BEGIN);
+	DWORD len = 0;
+	do{
+		ReadFile(hFile, &out[len++], 1, &R, 0);
+	}while (len < cch && out[len-1] != 0);
+	out[cch-1] = 0;
+
+	IdxPtr  += sizeof(PackageInfo::PACKAGEINDEX);
+	NamePtr += len;
+
+	return 0;
 }
 
 int Exactehzc1File(PBYTE PackageData, PBYTE *OriginalData, DWORD PackageDataLen, SeparateBmp & sb) /*需要调用 gfnUncompress*/
@@ -180,10 +180,11 @@ int MakeBmpFile(PBYTE RawData, DWORD FileLen, DWORD BppType, DWORD Height, DWORD
 
 int Enterence(wchar_t *PackageName, wchar_t *CurrentDir)
 {
-	wchar_t szBuf[MAX_PATH];
+	wchar_t szBuf[MAX_PATH1];
 	DWORD R, SavedFileNum = 0;
 
 	if (!PackageName) return 0;
+
 	HANDLE hFile = CreateFile(PackageName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
 	if (hFile == INVALID_HANDLE_VALUE)
 	{
@@ -192,61 +193,64 @@ int Enterence(wchar_t *PackageName, wchar_t *CurrentDir)
 		return 0;
 	}
 
-	PPACKAGEINDEX PackIdx;
-	char *FileNameTable;
-	DWORD TotFileNum = GetPackageIndex(hFile, &PackIdx, &FileNameTable);
+	PackageInfo PI(hFile);
+	PackageInfo::PACKAGEINDEX pi;
+	char AsciiName[MAX_PATH1];
+	wchar_t UTFName[MAX_PATH1];
 
-	for (int i=0; i<TotFileNum; ++i)
+	for (int i=0; i<PI.FileNum(); ++i)
 	{
-		wchar_t szFileNameBuf[MAX_PATH];
-		PBYTE PackData = (PBYTE)VirtualAlloc(NULL, PackIdx[i].FileLength, MEM_COMMIT, PAGE_READWRITE);
+		PI.GetNextIdx(&pi, AsciiName, MAX_PATH1-1);
+
+		PBYTE PackData = (PBYTE)VirtualAlloc(NULL, pi.FileLength, MEM_COMMIT, PAGE_READWRITE);
 		if (!PackData)
 		{
 			AppendMsg(L"内存无法分配，内存不够了么？\r\n");
 			return 0;
 		}
 		
-		SetFilePointer(hFile, PackIdx[i].FileOffset, 0, FILE_BEGIN);
-		ReadFile(hFile, PackData, PackIdx[i].FileLength, &R, 0);
+		SetFilePointer(hFile, pi.FileOffset, 0, FILE_BEGIN);
+		ReadFile(hFile, PackData, pi.FileLength, &R, 0);
 
 		// Code Page	932	shift_jis	ANSI/OEM Japanese; Japanese (Shift-JIS)
-		MultiByteToWideChar(932, 0, &FileNameTable[PackIdx[i].FileNameOffset], -1, szFileNameBuf, MAX_PATH-1);
+		MultiByteToWideChar(932, 0, AsciiName, -1, UTFName, MAX_PATH1-1);
+
 		if (*(PDWORD)PackData == 0x5367674F || *(PDWORD)PackData == 0x46464952)	// "OggS" "RIFF"
 		{
 			if (*(PDWORD)PackData == 0x5367674F)
-				wcscat(szFileNameBuf, L".ogg");
+				wcscat(UTFName, L".ogg");
 			else
-				wcscat(szFileNameBuf, L".wav");
+				wcscat(UTFName, L".wav");
 
-			if (!SplitFileNameAndSave(CurrentDir, szFileNameBuf, PackData, PackIdx[i].FileLength))
+			if (!SplitFileNameAndSave(CurrentDir, UTFName, PackData, pi.FileLength))
 				++SavedFileNum;
-			VirtualFree(PackData, 0, MEM_RELEASE);
 		}
 		else if (*(PDWORD)PackData == 0x31637A68)	// "hzc1"
 		{
 			PBYTE OriginalData = 0;
 			DWORD FileLen = 0;
 			SeparateBmp sb;
-			wcscat(szFileNameBuf, L".bmp");
-			if (!(FileLen = Exactehzc1File(PackData, &OriginalData, PackIdx[i].FileLength, sb)))
+			wcscat(UTFName, L".bmp");
+			if (!(FileLen = Exactehzc1File(PackData, &OriginalData, pi.FileLength, sb)))
 			{
-				wsprintf(szBuf, L"文件解码失败！ - %s\r\n", szFileNameBuf);
+				wsprintf(szBuf, L"文件解码失败！ - %s\r\n", UTFName);
 				AppendMsg(szBuf);
 			}
 			else
 			{
 				if (sb.QueryFileNum())
 				{
-					szFileNameBuf[wcslen(szFileNameBuf)-4] = 0;	// 截掉bmp后缀....
-					SavedFileNum += !!sb.SaveToFile(CurrentDir, szFileNameBuf);
+					UTFName[wcslen(UTFName)-4] = 0;	// 截掉.bmp后缀....
+					SavedFileNum += !!sb.SaveToFile(CurrentDir, UTFName);
 				}
-				else if (!SplitFileNameAndSave(CurrentDir, szFileNameBuf, OriginalData, FileLen))
+				else if (!SplitFileNameAndSave(CurrentDir, UTFName, OriginalData, FileLen))
 					++SavedFileNum;
 			}
 			VirtualFree(OriginalData, 0, MEM_RELEASE);
 		}
+		VirtualFree(PackData, 0, MEM_RELEASE);
 	}
-	if (TotFileNum == SavedFileNum)
+	if (PI.FileNum() == SavedFileNum)
 	{
 		wsprintf(szBuf, L"[提取完成(%d/%d)] %s\r\n", SavedFileNum, SavedFileNum, PackageName);
 		AppendMsg(szBuf);
@@ -254,12 +258,9 @@ int Enterence(wchar_t *PackageName, wchar_t *CurrentDir)
 	else
 	{
 		wsprintf(szBuf, L"[提取完成(%d/%d)] %s\r\n有%d个文件出错",
-					SavedFileNum, TotFileNum, PackageName, TotFileNum-SavedFileNum);
+					SavedFileNum, PI.FileNum(), PackageName, PI.FileNum()-SavedFileNum);
 		MessageBox(0, szBuf, L"提示", MB_ICONWARNING);
 	}
-	VirtualFree(PackIdx, 0, MEM_RELEASE);
-	VirtualFree(FileNameTable, 0, MEM_RELEASE);
-	CloseHandle(hFile);
 	return 0;
 }
 
