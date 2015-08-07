@@ -1,8 +1,11 @@
 #include <Windows.h>
+#include <strsafe.h>
 #include "Favorite.h"
 #include "resource.h"
 
-#define MAX_PATH 400
+#define MAXPATH 350
+
+#define THREADNUM 4
 
 HWND hEdit;
 CRITICAL_SECTION cs;
@@ -37,19 +40,19 @@ void AppendMsg(const wchar_t *szBuffer)
 		dwPos = 0;
 		SendMessage(hEdit, EM_SETSEL, 0, -1);
 		SendMessage(hEdit, EM_REPLACESEL, FALSE, 0);
-		return;
+	} else {
+		SendMessage(hEdit, EM_SETSEL, (WPARAM)&dwPos, (LPARAM)&dwPos);
+		SendMessage(hEdit, EM_REPLACESEL, 0, (LPARAM)szBuffer);
+		SendMessage(hEdit, EM_GETSEL, 0, (LPARAM)&dwPos);
 	}
-	SendMessage(hEdit, EM_SETSEL, (WPARAM)&dwPos, (LPARAM)&dwPos);
-	SendMessage(hEdit, EM_REPLACESEL, 0, (LPARAM)szBuffer);
-	SendMessage(hEdit, EM_GETSEL, 0, (LPARAM)&dwPos);
 	return;
 }
 
-int mycmp(PTSTR src, PTSTR dst)
+int mycmp(wchar_t* src, wchar_t* dst)
 {
 	int i = 0;
 	while (src[i]) tolower(src[i++]);
-	return lstrcmp(src, dst);
+	return wcscmp(src, dst);
 }
 //////////////////////////////////////////////////////////////////////////////////
 // 用于展开子目录
@@ -57,36 +60,36 @@ int mycmp(PTSTR src, PTSTR dst)
 // callback		 - 回调函数
 // pcb			 - 回调函数参数
 //////////////////////////////////////////////////////////////////////////////////
-typedef int (*CallBack)(struct CB* pcb, PTSTR path);
+typedef int (*CallBack)(struct CB* pcb, wchar_t* path);
 
 struct CB
 {
 	int cnt;
 	thread_param* ptp;
-	PTSTR filter;
+	wchar_t* filter;
 };
 
-int callback(struct CB* pcb, PTSTR path)
+int callback(struct CB* pcb, wchar_t* path)
 {
 	int len = lstrlen(path);
 	while(len>=0 && path[len-1] != '.') --len;
-	if (!pcb->filter || !lstrcmp(&path[len], pcb->filter))
+	if (!pcb->filter || !wcscmp(&path[len], pcb->filter))
 	{
 		while (pcb->ptp[pcb->cnt].front == pcb->ptp[pcb->cnt].tail+1)		// 队列满，转下一个
-			pcb->cnt = (pcb->cnt+1)%4;
+			pcb->cnt = (pcb->cnt+1) % THREADNUM;
 
 		EnterCriticalSection(&cs);
 		{
-			lstrcpy((PTSTR)((PBYTE)*pcb->ptp[pcb->cnt].queue + pcb->ptp[pcb->cnt].tail*MAX_PATH), path);
+			StringCchCopy(*pcb->ptp[pcb->cnt].queue + pcb->ptp[pcb->cnt].tail*MAXPATH, MAXPATH, path);
 		
 			if (pcb->ptp[pcb->cnt].tail == pcb->ptp[pcb->cnt].front)		// 原先队列为空，置位
 				SetEvent(pcb->ptp[pcb->cnt].hEvent);
 
-			pcb->ptp[pcb->cnt].tail = (pcb->ptp[pcb->cnt].tail + 1) % pcb->ptp[pcb->cnt].QUEUE_SIZE;// 更新队列
+			pcb->ptp[pcb->cnt].tail = (pcb->ptp[pcb->cnt].tail + 1) % thread_param::QUEUE_SIZE;// 更新队列
 		}
 		LeaveCriticalSection(&cs);
 
-		pcb->cnt = (pcb->cnt+1)%4;	// 转下一个线程
+		pcb->cnt = (pcb->cnt+1) % THREADNUM;	// 转下一个线程
 	}
 	return 0;
 }
@@ -94,24 +97,24 @@ int callback(struct CB* pcb, PTSTR path)
 int ExpandDirectory(PTSTR lpszPath, CallBack callback, struct CB* pcb)
 {
 	static const DWORD MemAllocStep = 1024*MAX_PATH;
-	TCHAR			lpFind[MAX_PATH], lpSearch[MAX_PATH], lpPath[MAX_PATH];
+	wchar_t			lpFind[MAXPATH], lpSearch[MAXPATH], lpPath[MAXPATH];
 	HANDLE			hFindFile;
 	WIN32_FIND_DATA FindData;
 	int				cnt = 0;
 
 	// Path\*.*
-	lstrcpy(lpPath, lpszPath);
-	lstrcat(lpPath, TEXT("\\"));
-	lstrcpy(lpSearch, lpPath);
-	lstrcat(lpSearch, TEXT("*.*"));
+	StringCchCopy(lpPath, MAXPATH, lpszPath);
+	StringCchCat(lpPath, MAXPATH, L"\\");
+	StringCchCopy(lpSearch, MAXPATH, lpPath);
+	StringCchCat(lpSearch, MAXPATH, L"*.*");
 
 	if (INVALID_HANDLE_VALUE != (hFindFile = FindFirstFile(lpSearch, &FindData)))
 	{
 		do
 		{
 			// 完整文件名
-			lstrcpy(lpFind, lpPath);
-			lstrcat(lpFind, FindData.cFileName);
+			StringCchCopy(lpFind, MAXPATH, lpPath);
+			StringCchCat(lpFind, MAXPATH, FindData.cFileName);
 
 			if (FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			{
@@ -151,7 +154,7 @@ DWORD AppendFileToQueue(PTSTR pInBuf, CallBack callback, struct CB *pcb)
 void OnDropFiles(HDROP hDrop, HWND hwnd, thread_param* ptp)
 {
 	struct CB cb;
-	TCHAR FileName[MAX_PATH];
+	TCHAR FileName[MAXPATH];
 	DWORD i;
 	DWORD FileNum;
 
@@ -179,25 +182,26 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_INITDIALOG:
 		if (!(gfnUncompress = (_UNCOM)GetProcAddress(LoadLibrary(L"zlib.dll"), "uncompress")))
-			MessageBox(hDlg, L"找不到zlib.dll，将无法解压图片资源", L"警告", MB_ICONWARNING);
+			MessageBox(hDlg, L"找不到zlib.dll，将无法处理图片资源", L"警告", MB_ICONWARNING);
 
 		hEdit = GetDlgItem(hDlg, IDC_EDIT);
 		SendMessage(hEdit, EM_LIMITTEXT, -1, 0);
-		AppendMsg(TEXT("拖放封包文件至此处...\r\n【注意】文件路径须小于200个字符\r\n"));
+		AppendMsg(TEXT("拖放封包文件至此处...\r\n【注意】文件路径须小于260个字符\r\n"));
 
-		for (int i=0; i<4; ++i)
+		for (int i=0; i<THREADNUM; ++i)
 		{
 			if (!(tp[i].hEvent = CreateEvent(NULL, TRUE, FALSE, NULL)))
 			{
 				AppendMsg(TEXT("事件初始化错误！"));
 				EndDialog(hDlg, 0);
 			}
-			if (!(tp[i].queue = (PTSTR*)VirtualAlloc(NULL, sizeof(PTSTR*), MEM_COMMIT, PAGE_READWRITE)))
+			if (!(tp[i].queue = (wchar_t**)VirtualAlloc(NULL, sizeof(wchar_t**), MEM_COMMIT, PAGE_READWRITE)))
 			{
 				AppendMsg(TEXT("内存分配错误！"));
 				EndDialog(hDlg, 0);
 			}
-			if (!(*(tp[i].queue) = (wchar_t*)VirtualAlloc(NULL, tp[i].QUEUE_SIZE*MAX_PATH, MEM_COMMIT, PAGE_READWRITE)))
+			if (!(*(tp[i].queue) = (wchar_t*)VirtualAlloc(NULL, thread_param::QUEUE_SIZE * MAXPATH * sizeof(wchar_t),
+																MEM_COMMIT, PAGE_READWRITE)))
 			{
 				AppendMsg(TEXT("内存分配错误！"));
 				EndDialog(hDlg, 0);
@@ -218,7 +222,7 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		return TRUE;
 
 	case WM_CLOSE:
-		for (int i=0; i<4; ++i)
+		for (int i=0; i<THREADNUM; ++i)
 		{
 			tp[i].thread_exit = true;
 			SetEvent(tp[i].hEvent);
@@ -232,7 +236,7 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 
 DWORD WINAPI Thread(PVOID pv)
 {
-	wchar_t cur_dir[MAX_PATH];
+	wchar_t cur_dir[MAXPATH];
 	LPTSTR CurrentFile;
 	DWORD dwNowProcess = 0;
 	thread_param * ptp = (thread_param*) pv;
@@ -246,14 +250,14 @@ DWORD WINAPI Thread(PVOID pv)
 
 		CurrentFile = (PTSTR)((PBYTE)*ptp->queue + ptp->front*MAX_PATH);
 
-		lstrcpy(cur_dir, CurrentFile);
+		StringCchCopy(cur_dir, MAXPATH, CurrentFile);
 
 		int l = lstrlen(cur_dir);
 		while(l && cur_dir[l-1] != '\\') --l;
 		cur_dir[l] = '\0';
 
-		lstrcat(cur_dir, TEXT("[extract] "));
-		lstrcat(cur_dir, &CurrentFile[l]);
+		StringCchCat(cur_dir, MAXPATH, TEXT("[extract] "));
+		StringCchCat(cur_dir, MAXPATH, &CurrentFile[l]);
 		CreateDirectory(cur_dir, 0);
 		
 		Enterence(CurrentFile, cur_dir);
