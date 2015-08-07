@@ -11,7 +11,7 @@ int SeparateBmp::SetValue(DWORD h, DWORD w, DWORD b, PBYTE buf, DWORD cch)
 	Bpp    = b;
 	FileSize = h * w * (b >> 3);
 	FileNum  = cch / FileSize;
-	FileSize += 54;	// 加上BMP文件头
+	FileSize += sizeof(BmpHeader);	// 加上BMP文件头
 
 	PBYTE p = buf, p_end = buf + cch;
 
@@ -29,10 +29,10 @@ int SeparateBmp::SaveToFile(const wchar_t *dir, const wchar_t *NameWithoutSuffix
 	wchar_t newname[MAXPATH] = {0};
 	wchar_t buf[MAXPATH] = {0};
 	BYTE bmp[sizeof(BmpHeader)];
-	StringCchCopy(format, MAXPATH, dir);//wcscpy(format, dir);
-	StringCchCat(format, MAXPATH, L"\\");//wcscat(format, L"\\");
-	StringCchCat(format, MAXPATH, NameWithoutSuffix);//wcscat(format, NameWithoutSuffix);
-	StringCchCat(format, MAXPATH, L"_%03d.bmp");//wcscat(format, L"_%03d.bmp");
+	StringCchCopy(format, MAXPATH, dir);
+	StringCchCat(format, MAXPATH, L"\\");
+	StringCchCat(format, MAXPATH, NameWithoutSuffix);
+	StringCchCat(format, MAXPATH, L"_%03d.bmp");
 
 	memcpy(bmp, BmpHeader, sizeof(BmpHeader));
 	*(PDWORD)(bmp +  0x2) = FileSize;
@@ -168,6 +168,7 @@ int MakeBmpFile(PBYTE *RawData, DWORD DataLen, DWORD BppType, DWORD Height, DWOR
 		}
 
 		memcpy(Bmp, BmpHeader, sizeof(BmpHeader));
+
 		PBYTE p = Bmp + sizeof(BmpHeader);
 		if (Bpp == 8)
 		{
@@ -201,7 +202,7 @@ int MakeBmpFile(PBYTE *RawData, DWORD DataLen, DWORD BppType, DWORD Height, DWOR
 	}
 	else
 	{
-		sb.SetValue(Height, Width, Bpp, *RawData, DataLen);	// 最初RawData里为Bmp头留出了空间
+		sb.SetValue(Height, Width, Bpp, *RawData, DataLen);	// 把数据放到SeparateBmp里处理
 		return DataLen;
 	}
 }
