@@ -27,7 +27,7 @@ int arc_extract_file_save(HANDLE hFile,const struct IDX * const arc_idx, int fil
 int SplitFileNameAndSave(wchar_t *cur_dir, wchar_t *file_name, void* unpack, u32 file_length);
 
 
-extern void AppendMsg(PTSTR szBuffer);
+extern void AppendMsg(wchar_t* szBuffer);
 
 
 extern int Is_DSC(const u8* in);
