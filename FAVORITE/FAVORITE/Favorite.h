@@ -1,18 +1,7 @@
 #pragma once
 #include <Windows.h>
 
-typedef struct
-{
-	DWORD TotalFileNum;
-	DWORD unKnown;
-} PACKAGEHEADER, *PPACKAGEHEADER;
-
-typedef struct
-{
-	DWORD FileNameOffset;
-	DWORD FileOffset;
-	DWORD FileLength;
-} PACKAGEINDEX, *PPACKAGEINDEX;
+#define MAX_PATH1 350
 
 typedef struct
 {
@@ -46,6 +35,7 @@ static const unsigned char BmpHeader [] = {
 
 extern void AppendMsg(const wchar_t *szBuffer);
 
+// 用于传递需要拆分的bmp数据信息，因为文件保存的路径在外面的函数里。。。。
 class SeparateBmp
 {
 	enum {MAXPATH = 350};
@@ -69,7 +59,37 @@ public:
 	}
 };
 
-int GetPackageIndex(HANDLE hFile, PPACKAGEINDEX* PackageIdx, char** FileNameTable);
+class PackageInfo
+{
+	HANDLE hFile;
+	DWORD H_TotalFileNum;
+	DWORD IdxOffset;
+	DWORD NameOffset;
+	DWORD IdxPtr;
+	DWORD NamePtr;
+
+	PackageInfo(){}
+public:
+	typedef struct
+	{
+		DWORD TotalFileNum;
+		DWORD unKnown;
+	} PACKAGEHEADER, *PPACKAGEHEADER;
+
+	typedef struct
+	{
+		DWORD FileNameOffset;
+		DWORD FileOffset;
+		DWORD FileLength;
+	} PACKAGEINDEX, *PPACKAGEINDEX;
+
+	PackageInfo(HANDLE hFile);
+	int GetNextIdx(PPACKAGEINDEX pi, char *out, int cch);
+	DWORD FileNum() { return H_TotalFileNum;};
+	~PackageInfo() { CloseHandle(hFile); };
+};
+
+int GetPackageIndex(HANDLE hFile, PackageInfo::PPACKAGEINDEX* PackageIdx, char** FileNameTable);
 int Exactehzc1File(PBYTE PackageData, PBYTE *OriginalData, DWORD PackageDataLen, SeparateBmp & sb);
 int MakeBmpFile(PBYTE RawData, DWORD FileLen, DWORD BppType, DWORD Height, DWORD Width, SeparateBmp & sb);
 int Enterence(wchar_t *PackageName, wchar_t *CurrentDir);
