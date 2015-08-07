@@ -11,8 +11,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{23DF02E1-0013-4CC8-8BB0-609A645EA1DE}</ProjectGuid>
-    <RootNamespace>arc_DSC_CBG</RootNamespace>
+    <ProjectGuid>{D9A5D1C5-E2F4-4122-AED3-894C7B43A2BD}</ProjectGuid>
+    <RootNamespace>BGI</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -66,9 +66,6 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="main.rc" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="arc.h" />
     <ClInclude Include="cbg.h" />
     <ClInclude Include="CBG_v2.h" />
@@ -76,6 +73,9 @@
     <ClInclude Include="error.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="type.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="main.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -29,7 +29,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInstance,
 	return 0;
 }
 
-void AppendMsg(PTSTR szBuffer)
+void AppendMsg(wchar_t* szBuffer)
 {
 	static DWORD dwPos;
 	if (0 == szBuffer)

@@ -15,45 +15,45 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="dsc.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="arc.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="cbg_v1.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="main.rc">
+    <ClCompile Include="dsc.cpp">
       <Filter>源文件</Filter>
-    </ResourceCompile>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="resource.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="dsc.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="type.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="error.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="cbg.h">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="arc.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="CBG_v2.h">
-      <Filter>源文件</Filter>
+    <ClInclude Include="cbg.h">
+      <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="CBG_v2.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="dsc.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="error.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="main.rc">
+      <Filter>资源文件</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>
