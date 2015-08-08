@@ -1,3 +1,3 @@
-封包格式      bin
-封包Magic     "ESC-ARC2"
-文件Magic     "acp\0"
+灏佸寘鏍煎紡      bin
+灏佸寘Magic     "ESC-ARC2"
+鏂囦欢Magic     "acp\0"
