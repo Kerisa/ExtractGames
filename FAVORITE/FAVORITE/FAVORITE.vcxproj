@@ -71,6 +71,10 @@
   <ItemGroup>
     <ResourceCompile Include="main.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\Shigure\Desktop\bitbug_favicon.ico" />
+    <None Include="icon1.ico" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

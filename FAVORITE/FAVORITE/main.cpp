@@ -166,7 +166,7 @@ void OnDropFiles(HDROP hDrop, HWND hwnd, thread_param* ptp)
 
 	for (i=0; i<FileNum; ++i)
 	{
-		DragQueryFile(hDrop, i, (LPTSTR)FileName, MAX_PATH);
+		DragQueryFile(hDrop, i, (LPTSTR)FileName, MAXPATH);
 		AppendFileToQueue(FileName, callback, &cb);
 	}
 	DragFinish(hDrop);
@@ -181,6 +181,9 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 	switch (msg)
 	{
 	case WM_INITDIALOG:
+		SendMessage(hDlg, WM_SETICON, ICON_BIG,
+					(LPARAM)LoadIcon((HINSTANCE)GetWindowLong(hDlg, GWL_HINSTANCE), MAKEINTRESOURCE(IDI_ICON1)));
+
 		if (!(gfnUncompress = (_UNCOM)GetProcAddress(LoadLibrary(L"zlib.dll"), "uncompress")))
 			MessageBox(hDlg, L"找不到zlib.dll，将无法处理图片资源", L"警告", MB_ICONWARNING);
 
@@ -248,7 +251,7 @@ DWORD WINAPI Thread(PVOID pv)
 
 		if (ptp->thread_exit) break;
 
-		CurrentFile = (PTSTR)((PBYTE)*ptp->queue + ptp->front*MAX_PATH);
+		CurrentFile = (wchar_t*)(*ptp->queue + ptp->front*MAXPATH);
 
 		StringCchCopy(cur_dir, MAXPATH, CurrentFile);
 
