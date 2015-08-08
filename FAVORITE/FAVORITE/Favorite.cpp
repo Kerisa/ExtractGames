@@ -43,11 +43,15 @@ int SeparateBmp::SaveToFile(const wchar_t *dir, const wchar_t *NameWithoutSuffix
 
 	if (Bpp == 32)
 	{
-		// 把Alpha通道为透明(0x0)的像素换成白色
-		PDWORD p = (PDWORD)(Data + 54);
-		for (int i=0; i<((FileSize-54)>>2); ++i)
-			if (!(p[i] & 0xff000000))
-				p[i] = 0x00ffffff;
+		// Alpha混合
+		BYTE *p = Bmp + 54;
+		for (DWORD i = 0; i < Width * Height; ++i)
+		{
+			p[0] = p[0] * p[3] / 255 + 255 - p[3];
+			p[1] = p[1] * p[3] / 255 + 255 - p[3];
+			p[2] = p[2] * p[3] / 255 + 255 - p[3];
+			p += 4;
+		}
 	}
 
 	DWORD FileSaved = 0;
@@ -172,7 +176,7 @@ int MakeBmpFile(PBYTE *RawData, DWORD DataLen, DWORD BppType, DWORD Height, DWOR
 		PBYTE p = Bmp + sizeof(BmpHeader);
 		if (Bpp == 8)
 		{
-			*(Bmp + 0xb) = 0x4;		// 实际图像数据为0x436
+			*(Bmp + 0xb) = 0x4;		// 实际图像数据偏移为0x436
 			for (int i=0; i<0x100; ++i)
 			{
 				for (int j=0; j<3; ++j)
@@ -190,11 +194,15 @@ int MakeBmpFile(PBYTE *RawData, DWORD DataLen, DWORD BppType, DWORD Height, DWOR
 		*(PDWORD)(Bmp + 0x16) = -Height;
 		*(PBYTE)(Bmp + 0x1C) = (BYTE)Bpp;
 		if (Bpp == 32)
-		{
-			PDWORD p = (PDWORD)(Bmp + 54);
-			for (int i=0; i<(DataLen>>2); ++i)	// 把Alpha通道为透明(0x0)的像素换成白色
-				if (!(p[i] & 0xff000000))
-					p[i] = 0x00ffffff;
+		{	// Alpha混合
+			BYTE *p = Bmp + 54;
+			for (DWORD i = 0; i < Width * Height; ++i)
+			{
+				p[0] = p[0] * p[3] / 255 + 255 - p[3];
+				p[1] = p[1] * p[3] / 255 + 255 - p[3];
+				p[2] = p[2] * p[3] / 255 + 255 - p[3];
+				p += 4;
+			}
 		}
 		VirtualFree(*RawData, 0, MEM_RELEASE);
 		*RawData = Bmp;

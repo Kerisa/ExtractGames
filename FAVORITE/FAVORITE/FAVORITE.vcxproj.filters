@@ -38,4 +38,12 @@
       <Filter>资源文件</Filter>
     </ResourceCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="icon1.ico">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="C:\Users\Shigure\Desktop\bitbug_favicon.ico">
+      <Filter>资源文件</Filter>
+    </None>
+  </ItemGroup>
 </Project>
