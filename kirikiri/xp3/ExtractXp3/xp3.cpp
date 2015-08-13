@@ -310,3 +310,14 @@ static void xor_decode_prettycation(DWORD hash, u8 extend_key, u32 offset, PBYTE
 		buf[i] ^= (BYTE)(hash>>0xc);
 	return;
 }
+
+static void xor_decode_swansong(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DWORD len)
+{
+	BYTE ror = (BYTE)hash & 7, key = (BYTE)(hash >> 8);
+	for (int i=offset; i<len; ++i)
+	{
+		buf[i] = buf[i] ^ key;
+		buf[i] = buf[i] >> ror | buf[i] << (8-ror);
+	}
+	return;
+}
