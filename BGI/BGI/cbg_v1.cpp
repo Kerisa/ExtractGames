@@ -15,6 +15,20 @@ struct ARR2
 	u32 mem6;
 };
 
+int AlphaBlending(u8* bmp, u32 Width, u32 Height)
+{
+	// Alpha»ìºÏ
+	u8 *p = bmp + 54;
+	for (u32 i = 0; i < Width * Height; ++i)
+	{
+		p[0] = p[0] * p[3] / 255 + 255 - p[3];
+		p[1] = p[1] * p[3] / 255 + 255 - p[3];
+		p[2] = p[2] * p[3] / 255 + 255 - p[3];
+		p += 4;
+	}
+	return 0;
+}
+
 int Process_1(u32 *arr1, struct ARR2 *arr2)
 {
 	u32 v10, edi, edx, eax = 0x100;
@@ -303,6 +317,9 @@ int DecodeCBG(u8** raw_data, u8* in, int in_size)
 		*(u32*)(bmp + 0x16) = 0 - height;
 
 		memcpy(bmp+sizeof(BMP_head_raw)/sizeof(u8), data, 4*width*height); //memcpy((void*)p, data_p, 4*width);
+
+		if (bpp == 32)
+			AlphaBlending(bmp, width, height);
 	//==========================
 	}
 	else if (bpp == 8)

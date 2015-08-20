@@ -46,11 +46,19 @@ void AppendMsg(wchar_t* szBuffer)
 	return;
 }
 
-int mycmp(PTSTR src, PTSTR dst)
+int mycmp(wchar_t *src, wchar_t *dst)
 {
 	int i = 0;
-	while (src[i]) tolower(src[i++]);
-	return lstrcmp(src, dst);
+	while (src[i] && dst[i])
+	{
+		if (dst[i] == tolower(src[i]))
+		{
+			++i;
+			continue;
+		}
+		break;
+	}
+	return src[i];
 }
 //////////////////////////////////////////////////////////////////////////////////
 // 用于展开子目录
@@ -71,7 +79,7 @@ int callback(struct CB* pcb, PTSTR path)
 {
 	int len = lstrlen(path);
 	while(len>=0 && path[len-1] != '.') --len;
-	if (!pcb->filter || !lstrcmp(&path[len], pcb->filter))
+	if (!pcb->filter || !mycmp(&path[len], pcb->filter))
 	{
 		while (pcb->ptp[pcb->cnt].front == pcb->ptp[pcb->cnt].tail+1)		// 队列满，转下一个
 			pcb->cnt = (pcb->cnt+1)%4;
@@ -157,7 +165,7 @@ void OnDropFiles(HDROP hDrop, HWND hwnd, thread_param* ptp)
 	DWORD FileNum;
 
 	cb.cnt = 0;
-	cb.filter = TEXT("arc");
+	cb.filter = L"arc";
 	cb.ptp = ptp;
 
 	FileNum  = DragQueryFile(hDrop, -1, NULL, 0);

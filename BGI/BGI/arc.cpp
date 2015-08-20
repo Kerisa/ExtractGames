@@ -15,7 +15,7 @@ int Is_arc(HANDLE hFile)
 		if (!memcmp(buf, arc_file_type[i], magic_len[i]))
 			return i;
 
-	return -1;
+	return ARC_FILE_TYPE;
 }
 
 int arc_extract_file_save(HANDLE hFile,const struct IDX * const idx, int file_num, u32 correct, wchar_t *cur_dir)
@@ -117,12 +117,12 @@ int SplitFileNameAndSave(wchar_t *cur_dir, wchar_t *file_name, void* unpack, u32
 	DWORD ByteWrite;
 	wchar_t buf[MAX_PATH] = {0}, buf2[MAX_PATH];
 
-	lstrcpyW(buf, cur_dir);
-	lstrcatW(buf, L"\\");
-	lstrcatW(buf, file_name);
+	wcscpy(buf, cur_dir);
+	wcscat(buf, L"\\");
+	wcscat(buf, file_name);
 
 	int len = lstrlenW(buf);
-	int i = lstrlenW(cur_dir) + 1;
+	int i = wcslen(cur_dir) + 1;
 	wchar_t *p = buf, *end = buf + len;
 	while (p <= end && i < len)
 	{
@@ -133,7 +133,7 @@ int SplitFileNameAndSave(wchar_t *cur_dir, wchar_t *file_name, void* unpack, u32
 			wchar_t tmp = buf[i];
 			buf[i] = '\0';
 
-			CreateDirectoryW(p, 0);
+			CreateDirectory(p, 0);
 			buf[i] = tmp;
 			++i;
 			p = buf + i;
@@ -146,7 +146,7 @@ int SplitFileNameAndSave(wchar_t *cur_dir, wchar_t *file_name, void* unpack, u32
 		hFile = CreateFile(p, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
 		if (hFile == INVALID_HANDLE_VALUE)
 		{
-			wsprintfW(buf2, L"[文件创建错误]%s", p);
+			wsprintfW(buf2, L"[文件创建错误]%s", file_name);
 			ret = ERR_FILE_CREATE;
 			break;
 		}
@@ -155,16 +155,16 @@ int SplitFileNameAndSave(wchar_t *cur_dir, wchar_t *file_name, void* unpack, u32
 
 		if (ByteWrite != file_length)
 		{
-			wsprintfW(buf2, L"[文件写入错误]%s", p);
+			wsprintfW(buf2, L"[文件写入错误]%s", file_name);
 			ret = ERR_FILE_ERITE;
 			break;
 		}
 		int t = GetLastError();
 		if (!t || t == ERROR_ALREADY_EXISTS)
-			wsprintfW(buf2, L"[已保存]%s", p);
+			wsprintfW(buf2, L"[已保存]%s", file_name);
 		else
 		{
-			wsprintfW(buf2, L"[无法保存]%s,错误码%d", p, GetLastError());
+			wsprintfW(buf2, L"[无法保存]%s,错误码%d", file_name, GetLastError());
 			ret = ERR_FILE_OTHERS;
 		}
 	}while(0);
