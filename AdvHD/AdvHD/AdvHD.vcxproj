@@ -11,14 +11,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{6815FF6A-1955-4F44-B316-1814EC82BCD0}</ProjectGuid>
-    <RootNamespace>sub_pna</RootNamespace>
+    <ProjectGuid>{59993523-E000-411C-89B3-3F79F442D28B}</ProjectGuid>
+    <RootNamespace>AdvHD</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -60,13 +60,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="pna.cpp" />
+    <ClCompile Include="AdvHD.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="pnap.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="pna.rc" />
+    <ResourceCompile Include="AdvHD.rc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="gameicon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
