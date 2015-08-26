@@ -5,6 +5,7 @@
 #include "error.h"
 #include "cxdec\cxdec.h"
 #include "xp3filter_decode.h"
+#include <strsafe.h>
 
 struct xp3_file_header
 {
@@ -30,7 +31,7 @@ struct file_entry
 	wchar_t file_name[128];
 };
 
-extern void AppendMsg(PTSTR szBuffer);
+extern void AppendMsg(const wchar_t *szBuffer);
 
 int is_xp3_file(HANDLE hFile);
 u8* uncompress_xp3_idx(HANDLE hFile, u32 *idx_len, UNCOM unCom);
