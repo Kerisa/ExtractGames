@@ -38,7 +38,6 @@ void AppendMsg(PTSTR szBuffer)
 		return;
 	}
 	SendMessage(hEdit, EM_SETSEL, (WPARAM)&dwPos, (LPARAM)&dwPos);
-	lstrcat(szBuffer, TEXT("\r\n"));
 	SendMessage(hEdit, EM_REPLACESEL, 0, (LPARAM)szBuffer);
 	SendMessage(hEdit, EM_GETSEL, 0, (LPARAM)&dwPos);
 	return;
@@ -226,6 +225,20 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 	return FALSE;
 }
 
+int AlphaBlending(unsigned char *bmp, unsigned long Width, unsigned long Height)
+{
+	// Alpha混合
+	unsigned char *p = bmp + 54;
+	for (unsigned long i = 0; i < Width * Height; ++i)
+	{
+		p[0] = p[0] * p[3] / 255 + 255 - p[3];
+		p[1] = p[1] * p[3] / 255 + 255 - p[3];
+		p[2] = p[2] * p[3] / 255 + 255 - p[3];
+		p += 4;
+	}
+	return 0;
+}
+
 DWORD WINAPI Thread(PVOID pv)
 {
 	HANDLE hFile;
@@ -241,12 +254,14 @@ DWORD WINAPI Thread(PVOID pv)
 
 		if (ptp->thread_exit) break;
 
+//*****************************************************************************
+
 		CurrentFile = (PTSTR)((PBYTE)*ptp->queue + ptp->front*MAX_PATH);
 		hFile = CreateFile(CurrentFile, GENERIC_READ, FILE_SHARE_READ,
 							NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
 		if (hFile == INVALID_HANDLE_VALUE)
 		{
-			wsprintf(szBuffer, TEXT("[%d]无法打开文件%s，跳过"), ptp->hThread, CurrentFile);
+			wsprintf(szBuffer, TEXT("[%d]无法打开文件%s，跳过\r\n"), ptp->hThread, CurrentFile);
 			MessageBox(0, szBuffer, TEXT("提示"), MB_ICONWARNING);
 			++dwNowProcess;
 			continue;
@@ -266,7 +281,7 @@ DWORD WINAPI Thread(PVOID pv)
 		if ((PBYTE)p-(PBYTE)FileBuf >= FileLen-5)
 		{
 FILE_FORMAT_ERR:
-			wsprintf(szBuffer, TEXT("文件不对错误，跳过%s"), CurrentFile);
+			wsprintf(szBuffer, TEXT("文件不对错误，跳过%s\r\n"), CurrentFile);
 			MessageBox(0, szBuffer, TEXT("提示"), MB_ICONWARNING);
 			GlobalFree(FileBuf);
 			++dwNowProcess;
@@ -278,7 +293,7 @@ FILE_FORMAT_ERR:
 		PVOID *Receive = (PVOID*)malloc(sizeof(PVOID));
 		if (!Receive)
 		{
-			wsprintf(szBuffer, TEXT("内存分配错误，跳过%s"), CurrentFile);
+			wsprintf(szBuffer, TEXT("内存分配错误，跳过%s\r\n"), CurrentFile);
 			MessageBox(0, szBuffer, TEXT("提示"), MB_ICONWARNING);
 			GlobalFree(FileBuf);
 			++dwNowProcess;
@@ -306,7 +321,7 @@ FILE_FORMAT_ERR:
 		err = GetLastError();
 		if (hFile == INVALID_HANDLE_VALUE || err && err != ERROR_ALREADY_EXISTS)
 		{
-			wsprintf(szBuffer, TEXT("无法创建文件%s，跳过"), CurrentFile);
+			wsprintf(szBuffer, TEXT("无法创建文件%s，跳过\r\n"), CurrentFile);
 			MessageBox(0, szBuffer, TEXT("提示"), MB_ICONWARNING);
 		}
 		else
@@ -317,22 +332,30 @@ FILE_FORMAT_ERR:
 				*((PBYTE)*Receive+3) = 'M';
 				*((PBYTE)*Receive+4) -= 2;		// 文件大小减2
 				*((PBYTE)*Receive+12) -= 2;		// 图像数据偏移减2
+
+				if ((BYTE)*((PBYTE)*Receive + 0x1e) == 32)
+					AlphaBlending((PBYTE)*Receive+2, *(DWORD*)((PBYTE)*Receive + 0x14), *(DWORD*)((PBYTE)*Receive + 0x18));
+
 				WriteFile(hFile, (PBYTE)*Receive+2, RawSize-2, &ByteRead, NULL);
 			}
 			else
 			{
+				if ((BYTE)*((PBYTE)*Receive + 0x1c) == 32)
+					AlphaBlending((PBYTE)*Receive, *(DWORD*)((PBYTE)*Receive + 0x12), *(DWORD*)((PBYTE)*Receive + 0x16));
+
 				WriteFile(hFile, *Receive, RawSize, &ByteRead, NULL);
 			}
 			err = GetLastError();
 			CloseHandle(hFile);
 			err = GetLastError();
-			wsprintf(szBuffer, TEXT("[已保存]%s"), CurrentFile);
+			wsprintf(szBuffer, TEXT("[已保存]%s\r\n"), CurrentFile);
 			AppendMsg(szBuffer);
 			
 		}
 		if (*Receive) free(*Receive);
 		free(Receive);
 		GlobalFree(FileBuf);
+//*****************************************************************************
 _NEXT:
 		EnterCriticalSection(&cs);
 		{
