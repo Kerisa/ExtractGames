@@ -57,7 +57,7 @@ u8* uncompress_xp3_idx(HANDLE hFile, u32 *idx_len, UNCOM unCom)
 	u8 * idx_raw = (u8*)VirtualAlloc(NULL, idx_uncom_lo, MEM_COMMIT, PAGE_READWRITE);
 	if (!idx || !idx_raw)
 	{
-		AppendMsg(TEXT("内存分配失败！"));
+		AppendMsg(L"内存分配失败！");
 		return 0;
 	}
 
@@ -84,7 +84,7 @@ static u8* get_file_thunk(u8 *pointer, struct file_entry *fe, u32 *split_file, u
 
 	if (*((u32*)pointer) != _file)		// 都是以"File"块开始
 	{
-		AppendMsg(TEXT("文件索引表错误，提取终止"));
+		AppendMsg(L"文件索引表错误，提取终止\r\n");
 		return 0;
 	}
 	pointer += 4;
@@ -93,7 +93,7 @@ static u8* get_file_thunk(u8 *pointer, struct file_entry *fe, u32 *split_file, u
 	u8* first_end = pointer + thunk_len + 0x8;
 	if (first_end > idx_end)
 	{
-		AppendMsg(TEXT("文件索引表读取错误，提取终止"));	// 反正是不会出现的
+		AppendMsg(L"文件索引表读取错误，提取终止\r\n");	// 反正是不会出现的
 		return 0;
 	}
 	pointer += 0x8;
@@ -117,7 +117,7 @@ static u8* get_file_thunk(u8 *pointer, struct file_entry *fe, u32 *split_file, u
 			{
 				*split_file = *(u32*)(pointer+4) / 0x1c;
 				pointer += 0xC;
-				for (int i=0; i<*split_file; ++i)
+				for (u32 i=0; i<*split_file; ++i)
 				{
 					fe[i].compress_flag = *(u32*)pointer;   	pointer += 4;	// 1 compressed
 					fe[i].offset		= *(u64*)pointer;		pointer += 8;
@@ -127,7 +127,7 @@ static u8* get_file_thunk(u8 *pointer, struct file_entry *fe, u32 *split_file, u
 			}
 			else
 			{
-				AppendMsg(TEXT("错误的文件索引"));
+				AppendMsg(L"错误的文件索引\r\n");
 				*split_file = 0;
 				while(*(u32*)pointer != _file) ++pointer;	// 跳过这个索引
 			}
@@ -141,7 +141,7 @@ static u8* get_file_thunk(u8 *pointer, struct file_entry *fe, u32 *split_file, u
 			int buf_size = (int)*((u16*)pointer);
 			if(buf_size >= sizeof(fe->file_name)/sizeof(fe->file_name[0]))
 			{
-				MessageBox(0, TEXT("文件名超出缓冲区长度"), TEXT("提示"), MB_ICONWARNING | MB_OK);
+				MessageBox(0, L"文件名超出缓冲区长度\r\n", L"提示", MB_ICONWARNING | MB_OK);
 				buf_size = sizeof(fe->file_name)/sizeof(fe->file_name[0]) - 1;
 			}
 			pointer += 0x2;
@@ -158,12 +158,12 @@ static int SplitFileNameAndSave(wchar_t *cur_dir, wchar_t *file_name, void* unpa
 	DWORD ByteWrite;
 	wchar_t buf[MAX_PATH] = {0}, buf2[MAX_PATH];
 
-	lstrcpyW(buf, cur_dir);
-	lstrcatW(buf, L"\\");
-	lstrcatW(buf, file_name);
+	StringCchCopy(buf, MAX_PATH, cur_dir);
+	StringCchCat (buf, MAX_PATH, L"\\");
+	StringCchCat (buf, MAX_PATH, file_name);
 
-	int len = lstrlenW(buf);
-	int i = lstrlenW(cur_dir) + 1;
+	int len = wcslen(buf);
+	int i = wcslen(cur_dir) + 1;
 	wchar_t *p = buf, *end = buf + len;
 	while (p <= end && i < len)
 	{
@@ -186,7 +186,7 @@ static int SplitFileNameAndSave(wchar_t *cur_dir, wchar_t *file_name, void* unpa
 		hFile = CreateFile(buf, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
 		if (hFile == INVALID_HANDLE_VALUE)
 		{
-			wsprintfW(buf2, L"[文件创建错误]%s", p);
+			StringCchPrintf(buf2, MAX_PATH, L"[文件创建错误]%s\r\n", file_name);
 			ret = ERR_FILE_CREATE;
 			break;
 		}
@@ -195,17 +195,17 @@ static int SplitFileNameAndSave(wchar_t *cur_dir, wchar_t *file_name, void* unpa
 
 		if (ByteWrite != file_length)
 		{
-			wsprintfW(buf2, L"[文件写入错误]%s", p);
+			StringCchPrintf(buf2, MAX_PATH, L"[文件写入错误]%s\r\n", file_name);
 			ret = ERR_FILE_ERITE;
 			break;
 		}
 		
 		int t = GetLastError();
 		if (!t || t == ERROR_ALREADY_EXISTS)
-			wsprintfW(buf2, L"[已保存]%s", p);
+			StringCchPrintf(buf2, MAX_PATH, L"[已保存]%s\r\n", file_name);
 		else
 		{
-			wsprintfW(buf2, L"[无法保存]%s", p);
+			StringCchPrintf(buf2, MAX_PATH, L"[无法保存]%s\r\n", file_name);
 			ret = ERR_FILE_OTHERS;
 		}
 	}while(0);
@@ -226,7 +226,7 @@ int xp3_extract_file_save(const HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *fil
 	idx_end = xp3_idx + idx_len;
 	
 	p += 0x4;
-	p += *(u32*)p + 0x8;	// skip the protection warning
+	p += *(u32*)p + 0x8;	// 跳过protection warning
 	
 	if (!strcmp(game, unencry_game))	// 决定解密使用的函数
 		p_decode = 0;
@@ -246,31 +246,31 @@ int xp3_extract_file_save(const HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *fil
 
 		if (split_file > sizeof(fe)/sizeof(fe[0]))
 		{
-			MessageBox(0, L"文件分段数量过多，提取中止！", 0, MB_ICONERROR);
+			MessageBox(0, L"文件分段数量过多，提取中止！\r\n", 0, MB_ICONERROR);
 			break;
 		}
 
 		u32 file_pkg_len = 0;
 		u32 file_org_len = 0;
-		for (int i=0; i<split_file; ++i)
+		for (u32 i=0; i<split_file; ++i)
 		{
-			file_pkg_len += fe[i].pkg_length;
-			file_org_len += fe[i].orig_length;
+			file_pkg_len += (u32)fe[i].pkg_length;
+			file_org_len += (u32)fe[i].orig_length;
 		}
 
 		u32 file_read = 0;
 		u8 *cipher = (u8*)VirtualAlloc(NULL, file_pkg_len, MEM_COMMIT, PAGE_READWRITE);
 
-		for (int i=0; i<split_file; ++i)
+		for (u32 i=0; i<split_file; ++i)
 		{
 			offset_hi = (u32)(fe[i].offset >> 32);
 			SetFilePointer(hFile, (u32)fe[i].offset, (PLONG)&offset_hi, FILE_BEGIN);
 			ReadFile(hFile, cipher+file_read, (u32)fe[i].pkg_length, &R, NULL);
-			file_read += fe[i].pkg_length;
+			file_read += (u32)fe[i].pkg_length;
 		}
 
 		u8* unpack		  = (u8*) VirtualAlloc(NULL, file_org_len, MEM_COMMIT, PAGE_READWRITE);
-		u32 unpack_len	  = (u32)file_org_len;
+		u32 unpack_len	  = (u32) file_org_len;
 		u32 unpack_offset = 0;
 
 		if (fe[0].compress_flag)
@@ -306,7 +306,7 @@ static void xor_decode(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DWORD l
 
 static void xor_decode_prettycation(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DWORD len)
 {
-	for (int i=offset; i<len; ++i)
+	for (u32 i=offset; i<len; ++i)
 		buf[i] ^= (BYTE)(hash>>0xc);
 	return;
 }
@@ -314,7 +314,7 @@ static void xor_decode_prettycation(DWORD hash, u8 extend_key, u32 offset, PBYTE
 static void xor_decode_swansong(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DWORD len)
 {
 	BYTE ror = (BYTE)hash & 7, key = (BYTE)(hash >> 8);
-	for (int i=offset; i<len; ++i)
+	for (u32 i=offset; i<len; ++i)
 	{
 		buf[i] = buf[i] ^ key;
 		buf[i] = buf[i] >> ror | buf[i] << (8-ror);

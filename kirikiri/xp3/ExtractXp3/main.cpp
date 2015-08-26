@@ -3,8 +3,9 @@
 #include "error.h"
 #include "resource.h"
 #include "xp3.h"
+#include <strsafe.h>
 
-#define THREAD_NUM 4
+const int THREAD_NUM = 4;
 
 struct thread_param
 {
@@ -26,9 +27,9 @@ DWORD WINAPI Thread(PVOID pv);
 void OnDropFiles(HDROP hDrop, HWND hwnd, thread_param* ptp);
 BOOL CALLBACK DlgProc(HWND, UINT, WPARAM, LPARAM);
 
-#define MESSAGE(x) MessageBox(0, x, TEXT("提示"), MB_ICONINFORMATION|MB_OK)
+#define MESSAGE(x) MessageBox(0, x, L"提示", MB_ICONINFORMATION|MB_OK)
 
-void AppendMsg(PTSTR szBuffer)
+void AppendMsg(const wchar_t *szBuffer)
 {
 	static DWORD dwPos;
 	if (0 == szBuffer)
@@ -39,7 +40,6 @@ void AppendMsg(PTSTR szBuffer)
 		return;
 	}
 	SendMessage(hEdit, EM_SETSEL, (WPARAM)&dwPos, (LPARAM)&dwPos);
-	lstrcat(szBuffer, TEXT("\r\n"));
 	SendMessage(hEdit, EM_REPLACESEL, 0, (LPARAM)szBuffer);
 	SendMessage(hEdit, EM_GETSEL, 0, (LPARAM)&dwPos);
 	return;
@@ -63,25 +63,25 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 	switch (msg)
 	{
 	case WM_INITDIALOG:
-		hZlib = LoadLibrary(TEXT("zlib.dll"));
+		hZlib = LoadLibrary(L"zlib.dll");
 		if (!hZlib)
 		{
-			MESSAGE(TEXT("缺少zlib.dll文件！"));
+			MESSAGE(L"缺少zlib.dll文件！");
 			EndDialog(hDlg, 0);
 		}
 		
 		if (!(tmp = (UNCOM)GetProcAddress(hZlib, "uncompress")))
 		{
-			MESSAGE(TEXT("解码函数获取失败！"));
+			MESSAGE(L"解码函数获取失败！");
 			EndDialog(hDlg, 0);
 		}
 //----------------------------------------------------------
 		hEdit = GetDlgItem(hDlg, IDC_EDIT);
 		SendMessage(hEdit, EM_LIMITTEXT, -1, 0);
-		AppendMsg(TEXT("选择对应游戏后拖放xp3文件到此处..."));
+		AppendMsg(L"选择对应游戏后拖放xp3文件到此处...\r\n");
 //----------------------------------------------------------
 		hCombo = GetDlgItem(hDlg, IDC_COMBO);
-		for (int i=IDS_STRING099; i<=IDS_STRING115; ++i)	// 改为对应游戏(字符串)数量
+		for (int i=IDS_STRING099; i<=IDS_STRING116; ++i)	// 改为对应游戏(字符串)数量
 		{
 			LoadString((HINSTANCE)GetWindowLong(hDlg, GWL_HINSTANCE), i, szBuffer, MAX_PATH);
 			SendMessage(hCombo, CB_ADDSTRING, 0, (LPARAM)szBuffer);
@@ -91,22 +91,22 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		{
 			if (!(tp[i].hEvent = CreateEvent(NULL, TRUE, FALSE, NULL)))
 			{
-				AppendMsg(TEXT("事件初始化错误！"));
+				AppendMsg(L"事件初始化错误！\r\n");
 				EndDialog(hDlg, 0);
 			}
 			if (!(tp[i].queue = (wchar_t**)VirtualAlloc(NULL, sizeof(wchar_t*), MEM_COMMIT, PAGE_READWRITE)))
 			{
-				AppendMsg(TEXT("内存分配错误！"));
+				AppendMsg(L"内存分配错误！\r\n");
 				EndDialog(hDlg, 0);
 			}
 			if (!(*(tp[i].queue) = (wchar_t*)VirtualAlloc(NULL, tp[i].QUEUE_SIZE*MAX_PATH*sizeof(wchar_t), MEM_COMMIT, PAGE_READWRITE)))
 			{
-				AppendMsg(TEXT("内存分配错误！"));
+				AppendMsg(L"内存分配错误！\r\n");
 				EndDialog(hDlg, 0);
 			}
 			if (!(tp[i].hThread = CreateThread(NULL, 0, Thread, &tp[i], 0, NULL)))
 			{
-				AppendMsg(TEXT("线程创建失败！"));
+				AppendMsg(L"线程创建失败！\r\n");
 				EndDialog(hDlg, 0);
 			}
 			tp[i].front = tp[i].tail = 0;
@@ -123,13 +123,13 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			{
 				for (int i=0; i<THREAD_NUM; ++i)
 					ResumeThread(tp[i].hThread);
-				SetDlgItemText(hDlg, IDC_PAUSE, TEXT("暂停(&P)"));
+				SetDlgItemText(hDlg, IDC_PAUSE, L"暂停(&P)");
 			}
 			else
 			{
 				for (int i=0; i<THREAD_NUM; ++i)
 					SuspendThread(tp[i].hThread);
-				SetDlgItemText(hDlg, IDC_PAUSE, TEXT("继续(&R)"));
+				SetDlgItemText(hDlg, IDC_PAUSE, L"继续(&R)");
 			}
 			thread_paused ^= 1;
 		}
@@ -158,22 +158,22 @@ struct CB
 {
 	int cnt;
 	thread_param* ptp;
-	PTSTR filter;
+	wchar_t *filter;
 };
 
-int callback(struct CB* pcb, PTSTR path)
+int callback(struct CB* pcb, wchar_t *path)
 {
-	int len = lstrlen(path);
+	int len = wcslen(path);
 	while(len>=0 && path[len-1] != '.') --len;
 
-	if (!pcb->filter || !lstrcmp(&path[len], pcb->filter))
+	if (!pcb->filter || !wcscmp(&path[len], pcb->filter))
 	{
 		while (pcb->ptp[pcb->cnt].front == pcb->ptp[pcb->cnt].tail+1)		// 队列满，转下一个
 			pcb->cnt = (pcb->cnt+1) % THREAD_NUM;
 
 		EnterCriticalSection(&cs);
 		{
-			lstrcpy((PTSTR)(*pcb->ptp[pcb->cnt].queue + pcb->ptp[pcb->cnt].tail*MAX_PATH), path);
+			StringCchCopy(*pcb->ptp[pcb->cnt].queue + pcb->ptp[pcb->cnt].tail*MAX_PATH, MAX_PATH, path);
 		
 			if (pcb->ptp[pcb->cnt].tail == pcb->ptp[pcb->cnt].front)		// 原先队列为空，置位
 				SetEvent(pcb->ptp[pcb->cnt].hEvent);
@@ -189,24 +189,23 @@ int callback(struct CB* pcb, PTSTR path)
 
 int ExpandDirectory(PTSTR lpszPath, CallBack callback, struct CB* pcb)
 {
-//	static const DWORD MemAllocStep = 1024*MAX_PATH;
-	TCHAR			lpFind[MAX_PATH], lpSearch[MAX_PATH], lpPath[MAX_PATH];
+	wchar_t			lpFind[MAX_PATH], lpSearch[MAX_PATH], lpPath[MAX_PATH];
 	HANDLE			hFindFile;
 	WIN32_FIND_DATA FindData;
 	int				cnt = 0;
 
 	// Path\*.*
-	lstrcpy(lpPath, lpszPath);
-	lstrcat(lpPath, TEXT("\\"));
-	lstrcpy(lpSearch, lpPath);
-	lstrcat(lpSearch, TEXT("*.*"));
+	StringCchCopy(lpPath,   MAX_PATH, lpszPath);
+	StringCchCat (lpPath,   MAX_PATH, L"\\");
+	StringCchCopy(lpSearch, MAX_PATH, lpPath);
+	StringCchCat (lpSearch, MAX_PATH, L"*.*");
 
 	if (INVALID_HANDLE_VALUE != (hFindFile = FindFirstFile(lpSearch, &FindData)))
 	{
 		do{
 			// 完整文件名
-			lstrcpy(lpFind, lpPath);
-			lstrcat(lpFind, FindData.cFileName);
+			StringCchCopy(lpFind, MAX_PATH, lpPath);
+			StringCchCat(lpFind, MAX_PATH, FindData.cFileName);
 
 			if (FindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
 			{
@@ -221,7 +220,7 @@ int ExpandDirectory(PTSTR lpszPath, CallBack callback, struct CB* pcb)
 	return -2;
 }
 
-DWORD AppendFileToQueue(PTSTR pInBuf, CallBack callback, struct CB *pcb)
+DWORD AppendFileToQueue(wchar_t *pInBuf, CallBack callback, struct CB *pcb)
 {	
 	if (FILE_ATTRIBUTE_DIRECTORY == GetFileAttributes(pInBuf))
 		ExpandDirectory(pInBuf, callback, pcb);
@@ -233,10 +232,9 @@ DWORD AppendFileToQueue(PTSTR pInBuf, CallBack callback, struct CB *pcb)
 void OnDropFiles(HDROP hDrop, HWND hDlg, thread_param* ptp)
 {
 	struct CB cb;
-	TCHAR FileName[MAX_PATH];
+	wchar_t FileName[MAX_PATH];
 	char szBuffer[128];
-	DWORD i;
-	DWORD FileNum;
+	DWORD i, FileNum;
 
 	cb.cnt	  = 0;
 	cb.filter = 0;
@@ -245,7 +243,7 @@ void OnDropFiles(HDROP hDrop, HWND hDlg, thread_param* ptp)
 	u32 idx = SendMessage(hCombo, CB_GETCURSEL, 0, 0);
 	if (idx == CB_ERR)
 	{
-		MessageBox(hDlg, TEXT("请先选择对应的游戏"), TEXT("提示"), MB_ICONINFORMATION);
+		MessageBox(hDlg, L"请先选择对应的游戏", L"提示", MB_ICONINFORMATION);
 		return;
 	}
 	LoadStringA((HINSTANCE)GetWindowLong(hDlg, GWL_HINSTANCE), idx+499, szBuffer, 128);
@@ -268,8 +266,7 @@ DWORD WINAPI Thread(PVOID pv)
 {
 	DWORD dwNowProcess = 0;
 	HANDLE hFile;
-	wchar_t cur_dir[MAX_PATH], *CurrentFile;
-	TCHAR szBuffer[MAX_PATH];
+	wchar_t cur_dir[MAX_PATH], szBuffer[MAX_PATH], *CurrentFile;
 	thread_param *ptp = (thread_param*) pv;
 	
 	while (1)
@@ -280,14 +277,14 @@ DWORD WINAPI Thread(PVOID pv)
 
 		CurrentFile = *ptp->queue + ptp->front*MAX_PATH;
 
-		lstrcpyW(cur_dir, CurrentFile);
+		StringCchCopy(cur_dir, MAX_PATH, CurrentFile);
 
-		int l = lstrlenW(cur_dir);
+		DWORD l = wcslen(cur_dir);
 		while(l && cur_dir[l-1] != '\\') --l;
 		cur_dir[l] = '\0';
 
-		lstrcatW(cur_dir, TEXT("[extract] "));
-		lstrcatW(cur_dir, &CurrentFile[l]);
+		StringCchCat(cur_dir, MAX_PATH, L"[extract] ");
+		StringCchCat(cur_dir, MAX_PATH, &CurrentFile[l]);
 		CreateDirectory(cur_dir, 0);
 		
 		u32 file_num = 0;
@@ -297,14 +294,14 @@ DWORD WINAPI Thread(PVOID pv)
 			hFile = CreateFile(CurrentFile, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, 0);
 			if (hFile == INVALID_HANDLE_VALUE)
 			{
-				wsprintf(szBuffer, TEXT("无法打开文件, 跳过\r\n%s"), CurrentFile);
+				StringCchPrintf(szBuffer, MAX_PATH, L"无法打开文件, 跳过\r\n%s\r\n", CurrentFile);
 				AppendMsg(szBuffer);
 				break;
 			}
 
 			if (!is_xp3_file(hFile))
 			{
-				wsprintf(szBuffer, TEXT("错误的xp3文件:%s"), CurrentFile);
+				StringCchPrintf(szBuffer, MAX_PATH, L"错误的xp3文件:%s\r\n", CurrentFile);
 				AppendMsg(szBuffer);
 				break;
 			}
@@ -313,7 +310,7 @@ DWORD WINAPI Thread(PVOID pv)
 			
 			if (!uncompress_idx)
 			{
-				AppendMsg(TEXT("xp3索引提取失败"));
+				AppendMsg(L"xp3索引提取失败\r\n");
 				break;
 			}
 			u32 save_file = xp3_extract_file_save(hFile, uncompress_idx, idx_size, &file_num,
@@ -321,14 +318,15 @@ DWORD WINAPI Thread(PVOID pv)
 
 			if (file_num == save_file)
 			{
-				wsprintf(szBuffer, TEXT("[提取完成(%d/%d)]%s"), save_file, save_file, CurrentFile);
+				StringCchPrintf(szBuffer, MAX_PATH, 
+						L"[提取完成(%d/%d)]%s\r\n", save_file, save_file, CurrentFile);
 				AppendMsg(szBuffer);
 			}
 			else
 			{
-				wsprintf(szBuffer, TEXT("提取%d个文件，共%d个，有%d个发生错误\r\n%s"),
+				StringCchPrintf(szBuffer, MAX_PATH, L"提取%d个文件，共%d个，有%d个发生错误\r\n%s\r\n",
 								save_file, file_num, file_num-save_file, CurrentFile);
-				MessageBox(0, szBuffer, TEXT("提示"), MB_ICONWARNING);
+				MessageBox(0, szBuffer, L"提示", MB_ICONWARNING);
 			}
 		}while(0);
 
