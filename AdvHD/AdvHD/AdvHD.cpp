@@ -24,7 +24,7 @@ extern int ExtractPNAPFile(unsigned char *Data, const wchar_t *CurDir, const wch
 
 
 
-int Enterence(const wchar_t *CurDir, const wchar_t *PackName)
+int Entrance(const wchar_t *CurDir, const wchar_t *PackName)
 {
 	int ret = 0;
 	DWORD BytesRead;

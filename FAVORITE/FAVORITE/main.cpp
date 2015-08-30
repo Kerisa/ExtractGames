@@ -263,7 +263,7 @@ DWORD WINAPI Thread(PVOID pv)
 		StringCchCat(cur_dir, MAXPATH, &CurrentFile[l]);
 		CreateDirectory(cur_dir, 0);
 		
-		Enterence(CurrentFile, cur_dir);
+		Entrance(CurrentFile, cur_dir);
 		
 		EnterCriticalSection(&cs);
 		{

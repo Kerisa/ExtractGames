@@ -66,7 +66,7 @@ int SplitFileNameAndSave(const wchar_t *cur_dir, const wchar_t *file_name, void*
 	return ret;
 }
 
-int Enterence(const wchar_t *PackName, const wchar_t *CurDir)
+int Entrance(const wchar_t *PackName, const wchar_t *CurDir)
 {
 	DWORD R, FileSaved = 0;
 	PACKHEADER ph;
