@@ -91,5 +91,5 @@ public:
 int GetPackageIndex(HANDLE hFile, PackageInfo::PPACKAGEINDEX* PackageIdx, char** FileNameTable);
 int Exactehzc1File(PBYTE PackageData, PBYTE *OriginalData, DWORD PackageDataLen, SeparateBmp & sb);
 int MakeBmpFile(PBYTE *RawData, DWORD DataLen, DWORD BppType, DWORD Height, DWORD Width, SeparateBmp & sb);
-int Enterence(wchar_t *PackageName, wchar_t *CurrentDir);
+int Entrance(wchar_t *PackageName, wchar_t *CurrentDir);
 int SplitFileNameAndSave(const wchar_t *cur_dir, const wchar_t *file_name, void* unpack, unsigned long file_length);

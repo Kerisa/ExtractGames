@@ -44,7 +44,7 @@ int SeparateBmp::SaveToFile(const wchar_t *dir, const wchar_t *NameWithoutSuffix
 	if (Bpp == 32)
 	{
 		// Alpha混合
-		BYTE *p = Bmp + 54;
+		BYTE *p = bmp + 54;
 		for (DWORD i = 0; i < Width * Height; ++i)
 		{
 			p[0] = p[0] * p[3] / 255 + 255 - p[3];
@@ -210,12 +210,12 @@ int MakeBmpFile(PBYTE *RawData, DWORD DataLen, DWORD BppType, DWORD Height, DWOR
 	}
 	else
 	{
-		sb.SetValue(Height, Width, Bpp, *RawData, DataLen);	// 把数据放到SeparateBmp里处理
+		sb.SetValue(Height, Width, Bpp, *RawData, DataLen);	// 把数据放到SeparateBmp里延后处理
 		return DataLen;
 	}
 }
 
-int Enterence(wchar_t *PackageName, wchar_t *CurrentDir)
+int Entrance(wchar_t *PackageName, wchar_t *CurrentDir)
 {
 	wchar_t szBuf[MAX_PATH1];
 	DWORD R, SavedFileNum = 0;
@@ -235,6 +235,7 @@ int Enterence(wchar_t *PackageName, wchar_t *CurrentDir)
 	char AsciiName[MAX_PATH1];
 	wchar_t UTFName[MAX_PATH1];
 
+	// 提取每个文件索引并进行处理
 	for (int i=0; i<PI.FileNum(); ++i)
 	{
 		PI.GetNextIdx(&pi, AsciiName, MAX_PATH1-1);
@@ -252,6 +253,7 @@ int Enterence(wchar_t *PackageName, wchar_t *CurrentDir)
 		// Code Page	932	shift_jis	ANSI/OEM Japanese; Japanese (Shift-JIS)
 		MultiByteToWideChar(932, 0, AsciiName, -1, UTFName, MAX_PATH1-1);
 
+		// 3种文件类型
 		if (*(PDWORD)PackData == 0x5367674F || *(PDWORD)PackData == 0x46464952)	// "OggS" "RIFF"
 		{
 			if (*(PDWORD)PackData == 0x5367674F)

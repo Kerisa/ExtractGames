@@ -332,16 +332,20 @@ int GetGamePassword(string& Password)
 	return ret;
 }
 
-int Enterence(const wchar_t *PackName, const wchar_t *CurDir)
+int Entrance(const wchar_t *PackName, const wchar_t *CurDir)
 {
+	int ret = 0;
 	DWORD R, FileSaveNum = 0;
 	string Password;
 	wchar_t MsgBuf[MAXPATH];
+	vector<FILEENTRY> Index;
+
 	HANDLE hPack = CreateFile(PackName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
 	if (hPack == INVALID_HANDLE_VALUE)
 	{
 		AppendMsg(L"无法打开文件\r\n");
-		return -1;
+		ret = -1;
+		goto CLOSE;
 	}
 	NOAHEADER nh;
 	ReadFile(hPack, &nh, sizeof(nh), &R, 0);
@@ -350,15 +354,16 @@ int Enterence(const wchar_t *PackName, const wchar_t *CurDir)
 	{
 		StringCchPrintf(MsgBuf, MAXPATH, L"%s不是EntisGLS格式文件\r\n", PackName);
 		AppendMsg(MsgBuf);
-		return -3;
+		ret = -3;
+		goto CLOSE;
 	}
 
-	vector<FILEENTRY> Index;
 	if (GetPackageIndex(hPack, Index, ""))
 	{
 		StringCchPrintf(MsgBuf, MAXPATH, L"%s文件目录错误\r\n", PackName);
 		AppendMsg(MsgBuf);
-		return -4;
+		ret = -4;
+		goto CLOSE;
 	}
 
 	// 根据文件索引读取文件数据并进行对应处理
@@ -378,7 +383,8 @@ int Enterence(const wchar_t *PackName, const wchar_t *CurDir)
 		if (!Untreated)
 		{
 			AppendMsg(L"内存无法分配\r\n");
-			return -2;
+			ret = -2;
+			goto CLOSE;
 		}
 
 		ReadFile(hPack, Untreated, (DWORD)nf.FileRecordLen, &R, 0);
@@ -401,7 +407,8 @@ int Enterence(const wchar_t *PackName, const wchar_t *CurDir)
 					if (!Psw || !PswUni)
 					{
 						AppendMsg(L"内存无法分配\r\n");
-						return -2;
+						ret = -2;
+						goto CLOSE;
 					}
 					for (DWORD i=0; i<Password.size(); ++i)
 						Psw[i] = Password[i];
@@ -414,13 +421,14 @@ int Enterence(const wchar_t *PackName, const wchar_t *CurDir)
 				} else {
 					MessageBox(0, L"无法获取密码资源", L"出错了", MB_ICONWARNING);
 				}
-				return 0;
+				goto CLOSE;
 			}
 			else
 			{
 				StringCchPrintf(MsgBuf, MAXPATH, L"%s中文件内容加密，提取中止\r\n", PackName);
 				AppendMsg(MsgBuf);
-				return -3;
+				ret = -3;
+				goto CLOSE;
 			}
 			break;
 
@@ -449,5 +457,8 @@ int Enterence(const wchar_t *PackName, const wchar_t *CurDir)
 							FileSaveNum, Index.size(), PackName, Index.size() - FileSaveNum);
 		MessageBox(0, MsgBuf, 0, MB_ICONWARNING);
 	}
-	return 0;
+
+CLOSE:
+	CloseHandle(hPack);
+	return ret;
 }

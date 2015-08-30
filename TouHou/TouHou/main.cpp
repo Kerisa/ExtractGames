@@ -8,6 +8,7 @@
 
 HWND hEdit, hCombo;
 
+
 typedef struct _THREADPARA
 {
 	wchar_t FileName[MAXPATH];
@@ -15,8 +16,12 @@ typedef struct _THREADPARA
 	int LoopTime;
 }THREADPARA, *PTHREADPARA;
 
+
+
 DWORD WINAPI Start(PVOID pv);
 BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam);
+
+
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInstance,
 					PSTR pCmdLine, int iCmdShow)
@@ -45,7 +50,6 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static OPENFILENAME ofn;
 	static THREADPARA tp;
-	//wchar_t buf[MAXPATH];
 
 	switch (msg)
 	{
@@ -94,11 +98,7 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 	return FALSE;
 }
 
-const static unsigned char WAVEHEAD [] = {
-	0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x41, 0x56, 0x45, 0x66, 0x6D, 0x74, 0x20, 
-	0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x02, 0x00, 0x44, 0xAC, 0x00, 0x00, 0x10, 0xB1, 0x02, 0x00, 
-	0x04, 0x00, 0x10, 0x00, 0x64, 0x61, 0x74, 0x61, 0x00, 0x00, 0x00, 0x00
-};	// 用的时候只要修改文件长度和波形数据长度就够了
+extern int Entrance(const wchar_t *CurDir, const wchar_t *PackName);
 
 DWORD WINAPI Start(PVOID pv)
 {
@@ -106,7 +106,7 @@ DWORD WINAPI Start(PVOID pv)
 	LPTSTR CurrentFile;
 	DWORD i, R, Saved = 0;
 	PTHREADPARA ptp = (PTHREADPARA) pv;
-
+	
 	do {
 		// 新建单独的目录
 		StringCchCopy(cur_dir, MAXPATH, ptp->FileName);
@@ -118,6 +118,9 @@ DWORD WINAPI Start(PVOID pv)
 		StringCchCat(cur_dir, MAXPATH, TEXT("[extract] "));
 		StringCchCat(cur_dir, MAXPATH, &ptp->FileName[l]);
 		CreateDirectory(cur_dir, 0);
+		//--------------------------------------------------------
+		Entrance(cur_dir, ptp->FileName);
+		break;
 		//--------------------------------------------------------
 		HANDLE hFile = CreateFile(ptp->FileName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
 		if (hFile == INVALID_HANDLE_VALUE)

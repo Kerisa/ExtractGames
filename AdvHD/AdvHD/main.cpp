@@ -23,7 +23,7 @@ struct thread_param
 // ÉùÃ÷
 DWORD WINAPI Thread(PVOID pv);
 BOOL CALLBACK DlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-extern int Enterence(const wchar_t *CurDir, const wchar_t *PackName);
+extern int Entrance(const wchar_t *CurDir, const wchar_t *PackName);
 
 
 
@@ -260,7 +260,7 @@ DWORD WINAPI Thread(PVOID pv)
 		StringCchCat(cur_dir, MAXPATH, &CurrentFile[l]);
 		CreateDirectory(cur_dir, 0);
 		
-		Enterence(cur_dir, CurrentFile);
+		Entrance(cur_dir, CurrentFile);
 		
 		EnterCriticalSection(&cs);
 		{

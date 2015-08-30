@@ -1,8 +1,12 @@
+
 #pragma once
+
 
 typedef unsigned long long QWORD;
 
+
 #pragma pack (1)
+
 enum FileTypeId
 {
 	fidArchive			= 0x02000400,
@@ -11,6 +15,7 @@ enum FileTypeId
 	fidEGL3DModel		= 0x03001200,
 	fidUndefinedEMC		= -1,
 };
+
 
 enum FileAttribute
 {
@@ -24,6 +29,7 @@ enum FileAttribute
 	attrFileNameUTF8	= 0x01000000,
 };
 
+
 enum EncodeType
 {
 	encodeRaw			= 0x00000000,
@@ -33,6 +39,7 @@ enum EncodeType
 	etBSHFCrypt			= 0x40000000,
 	etERISACrypt		= 0xC0000010,
 };
+
 
 struct FILE_TIME
 {
@@ -45,6 +52,7 @@ struct FILE_TIME
 	unsigned short	nYear;
 };
 
+
 typedef struct 
 {
 	unsigned long long	nBytes;
@@ -53,6 +61,7 @@ typedef struct
 	unsigned long long	nOffsetPos;
 	FILE_TIME			ftFileTime;
 } _FILEENTRY;
+
 
 typedef struct 
 {
@@ -65,11 +74,13 @@ typedef struct
 	wchar_t				wName[350];
 } FILEENTRY;
 
+
 typedef struct
 {
 	unsigned long	nCRC32;			// CRC32
 	unsigned long	nDecrypeKey[1];	// 暗号鍵
 } FILEEXTRAINFO;
+
 
 typedef struct {
 	char				PackageMagic[16];	// "Entis\x1A\x00\x00\x00\x04\x00\x02\x00\x00\x00\x00"
@@ -77,16 +88,20 @@ typedef struct {
 	unsigned long long	PackageLen;			// 整个封包文件除NOAHEADER以外的长度
 } NOAHEADER;
 
+
 typedef struct {
 	char				DirEntryMagic[8];	// "DirEntry"
 	unsigned long long	IndexLen;			// 全部文件索引表的长度(索引表紧随其后)
 } NOADIRENTRY;
+
 
 typedef struct {
 	char				FileDataMagic[8];	// "filedata"
 	unsigned long long	FileRecordLen;
 } NOAFILEDATA;
 
+
+
 extern void AppendMsg(const wchar_t *szBuffer);
 
-int Enterence(const wchar_t *PackName, const wchar_t *CurDir);
+int Entrance(const wchar_t *PackName, const wchar_t *CurDir);
