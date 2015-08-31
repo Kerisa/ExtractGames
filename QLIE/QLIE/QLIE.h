@@ -21,8 +21,8 @@ typedef struct
 	unsigned long FileNum;
 	unsigned long unKnown2;	// FileNum * 2
 	unsigned long DataSize;
-	unsigned long unKnown3;
-	char ZeroBytes[32];
+//	unsigned long unKnown3;
+//	char ZeroBytes[32];
 } HASHHEADER;
 
 

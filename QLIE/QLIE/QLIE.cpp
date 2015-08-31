@@ -415,7 +415,7 @@ int GetPackageDirectory(const HANDLE hPack, const PACKHEADER *ph, vector<PACKIDX
 	SetFilePointer(hPack, -(int)(sizeof(Buf) + HashSize), 0, FILE_END);
 	ReadFile(hPack, HashData, HashSize, &R, 0);
 
-	if (strcmp((char*)HashData, "HashVer1.4"))
+	if (strcmp((char*)HashData, "HashVer1.3"))
 	{
 		AppendMsg(L"Hash数据不匹配\r\n");
 		return -3;
@@ -567,7 +567,7 @@ int HandleDPNG(PBYTE Data, DWORD Len, const wchar_t *CurDir, const wchar_t *UniN
 	int k = wcslen(Format);
 	while (k>0 && Format[k-1] != '.') --k;
 	Format[k-1] = 0;
-	StringCchCat(Format, MAX_PATH, L"_%02d+x%dy%d.png");
+	StringCchCat(Format, MAX_PATH, L"+%02d+x%dy%d.png");
 
 
 	DPNGHEADER *pdh = (DPNGHEADER*) Data;
@@ -731,6 +731,7 @@ int Entrance(const wchar_t *CurDir, const wchar_t *PackName)
 	{
 		StringCchPrintf(MsgBuf, MAX_PATH, L"[提取完成(%d/%d)] %s\r\n有%d个文件提取失败",
 			dwFileProcesses, ph.FileNum, PackName, ph.FileNum - dwFileProcesses);
+		AppendMsg(MsgBuf);
 		MessageBox(0, MsgBuf, L"结果", MB_ICONWARNING);
 	}
 	return 0;
