@@ -63,10 +63,14 @@
     <ClCompile Include="merge.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BmpFileGroup.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Merge.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="icon (2).ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

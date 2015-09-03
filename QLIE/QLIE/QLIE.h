@@ -21,8 +21,8 @@ typedef struct
 	unsigned long FileNum;
 	unsigned long unKnown2;	// FileNum * 2
 	unsigned long DataSize;
-//	unsigned long unKnown3;
-//	char ZeroBytes[32];
+	unsigned long unKnown3;		// "HashVer1.3" 只要去掉下面的两行再改一下验证的Magic就可以
+	char ZeroBytes[32];
 } HASHHEADER;
 
 
