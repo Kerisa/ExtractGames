@@ -415,7 +415,7 @@ int GetPackageDirectory(const HANDLE hPack, const PACKHEADER *ph, vector<PACKIDX
 	SetFilePointer(hPack, -(int)(sizeof(Buf) + HashSize), 0, FILE_END);
 	ReadFile(hPack, HashData, HashSize, &R, 0);
 
-	if (strcmp((char*)HashData, "HashVer1.3"))
+	if (strcmp((char*)HashData, "HashVer1.4"))
 	{
 		AppendMsg(L"HashÊý¾Ý²»Æ¥Åä\r\n");
 		return -3;

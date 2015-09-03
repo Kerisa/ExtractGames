@@ -35,4 +35,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="icon (2).ico">
+      <Filter>资源文件</Filter>
+    </None>
+  </ItemGroup>
 </Project>
