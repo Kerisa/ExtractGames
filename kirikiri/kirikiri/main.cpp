@@ -1,33 +1,42 @@
 #include <Windows.h>
+#include <string>
+#include <vector>
 #include "types.h"
 #include "error.h"
 #include "resource.h"
 #include "xp3.h"
 #include <strsafe.h>
 
-const int THREAD_NUM = 4;
+
+using std::vector;
+using std::wstring;
+
+
+static int THREAD_NUM = 2;
+
 
 struct thread_param
 {
-	enum {QUEUE_SIZE = 1500};
-	wchar_t **queue;
-	DWORD front, tail;
 	HANDLE hEvent;
 	HANDLE hThread;
-	char ChooseGame[32];
 	UNCOM unCom;
 	bool thread_exit;
+	char ChooseGame[32];
+	vector<wstring> queue;
 };
 
-HWND hEdit, hCombo;
-HANDLE hThread;
+HWND			 hEdit, hCombo;
+HANDLE			 hThread;
 CRITICAL_SECTION cs;
+
 
 DWORD WINAPI Thread(PVOID pv);
 void OnDropFiles(HDROP hDrop, HWND hwnd, thread_param* ptp);
 BOOL CALLBACK DlgProc(HWND, UINT, WPARAM, LPARAM);
 
+
 #define MESSAGE(x) MessageBox(0, x, L"提示", MB_ICONINFORMATION|MB_OK)
+
 
 void AppendMsg(const wchar_t *szBuffer)
 {
@@ -45,20 +54,32 @@ void AppendMsg(const wchar_t *szBuffer)
 	return;
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInstance,
-					PSTR pCmdLine, int iCmdShow)
+void SetThreadNumByCPUCore(void)
 {
+	SYSTEM_INFO si;
+	GetSystemInfo(&si);
+	if (!GetLastError())
+		THREAD_NUM = si.dwNumberOfProcessors - 1;
+	else
+		THREAD_NUM = 2;
+}
+
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, PSTR pCmdLine, int)
+{
+	SetThreadNumByCPUCore();
 	DialogBoxParam(hInstance, MAKEINTRESOURCE(IDD_MAIN), 0, DlgProc, 0);
 	return 0;
 }
 
+
 BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	static thread_param tp[THREAD_NUM];
-	static HMODULE hZlib;
-	static bool thread_paused;
-	UNCOM tmp = 0;
-	TCHAR szBuffer[MAX_PATH];
+	static thread_param *tp = new thread_param[THREAD_NUM];
+	static HMODULE		hZlib;
+	static bool			thread_paused;
+	UNCOM				tmp = 0;
+	TCHAR				szBuffer[MAX_PATH];
 
 	switch (msg)
 	{
@@ -75,41 +96,42 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 			MESSAGE(L"解码函数获取失败！");
 			EndDialog(hDlg, 0);
 		}
+
 //----------------------------------------------------------
+
 		hEdit = GetDlgItem(hDlg, IDC_EDIT);
 		SendMessage(hEdit, EM_LIMITTEXT, -1, 0);
 		AppendMsg(L"选择对应游戏后拖放xp3文件到此处...\r\n");
+
 //----------------------------------------------------------
+
 		hCombo = GetDlgItem(hDlg, IDC_COMBO);
-		for (int i=IDS_STRING099; i<=IDS_STRING116; ++i)	// 改为对应游戏(字符串)数量
+		for (int i=IDS_STRING099; i<=IDS_STRING117; ++i)	// 改为对应游戏(字符串)数量
 		{
 			LoadString((HINSTANCE)GetWindowLong(hDlg, GWL_HINSTANCE), i, szBuffer, MAX_PATH);
 			SendMessage(hCombo, CB_ADDSTRING, 0, (LPARAM)szBuffer);
 		}
+
 //----------------------------------------------------------
+
+		if (!tp)
+		{
+			AppendMsg(L"内存分配错误！\r\n");
+			EndDialog(hDlg, 0);
+		}
 		for (int i=0; i<THREAD_NUM; ++i)
 		{
 			if (!(tp[i].hEvent = CreateEvent(NULL, TRUE, FALSE, NULL)))
 			{
-				AppendMsg(L"事件初始化错误！\r\n");
-				EndDialog(hDlg, 0);
-			}
-			if (!(tp[i].queue = (wchar_t**)VirtualAlloc(NULL, sizeof(wchar_t*), MEM_COMMIT, PAGE_READWRITE)))
-			{
-				AppendMsg(L"内存分配错误！\r\n");
-				EndDialog(hDlg, 0);
-			}
-			if (!(*(tp[i].queue) = (wchar_t*)VirtualAlloc(NULL, tp[i].QUEUE_SIZE*MAX_PATH*sizeof(wchar_t), MEM_COMMIT, PAGE_READWRITE)))
-			{
-				AppendMsg(L"内存分配错误！\r\n");
+				MESSAGE(L"事件初始化错误！\r\n");
 				EndDialog(hDlg, 0);
 			}
 			if (!(tp[i].hThread = CreateThread(NULL, 0, Thread, &tp[i], 0, NULL)))
 			{
-				AppendMsg(L"线程创建失败！\r\n");
+				MESSAGE(L"线程创建失败！\r\n");
 				EndDialog(hDlg, 0);
 			}
-			tp[i].front = tp[i].tail = 0;
+			
 			tp[i].thread_exit = false;
 			tp[i].unCom = tmp;
 		}
@@ -152,7 +174,9 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 	return FALSE;
 }
 
+
 typedef int (*CallBack)(struct CB* pcb, PTSTR path);
+
 
 struct CB
 {
@@ -161,6 +185,7 @@ struct CB
 	wchar_t *filter;
 };
 
+
 int callback(struct CB* pcb, wchar_t *path)
 {
 	int len = wcslen(path);
@@ -168,17 +193,11 @@ int callback(struct CB* pcb, wchar_t *path)
 
 	if (!pcb->filter || !wcscmp(&path[len], pcb->filter))
 	{
-		while (pcb->ptp[pcb->cnt].front == pcb->ptp[pcb->cnt].tail+1)		// 队列满，转下一个
-			pcb->cnt = (pcb->cnt+1) % THREAD_NUM;
-
 		EnterCriticalSection(&cs);
 		{
-			StringCchCopy(*pcb->ptp[pcb->cnt].queue + pcb->ptp[pcb->cnt].tail*MAX_PATH, MAX_PATH, path);
-		
-			if (pcb->ptp[pcb->cnt].tail == pcb->ptp[pcb->cnt].front)		// 原先队列为空，置位
+			pcb->ptp[pcb->cnt].queue.push_back(wstring(path));
+			if (pcb->ptp[pcb->cnt].queue.size() == 1)
 				SetEvent(pcb->ptp[pcb->cnt].hEvent);
-
-			pcb->ptp[pcb->cnt].tail = (pcb->ptp[pcb->cnt].tail + 1) % pcb->ptp[pcb->cnt].QUEUE_SIZE;// 更新队列
 		}
 		LeaveCriticalSection(&cs);
 
@@ -186,6 +205,7 @@ int callback(struct CB* pcb, wchar_t *path)
 	}
 	return 0;
 }
+
 
 int ExpandDirectory(PTSTR lpszPath, CallBack callback, struct CB* pcb)
 {
@@ -220,6 +240,7 @@ int ExpandDirectory(PTSTR lpszPath, CallBack callback, struct CB* pcb)
 	return -2;
 }
 
+
 DWORD AppendFileToQueue(wchar_t *pInBuf, CallBack callback, struct CB *pcb)
 {	
 	if (FILE_ATTRIBUTE_DIRECTORY == GetFileAttributes(pInBuf))
@@ -228,6 +249,7 @@ DWORD AppendFileToQueue(wchar_t *pInBuf, CallBack callback, struct CB *pcb)
 
 	return 0;
 }
+
 
 void OnDropFiles(HDROP hDrop, HWND hDlg, thread_param* ptp)
 {
@@ -246,9 +268,12 @@ void OnDropFiles(HDROP hDrop, HWND hDlg, thread_param* ptp)
 		MessageBox(hDlg, L"请先选择对应的游戏", L"提示", MB_ICONINFORMATION);
 		return;
 	}
+
+
 	LoadStringA((HINSTANCE)GetWindowLong(hDlg, GWL_HINSTANCE), idx+499, szBuffer, 128);
 	for (int i=0; i<THREAD_NUM; ++i)
-		strcpy(ptp[i].ChooseGame, szBuffer);
+		StringCchCopyA(ptp[i].ChooseGame, sizeof(ptp[i].ChooseGame), szBuffer);
+
 
 	FileNum  = DragQueryFile(hDrop, -1, NULL, 0);
 
@@ -264,18 +289,25 @@ void OnDropFiles(HDROP hDrop, HWND hDlg, thread_param* ptp)
 
 DWORD WINAPI Thread(PVOID pv)
 {
-	DWORD dwNowProcess = 0;
-	HANDLE hFile;
-	wchar_t cur_dir[MAX_PATH], szBuffer[MAX_PATH], *CurrentFile;
+	DWORD		  dwNowProcess = 0;
+	HANDLE		  hFile;
 	thread_param *ptp = (thread_param*) pv;
+	wchar_t		  cur_dir[MAX_PATH], szBuffer[MAX_PATH], CurrentFile[MAX_PATH];
+	
 	
 	while (1)
 	{
 		WaitForSingleObject(ptp->hEvent, INFINITE);
-
 		if (ptp->thread_exit) break;
 
-		CurrentFile = *ptp->queue + ptp->front*MAX_PATH;
+
+		EnterCriticalSection(&cs);
+		{
+			StringCchCopy(CurrentFile, MAX_PATH, (wchar_t *)ptp->queue.back().c_str());
+			ptp->queue.pop_back();			
+		}
+		LeaveCriticalSection(&cs);
+
 
 		StringCchCopy(cur_dir, MAX_PATH, CurrentFile);
 
@@ -287,6 +319,7 @@ DWORD WINAPI Thread(PVOID pv)
 		StringCchCat(cur_dir, MAX_PATH, &CurrentFile[l]);
 		CreateDirectory(cur_dir, 0);
 		
+
 		u32 file_num = 0;
 		u32 idx_size = 0;
 		u8 *uncompress_idx;
@@ -337,14 +370,11 @@ DWORD WINAPI Thread(PVOID pv)
 		}
 		if (hFile != INVALID_HANDLE_VALUE) CloseHandle(hFile);
 
-		EnterCriticalSection(&cs);
-		{
-			ptp->front = (ptp->front + 1) % ptp->QUEUE_SIZE;
 		
-			if (ptp->front == ptp->tail)
+
+		if (0 == ptp->queue.size())
 				ResetEvent(ptp->hEvent);
-		}
-		LeaveCriticalSection(&cs);
+		
 	}
 	return 0;
 }

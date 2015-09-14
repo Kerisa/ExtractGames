@@ -96,6 +96,7 @@
     <ClCompile Include="cxdec\ruitomo_cxdec.cpp" />
     <ClCompile Include="cxdec\sakurasaki_cxdec_callback.cpp" />
     <ClCompile Include="cxdec\silverblue_cxdec.cpp" />
+    <ClCompile Include="cxdec\sukisuki_cxdec.cpp" />
     <ClCompile Include="cxdec\tenshinTrial_cxdec.cpp" />
     <ClCompile Include="cxdec\tenshin_cxdec.cpp" />
     <ClCompile Include="cxdec\towa_cxdec.cpp" />

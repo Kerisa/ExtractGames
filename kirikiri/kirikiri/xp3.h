@@ -1,4 +1,7 @@
+
+
 #pragma once
+
 
 #include <Windows.h>
 #include "types.h"
@@ -7,6 +10,8 @@
 #include "xp3filter_decode.h"
 #include <strsafe.h>
 
+
+#pragma pack(1)
 struct xp3_file_header
 {
 	u8 magic[11]; // = {'\x58', '\x50', '\x33', '\x0D', '\x0A', '\x20', '\0A', '\x1A', '\x8B', '\x67', '\x01'};
@@ -19,6 +24,8 @@ struct xp3_file_header
 	u32 index_offset_lo;
 	u32 index_offset_hi;
 };
+#pragma pack()
+
 
 struct file_entry
 {
@@ -31,11 +38,15 @@ struct file_entry
 	wchar_t file_name[128];
 };
 
+
 extern void AppendMsg(const wchar_t *szBuffer);
+
 
 int is_xp3_file(HANDLE hFile);
 u8* uncompress_xp3_idx(HANDLE hFile, u32 *idx_len, UNCOM unCom);
 int xp3_extract_file_save(HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *file_num, char *game, UNCOM unCom, wchar_t *cur_dir);
+
+
 
 typedef void (*_XOR_DECODE)(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DWORD len);
  void xor_decode				(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DWORD len);
@@ -44,6 +55,8 @@ typedef void (*_XOR_DECODE)(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DW
 
 
 static const char unencry_game [] = "Unencrypted";		// 数据没有加密的游戏
+
+
 static const struct _SIMPLE_XOR		// 数据xor过的游戏
 {
 	char *name;			// 游戏名

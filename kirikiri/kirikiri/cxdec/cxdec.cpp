@@ -160,7 +160,7 @@ struct cxdec {
 	int init_flag;
 };
 
-static struct cxdec cxdec;
+__declspec(thread) static struct cxdec cxdec;
 
 static int cxdec_init(void)
 {
@@ -265,6 +265,7 @@ static void cxdec_decode(struct cxdec_callback *callback, DWORD hash, DWORD offs
 
 
 /* TODO: put new callback here */
+extern struct cxdec_callback sukisuki_cxdec_callback;
 extern struct cxdec_callback koisakura_cxdec_callback;
 extern struct cxdec_callback anioka_cxdec_callback;
 extern struct cxdec_callback colorfulcure_cxdec_callback;
@@ -303,6 +304,7 @@ extern struct cxdec_callback tenshin_cxdec_callback;
 extern struct cxdec_callback kurenai_cxdec_callback;
 
 static struct cxdec_callback *cxdec_callback_list[] = {
+	&sukisuki_cxdec_callback,
 	&koisakura_cxdec_callback,
 	&anioka_cxdec_callback,
 	&colorfulcure_cxdec_callback,
