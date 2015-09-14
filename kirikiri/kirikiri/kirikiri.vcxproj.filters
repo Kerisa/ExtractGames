@@ -140,6 +140,9 @@
     <ClCompile Include="cxdec\towa_cxdec.cpp">
       <Filter>源文件\cxdec</Filter>
     </ClCompile>
+    <ClCompile Include="cxdec\sukisuki_cxdec.cpp">
+      <Filter>源文件\cxdec</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="main.rc">

@@ -1,4 +1,6 @@
+
 #include "xp3.h"
+
 
 int is_xp3_file(HANDLE hFile)
 {
@@ -9,6 +11,7 @@ int is_xp3_file(HANDLE hFile)
 	ReadFile(hFile, magic, 11, &R, NULL);
 	return !memcmp(magic, "XP3\r\n \n\x1A\x8B\x67\x01", 11);
 }
+
 
 u8* uncompress_xp3_idx(HANDLE hFile, u32 *idx_len, UNCOM unCom)
 {
@@ -74,6 +77,7 @@ u8* uncompress_xp3_idx(HANDLE hFile, u32 *idx_len, UNCOM unCom)
 	*idx_len = idx_uncom_lo;
 	return idx_raw;
 }
+
 
 static u8* get_file_thunk(u8 *pointer, struct file_entry *fe, u32 *split_file, u8 *idx_end)
 {
@@ -153,7 +157,8 @@ static u8* get_file_thunk(u8 *pointer, struct file_entry *fe, u32 *split_file, u
 	return pointer;
 }
 
-static int SplitFileNameAndSave(wchar_t *cur_dir, wchar_t *file_name, void* unpack, u32 file_length)
+
+static int SplitFileNameAndSave(wchar_t *cur_dir, wchar_t *file_name, void* unpack, unsigned long file_length)
 {
 	DWORD ByteWrite;
 	wchar_t buf[MAX_PATH] = {0}, buf2[MAX_PATH];
@@ -215,6 +220,7 @@ static int SplitFileNameAndSave(wchar_t *cur_dir, wchar_t *file_name, void* unpa
 	return ret;
 }
 
+
 int xp3_extract_file_save(const HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *file_num, char *game, UNCOM unCom, wchar_t *cur_dir)
 {
 	_XOR_DECODE p_decode = (_XOR_DECODE)0x80000000;
@@ -222,12 +228,12 @@ int xp3_extract_file_save(const HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *fil
 	u8 *p, *idx_end;
 	u32 R, split_file, game_idx, offset_hi, cnt_savefile = 0;
 
-	p		= xp3_idx;
-	idx_end = xp3_idx + idx_len;
+	p		 = xp3_idx;
+	idx_end  = xp3_idx + idx_len;
+	p		+= 0x4;
+	p		+= *(u32*)p + 0x8;	// 跳过protection warning
 	
-	p += 0x4;
-	p += *(u32*)p + 0x8;	// 跳过protection warning
-	
+
 	if (!strcmp(game, unencry_game))	// 决定解密使用的函数
 		p_decode = 0;
 	else for (int i=0; i<sizeof(simple_xor_game)/sizeof(simple_xor_game[0]); ++i)
@@ -237,6 +243,7 @@ int xp3_extract_file_save(const HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *fil
 			game_idx = i;
 			break;
 		}
+
 
 	while(p < idx_end)
 	{
@@ -249,6 +256,7 @@ int xp3_extract_file_save(const HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *fil
 			MessageBox(0, L"文件分段数量过多，提取中止！\r\n", 0, MB_ICONERROR);
 			break;
 		}
+
 
 		u32 file_pkg_len = 0;
 		u32 file_org_len = 0;
@@ -297,6 +305,7 @@ int xp3_extract_file_save(const HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *fil
 	return cnt_savefile;
 }
 
+
 static void xor_decode(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DWORD len)	// 从offset开始解
 {
 	for (int i=offset; i<len; ++i)
@@ -304,12 +313,14 @@ static void xor_decode(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DWORD l
 	return;
 }
 
+
 static void xor_decode_prettycation(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DWORD len)
 {
 	for (u32 i=offset; i<len; ++i)
 		buf[i] ^= (BYTE)(hash>>0xc);
 	return;
 }
+
 
 static void xor_decode_swansong(DWORD hash, u8 extend_key, u32 offset, PBYTE buf, DWORD len)
 {
