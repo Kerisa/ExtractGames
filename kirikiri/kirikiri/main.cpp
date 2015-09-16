@@ -106,7 +106,7 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 //----------------------------------------------------------
 
 		hCombo = GetDlgItem(hDlg, IDC_COMBO);
-		for (int i=IDS_STRING099; i<=IDS_STRING117; ++i)	// 改为对应游戏(字符串)数量
+		for (int i=IDS_STRING099; i<=IDS_STRING118; ++i)	// 改为对应游戏(字符串)数量
 		{
 			LoadString((HINSTANCE)GetWindowLong(hDlg, GWL_HINSTANCE), i, szBuffer, MAX_PATH);
 			SendMessage(hCombo, CB_ADDSTRING, 0, (LPARAM)szBuffer);

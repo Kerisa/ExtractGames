@@ -86,6 +86,24 @@ static u8* get_file_thunk(u8 *pointer, struct file_entry *fe, u32 *split_file, u
 	static const u32 _segm = 0x6d676573;
 	static const u32 _info = 0x6f666e69;
 
+	/*/////////////////////////////////////////////////////////////////////////////
+	///////// 针对一些有 "eliF" 块的索引，加入这部分代码，
+	///////// 然后注释掉下面 "info" 块的
+
+	if (*(u32*)pointer == 0x46696c65)
+	{
+		fe->file_name[0] = '\0';
+		lstrcpyW(fe->file_name, (wchar_t*)(pointer + 0xc + 6));	// 这个6是因为文件名前6字符是乱码
+		pointer += *(u32*)(pointer + 4) + 0xc;
+	}
+	else
+	{
+		AppendMsg(L"文件索引表读取错误，提取终止\r\n");
+		return 0;
+	}
+
+	*//////////////////////////////////////////////////////////////////////////////
+	
 	if (*((u32*)pointer) != _file)		// 都是以"File"块开始
 	{
 		AppendMsg(L"文件索引表错误，提取终止\r\n");
@@ -149,7 +167,7 @@ static u8* get_file_thunk(u8 *pointer, struct file_entry *fe, u32 *split_file, u
 				buf_size = sizeof(fe->file_name)/sizeof(fe->file_name[0]) - 1;
 			}
 			pointer += 0x2;
-			lstrcpyW(fe->file_name, (wchar_t*)pointer);
+			StringCchCopy(fe->file_name, _countof(fe->file_name), (wchar_t*)pointer);
 			fe->file_name[buf_size] = '\0';
 			break;
 		}
@@ -158,7 +176,7 @@ static u8* get_file_thunk(u8 *pointer, struct file_entry *fe, u32 *split_file, u
 }
 
 
-static int SplitFileNameAndSave(wchar_t *cur_dir, wchar_t *file_name, void* unpack, unsigned long file_length)
+static int SplitFileNameAndSave(const wchar_t *cur_dir, wchar_t *file_name, void* unpack, unsigned long file_length)
 {
 	DWORD ByteWrite;
 	wchar_t buf[MAX_PATH] = {0}, buf2[MAX_PATH];
@@ -221,7 +239,13 @@ static int SplitFileNameAndSave(wchar_t *cur_dir, wchar_t *file_name, void* unpa
 }
 
 
-int xp3_extract_file_save(const HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *file_num, char *game, UNCOM unCom, wchar_t *cur_dir)
+int xp3_extract_file_save(const HANDLE hFile,
+						  u8 *xp3_idx,
+						  int idx_len,
+						  u32 *file_num,
+						  char *game,
+						  UNCOM unCom,
+						  const wchar_t *cur_dir)
 {
 	_XOR_DECODE p_decode = (_XOR_DECODE)0x80000000;
 	struct file_entry fe[20];	// 目前看到的最多分成5段(segm长度0x8c)，没个准头
