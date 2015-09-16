@@ -44,7 +44,7 @@ extern void AppendMsg(const wchar_t *szBuffer);
 
 int is_xp3_file(HANDLE hFile);
 u8* uncompress_xp3_idx(HANDLE hFile, u32 *idx_len, UNCOM unCom);
-int xp3_extract_file_save(HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *file_num, char *game, UNCOM unCom, wchar_t *cur_dir);
+int xp3_extract_file_save(HANDLE hFile, u8 *xp3_idx, int idx_len, u32 *file_num, char *game, UNCOM unCom, const wchar_t *cur_dir);
 
 
 
