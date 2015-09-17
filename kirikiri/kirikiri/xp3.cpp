@@ -87,13 +87,13 @@ static u8* get_file_thunk(u8 *pointer, struct file_entry *fe, u32 *split_file, u
 	static const u32 _info = 0x6f666e69;
 
 	/*/////////////////////////////////////////////////////////////////////////////
-	///////// 针对一些有 "eliF" 块的索引，加入这部分代码，
+	///////// 针对一些有 "eliF" 块的索引(如 花の野に咲くうたかたの、ネコぱら等)，加入这部分代码，
 	///////// 然后注释掉下面 "info" 块的
 
 	if (*(u32*)pointer == 0x46696c65)
 	{
 		fe->file_name[0] = '\0';
-		lstrcpyW(fe->file_name, (wchar_t*)(pointer + 0xc + 6));	// 这个6是因为文件名前6字符是乱码
+		lstrcpyW(fe->file_name, (wchar_t*)(pointer + 0xc + 6));	// 这个6是因为文件名前6字符是乱码, 有些不用加
 		pointer += *(u32*)(pointer + 4) + 0xc;
 	}
 	else
@@ -257,6 +257,9 @@ int xp3_extract_file_save(const HANDLE hFile,
 	p		+= 0x4;
 	p		+= *(u32*)p + 0x8;	// 跳过protection warning
 	
+	///////////
+	// p += *(u32*)(p+4) + 0xc;  // eliF
+	///////////
 
 	if (!strcmp(game, unencry_game))	// 决定解密使用的函数
 		p_decode = 0;
