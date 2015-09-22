@@ -16,14 +16,20 @@ typedef struct
 
 typedef struct
 {
-	char Magic[16];			// "HashVer1.4"
+	char Magic[16];			// "HashVer1.3"
 	unsigned long unKnown1;
 	unsigned long FileNum;
 	unsigned long unKnown2;	// FileNum * 2
 	unsigned long DataSize;
+} HASHHEADER13;
+
+
+typedef struct
+{
+	HASHHEADER13 HashHeader13;
 	unsigned long unKnown3;		// "HashVer1.3" 只要去掉下面的两行再改一下验证的Magic就可以
 	char ZeroBytes[32];
-} HASHHEADER;
+} HASHHEADER14;
 
 
 typedef struct

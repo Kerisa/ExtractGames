@@ -8,8 +8,10 @@ http://warmth.ne.jp/
 
 测试了
 	ワルキューレロマンツェ Re：tellⅡ 
+	月に寄りそう乙女の作法
 	美少女万華鏡VOL1
 	美少女万華鏡VOL2
 	美少女万華鏡VOL3
 
-Merger 用来合并解包出来的图片片段（先转成bmp）
+·Merger 用来合并解包出来的图片片段（先转成bmp）
+·abmp12 提取部分由png组成的.b文件
