@@ -415,16 +415,28 @@ int GetPackageDirectory(const HANDLE hPack, const PACKHEADER *ph, vector<PACKIDX
 	SetFilePointer(hPack, -(int)(sizeof(Buf) + HashSize), 0, FILE_END);
 	ReadFile(hPack, HashData, HashSize, &R, 0);
 
-	if (strcmp((char*)HashData, "HashVer1.4"))
+
+
+	if (!strcmp((char*)HashData, "HashVer1.4"))
+	{
+		Decode(HashData + sizeof(HASHHEADER14), ((HASHHEADER13*)HashData)->DataSize, 0x428);
+		ret = Decompress(HashData + sizeof(HASHHEADER14), ((HASHHEADER13*)HashData)->DataSize,
+				&RawIndex, &RawIndexLen);
+	}
+	else if (!strcmp((char*)HashData, "HashVer1.3"))
+	{
+		Decode(HashData + sizeof(HASHHEADER13), ((HASHHEADER13*)HashData)->DataSize, 0x428);
+		ret = Decompress(HashData + sizeof(HASHHEADER13), ((HASHHEADER13*)HashData)->DataSize,
+				&RawIndex, &RawIndexLen);
+	}
+	else
 	{
 		AppendMsg(L"HashÊý¾Ý²»Æ¥Åä\r\n");
 		return -3;
 	}
 
 	
-	Decode(HashData + sizeof(HASHHEADER), ((HASHHEADER*)HashData)->DataSize, 0x428);
-	ret = Decompress(HashData + sizeof(HASHHEADER), ((HASHHEADER*)HashData)->DataSize,
-			&RawIndex, &RawIndexLen);
+	
 	if (ret)
 	{
 		delete[] HashData;
