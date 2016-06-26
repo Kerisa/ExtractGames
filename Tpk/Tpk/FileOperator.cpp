@@ -35,7 +35,7 @@ bool FileOperatorCommon::SetFilePointer(U64 offset, MoveMethod m, PU64 newOffset
 
     LARGE_INTEGER li, nli;
     li.QuadPart = offset;
-    bool ret = ::SetFilePointerEx(m_File, li, &nli, m);
+    BOOL ret = ::SetFilePointerEx(m_File, li, &nli, m);
 
     if (newOffset)
     {
@@ -77,8 +77,10 @@ bool ReadOperator::ReadFile(void * ptr, U32 bytesToRead, PU32 pbytesRead)
     if (ptr == nullptr || !IsFileValid())
         return false;
 
-    U32 dummy;
-    return ::ReadFile(m_File, ptr, bytesToRead, pbytesRead ? pbytesRead : &dummy, 0);
+    U32 dummy, *readbytes = pbytesRead ? pbytesRead : &dummy;
+    BOOL ret = ::ReadFile(m_File, ptr, bytesToRead, readbytes, 0);
+
+    return ret && (*readbytes == bytesToRead);
 }
 
 std::shared_ptr<U8> ReadOperator::ReadFileBlock(U32 bytesToRead, PU32 pbytesRead)
@@ -94,10 +96,13 @@ std::shared_ptr<U8> ReadOperator::ReadFileBlock(U32 bytesToRead, PU32 pbytesRead
     std::shared_ptr<U8> data(new U8[bytesCanRead]);
     memset(data.get(), 0, bytesCanRead);
 
-    U32 dummy;
-    bool b = ::ReadFile(m_File, &(*data), bytesCanRead, pbytesRead ? pbytesRead : &dummy, 0);
+    U32 dummy, *readbytes = pbytesRead ? pbytesRead : &dummy;
+    BOOL ret = ::ReadFile(m_File, &(*data), bytesCanRead, readbytes, 0);
 
-    return data;
+    if (ret && (*readbytes == bytesToRead))
+        return data;
+    else
+        return std::shared_ptr<U8>();
 }
 
 
@@ -122,7 +127,6 @@ bool WriteOperator::Assign(const std::wstring & filename, bool forceNew)
     return ret;
 }
 
-
 bool WriteOperator::SaveAsFile(void * _data, U32 len, const std::wstring & filename)
 {
     bool c = Assign(filename);
@@ -138,8 +142,8 @@ bool WriteOperator::WriteFile(void * data, U32 len, PU32 pbytesWrited)
     if (!data || !IsFileValid())
         return false;
 
-    U32 dummy;
-    return ::WriteFile(m_File, data, len, pbytesWrited ? pbytesWrited : &dummy, 0);
+    U32 dummy, *writenBytes = pbytesWrited ? pbytesWrited : &dummy;
+    BOOL ret = ::WriteFile(m_File, data, len, writenBytes, 0);
+    
+    return ret && (*writenBytes == len);
 }
-
-
