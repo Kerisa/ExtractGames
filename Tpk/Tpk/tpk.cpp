@@ -147,18 +147,18 @@ TpkOperator::~TpkOperator()
 
 bool TpkOperator::OpenTpk(std::wstring filename)
 {
-    return OpenNewFile(filename);
+    return rfile.Assign(filename);
 }
 
 bool TpkOperator::IsValidTpk()
 {
-    if (!IsFileOpened())
+    if (!rfile.IsFileValid())
         return false;
 
     char buf[16] = { 0 };
     U32 read;
-    SetFilePointer(0, _FILE_BEGIN);
-    ReadFile(buf, sizeof(TpkOperator::TpkHeaderMagic), &read);
+    rfile.SetFilePointer(0, FileOperatorCommon::_FILE_BEGIN);
+    rfile.ReadFile(buf, sizeof(TpkOperator::TpkHeaderMagic), &read);
     assert(read == sizeof(TpkOperator::TpkHeaderMagic));
 
     return !memcmp(buf, TpkOperator::TpkHeaderMagic, sizeof(TpkOperator::TpkHeaderMagic));
@@ -168,10 +168,10 @@ bool TpkOperator::GetFileEntries()
 {
     // 假定tpk文件有效
 
-    SetFilePointer(sizeof(TpkOperator::TpkHeaderMagic), _FILE_BEGIN);
-    ReadFile(&IndexBaseSize, 4, 0);
+    rfile.SetFilePointer(sizeof(TpkOperator::TpkHeaderMagic), FileOperatorCommon::_FILE_BEGIN);
+    rfile.ReadFile(&IndexBaseSize, 4, 0);
     U32 indexLen = IndexBaseSize * Magic_Entry;
-    auto data = ReadFileBlock(indexLen);
+    auto data = rfile.ReadFileBlock(indexLen);
     assert(data.use_count() != 0);
 
     mEntries.clear();
@@ -208,18 +208,22 @@ bool TpkOperator::ExtractFiles()
 {
     for (const auto & ele : mEntries)
     {
-        SetFilePointer(ele.Offset, _FILE_BEGIN);
+        rfile.SetFilePointer(ele.Offset, FileOperatorCommon::_FILE_BEGIN);
 
         U32 fileNameLen;
-        ReadFile(&fileNameLen, 4);
+        rfile.ReadFile(&fileNameLen, 4);
         char *name = new char[fileNameLen + 2];
         memset(name, 0, fileNameLen + 2);
-        ReadFile(name, fileNameLen);
+        rfile.ReadFile(name, fileNameLen);
 
-        auto data = ReadFileBlock(ele.PkgLen);
+        auto data = rfile.ReadFileBlock(ele.PkgLen);
 
         if (CheckData(data.get(), ele.Crc32))
-            SaveAsFile(data.get(), ele.RawLen, std::string(name), OutputDirectoy);
+        {
+            std::wstring fn;
+            CreatePrepare(name, OutputDirectoy, fn);
+            wfile.SaveAsFile(data.get(), ele.RawLen, fn);
+        }
     }
 
     return true;
@@ -232,10 +236,47 @@ bool TpkOperator::CheckData(PU8 data, U32 crc)
 
 void TpkOperator::CloseTpk()
 {
-    CloseReadFile();
+    rfile.Close();
 }
 
-FileOperator::U64 TpkOperator::GetEntryOffsetByFileName(const char * filename, PU64 pId)
+void TpkOperator::CreatePrepare(
+    char *filename,
+    const std::wstring & directory,
+    std::wstring & fn
+    )
+{
+    U32 length = strlen(filename);
+    U32 size = (length + 2) * sizeof(wchar_t);
+    wchar_t * w = (wchar_t*)malloc(size);
+    memset(w, 0, size);
+    MultiByteToWideChar(CP_ACP, 0, filename, -1, w, length);
+    std::wstring ws(w);
+    delete[] w;
+
+
+    fn.assign(directory);
+    if (fn.rbegin() != fn.rend() && *(fn.rbegin()) != L'\\')
+        fn += L'\\';
+
+    for (size_t i = 0; i < ws.size(); ++i)
+        if (ws[i] == L'/')
+            fn += L'\\';
+        else
+            fn += ws[i];
+
+    size_t pos = 0;
+    while (pos < fn.size())
+    {
+        pos = fn.find(L'\\', pos + 1);
+        if (pos == std::wstring::npos)
+            break;
+
+        std::wstring dir(fn.substr(0, pos));
+        ::CreateDirectoryW(dir.c_str(), 0);
+    }
+}
+
+U64 TpkOperator::GetEntryOffsetByFileName(const char * filename, PU64 pId)
 {
     U32 Id1 = Magic_ID_1;
     U32 Id2 = Magic_ID_2;

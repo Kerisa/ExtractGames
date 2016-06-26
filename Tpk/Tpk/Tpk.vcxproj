@@ -120,6 +120,7 @@
   <ItemGroup>
     <ClInclude Include="FileOperator.h" />
     <ClInclude Include="tpk.h" />
+    <ClInclude Include="type.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="FileOperator.cpp" />
