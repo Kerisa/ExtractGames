@@ -5,7 +5,7 @@
 #include "FileOperator.h"
 
 
-class TpkOperator : private FileOperator
+class TpkOperator
 {
 public:
     struct TpkHeader
@@ -53,10 +53,15 @@ public:
     bool CheckData(PU8 data, U32 crc);
     void CloseTpk();
 
+    void CreatePrepare(char *filename, const std::wstring & directory, std::wstring & fn);
+
     // 游戏中通过文件名计算文件索引所在位置(的算法), 仅作记录, 当然也是能用的
     U64 GetEntryOffsetByFileName(const char *filename, PU64 pId);
 
 private:
+    ReadOperator rfile;
+    WriteOperator wfile;
+
     std::vector<TpkEntry> mEntries;
     U32 IndexBaseSize;
 };

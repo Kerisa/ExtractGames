@@ -32,5 +32,8 @@
     <ClInclude Include="FileOperator.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="type.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
