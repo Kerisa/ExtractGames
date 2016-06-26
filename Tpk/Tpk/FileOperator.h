@@ -50,7 +50,6 @@ class WriteOperator : public FileOperatorCommon
 {
 public:
     bool Assign(const std::wstring & filename, bool forceNew = false);
-    //bool CreateNewFileToWrite(const std::wstring &filename, const std::wstring & directory);
     bool WriteFile(void *data, U32 len, PU32 pbytesWrited = nullptr);
 
     bool SaveAsFile(void *_data, U32 len, const std::wstring &filename);
