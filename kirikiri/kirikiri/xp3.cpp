@@ -170,6 +170,7 @@ int XP3ArcPraseEntryStage0 (
         flag_segm = 0x4,    flag_info = 0x8,
         flag_all  = 0xf;
 
+    PBYTE info_sec_end = nullptr;
     PBYTE pEnd = (PBYTE)_idx + _len, p = (PBYTE)_idx;
 
     assert(*(PDWORD)p == _file);
@@ -240,10 +241,12 @@ int XP3ArcPraseEntryStage0 (
 
             case _info:
                 assert(!(flag & flag_info));
+                info_sec_end = p + 0xc + *((PDWORD)(p + 0x4));
                 p += 0xc;
                 fe.encryption_flag = *((PDWORD)p);    // 好像这个标志也没啥用
                 p += 0x14;  // 跳过info中的长度信息
 
+                // 剩下的是文件名长度和文件名
                 int buf_size = (int)*((PWORD)p);
                 if (buf_size >= _countof(fe.file_name))
                 {
@@ -252,8 +255,9 @@ int XP3ArcPraseEntryStage0 (
                 }
                 p += 0x2;
                 memset(fe.file_name, 0, _countof(fe.file_name));
-                StringCchCopy(fe.file_name, _countof(fe.file_name), (wchar_t*)p);
-                p += wcslen((wchar_t*)p) * 2 + 2;
+                memcpy(fe.file_name, (wchar_t*)p, buf_size * sizeof(wchar_t));
+                
+                p = info_sec_end;
 
                 flag |= flag_info;
                 break;
