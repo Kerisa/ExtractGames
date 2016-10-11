@@ -33,6 +33,7 @@ int wmain(int argc, wchar_t **argv)
 
     merge.Initialize(argv[1], _wtoi(argv[2]), g);
 	merge.Process();
+    merge.Release();
 
 	//system("pause");
     return 0;

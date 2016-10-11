@@ -188,7 +188,9 @@ bool Merge::Process()
 void Merge::Release()
 {
     mGroup.clear();
+    std::vector<int>().swap(mGroup);
     mInfo.clear();
+    std::vector<std::vector<PictureInfo>>().swap(mInfo);
 }
 
 bool Merge::LoadFileList(const wchar_t *txtFileName)
