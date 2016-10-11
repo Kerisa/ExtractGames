@@ -27,18 +27,18 @@ Merge::PictureInfo::PictureInfo(const PictureInfo & pi)
     height = pi.height;
     mLines = nullptr;
     mPixels = nullptr;
-	    
+        
     if (pi.mPixels)
     {
         int size = width * height * sizeof(COLORREF);
         mPixels = (COLORREF*)malloc(size);
         memcpy_s(mPixels, size, pi.mPixels, size);
 
-		// 行索引
-		size = height * sizeof(COLORREF*);
-		mLines = (COLORREF**)malloc(size);
-		for (int i = 0; i < height; ++i)
-			mLines[i] = &mPixels[(height - 1 - i) * width];
+        // 行索引
+        size = height * sizeof(COLORREF*);
+        mLines = (COLORREF**)malloc(size);
+        for (int i = 0; i < height; ++i)
+            mLines[i] = &mPixels[(height - 1 - i) * width];
     }
 }
 
@@ -83,7 +83,7 @@ Merge::Merge()
 {
     mGroupInitialized = false;
 
-	setlocale(LC_ALL, "");
+    setlocale(LC_ALL, "");
 }
 
 Merge::~Merge()
@@ -100,7 +100,7 @@ bool Merge::Initialize(const wchar_t *txtfilename, int groupnum, std::vector<int
         mGroupInitialized = false;
         
         // 获取分组信息
-		mGroup.assign(group.begin(), group.end());
+        mGroup.assign(group.begin(), group.end());
         mInfo.resize(groupnum);
 
         // 读取txt文件
@@ -110,21 +110,21 @@ bool Merge::Initialize(const wchar_t *txtfilename, int groupnum, std::vector<int
         
         // 读取png文件信息
         // 去掉txt后缀名
-		mTxtFileName.assign(txtfilename);
-		std::size_t pos = mTxtFileName.rfind(L'.');
-		mTxtFileName.assign(mTxtFileName.substr(0, pos));
-		
+        mTxtFileName.assign(txtfilename);
+        std::size_t pos = mTxtFileName.rfind(L'.');
+        mTxtFileName.assign(mTxtFileName.substr(0, pos));
+        
         for (int i = 0; i<mInfo.size(); ++i)
         {
             for (int k = 0; k<mInfo[i].size(); ++k)
             {
-				wchar_t tmp[32];
-				StringCchPrintf(tmp, _countof(tmp), L"%02d.png", mInfo[i][k].id);
-				std::wstring name(mTxtFileName);
-				name += L'_';
-				name += tmp;
+                wchar_t tmp[32];
+                StringCchPrintf(tmp, _countof(tmp), L"%02d.png", mInfo[i][k].id);
+                std::wstring name(mTxtFileName);
+                name += L'_';
+                name += tmp;
                 //StringCchPrintf(name, _countof(name), L"%s_%02d.png", mTxtFileName, mInfo[i][k].id);
-				result = OpenPng(name.c_str(), &mInfo[i][k]);
+                result = OpenPng(name.c_str(), &mInfo[i][k]);
                 if (!result)
                 {
                     assert(0);
@@ -134,10 +134,10 @@ bool Merge::Initialize(const wchar_t *txtfilename, int groupnum, std::vector<int
         }
 
         mGroupInitialized = true;
-		return true;
+        return true;
     } while (0);
 
-	return false;
+    return false;
 }
 
 bool Merge::Process()
@@ -163,24 +163,24 @@ bool Merge::Process()
             PixelsOverWrite(&newImage, pi);
         }
 
-		wchar_t tmp[32];
-		StringCchPrintf(tmp, _countof(tmp), L"%04d.png", count++);
+        wchar_t tmp[32];
+        StringCchPrintf(tmp, _countof(tmp), L"%04d.png", count++);
 
-		std::size_t pos = mTxtFileName.rfind(L'\\');
-		name.assign(mTxtFileName.substr(0, pos+1));
-		name += L"Merge_";
-		name += mTxtFileName.substr(pos+1);
-		name += L'_';
-		name += tmp;
+        std::size_t pos = mTxtFileName.rfind(L'\\');
+        name.assign(mTxtFileName.substr(0, pos+1));
+        name += L"Merge_";
+        name += mTxtFileName.substr(pos+1);
+        name += L'_';
+        name += tmp;
         //StringCchPrintf(name, _countof(name), L"Merge_%s_%04d.png", mTxtFileName, count++);
-		SaveToPng(name.c_str(), &newImage);
-		printf("%S saved.\n", name.c_str());
+        SaveToPng(name.c_str(), &newImage);
+        printf("%S saved.\n", name.c_str());
     } while (NextPermutation(cur));
 
-	int total = mInfo[0].size();
-	for (int i=1; i<mInfo.size(); ++i)
-		total *= (mInfo[i].size() + 1);
-	printf("%d pictures saved, %d in total.\n", count, total);
+    int total = mInfo[0].size();
+    for (int i=1; i<mInfo.size(); ++i)
+        total *= (mInfo[i].size() + 1);
+    printf("%d pictures saved, %d in total.\n", count, total);
 
     return true;
 }
@@ -380,7 +380,7 @@ bool Merge::OpenPng(const wchar_t *filename, PictureInfo *pi)
     {
         lines[i] = (COLORREF*)&pPixels[h * width];
         --h;
-		++i;
+        ++i;
     }
 
     //
@@ -446,11 +446,11 @@ bool Merge::SaveToPng(const wchar_t *filename, PictureInfo *pi)
         info_ptr,
         pi->width,
         pi->height,
-        8,								//颜色深度,
-        PNG_COLOR_TYPE_RGBA,			//颜色类型, PNG_COLOR_TYPE_RGBA表示32位带透明通道真彩色
-        PNG_INTERLACE_NONE,				//不交错。交错: PNG_INTERLACE_ADAM7
-        PNG_COMPRESSION_TYPE_DEFAULT,	//压缩方式
-        PNG_FILTER_TYPE_DEFAULT			//什么过滤? 默认填 PNG_FILTER_TYPE_DEFAULT
+        8,                              //颜色深度,
+        PNG_COLOR_TYPE_RGBA,            //颜色类型, PNG_COLOR_TYPE_RGBA表示32位带透明通道真彩色
+        PNG_INTERLACE_NONE,             //不交错。交错: PNG_INTERLACE_ADAM7
+        PNG_COMPRESSION_TYPE_DEFAULT,   //压缩方式
+        PNG_FILTER_TYPE_DEFAULT         //什么过滤? 默认填 PNG_FILTER_TYPE_DEFAULT
     );
     //设置打包信息
     png_set_packing(png_ptr);
@@ -496,13 +496,13 @@ void Merge::PixelsOverWrite(PictureInfo * dst, PictureInfo * src)
     for (int h = 0; h < src->height; ++h)
         for (int w = 0; w < src->width; ++w)
         {
-			COLORREF srcPixel = src->mPixels[h * src->width + w];
+            COLORREF srcPixel = src->mPixels[h * src->width + w];
             if ((srcPixel & 0xff000000))
             {
-			    // dst(底图)也有偏移, 这时要减掉
-			    int dstW = -dst->x + src->x + w;
-			    // y轴方向要倒着来, 而且因为y轴是倒着的所以dst->y要加
-			    int dstH = dst->y + dst->height - src->y - (src->height - h);
+                // dst(底图)也有偏移, 这时要减掉
+                int dstW = -dst->x + src->x + w;
+                // y轴方向要倒着来, 而且因为y轴是倒着的所以dst->y要加
+                int dstH = dst->y + dst->height - src->y - (src->height - h);
 
                 // Alpha混合
                 union {
@@ -529,7 +529,7 @@ void Merge::PixelsOverWrite(PictureInfo * dst, PictureInfo * src)
                 blend.p[2] = (unsigned char)r[2];
                 blend.p[3] = (unsigned char)r[3];
                 
-			    dst->mPixels[dstH * dst->width + dstW] = blend.pixel;
+                dst->mPixels[dstH * dst->width + dstW] = blend.pixel;
             }
         }
 }
