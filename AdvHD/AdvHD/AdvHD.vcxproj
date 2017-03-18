@@ -61,6 +61,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AdvHD.cpp" />
+    <ClCompile Include="AdvHD2.cpp" />
+    <ClCompile Include="AdvHD2.h" />
+    <ClCompile Include="functions.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="pnap.cpp" />
   </ItemGroup>
@@ -68,6 +71,7 @@
     <ResourceCompile Include="AdvHD.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="functions.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>

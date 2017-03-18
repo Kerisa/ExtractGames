@@ -1,12 +1,14 @@
 #include <Windows.h>
 #include <strsafe.h>
 #include "resource.h"
+#include "functions.h"
+#include "AdvHD2.h"
 
 #define MAXPATH 350
 
 #define THREADNUM 4
 
-HWND hEdit;
+HWND g_hEdit;
 CRITICAL_SECTION cs;
 
 struct thread_param
@@ -27,28 +29,11 @@ extern int Entrance(const wchar_t *CurDir, const wchar_t *PackName);
 
 
 
-
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInstance,
 					PSTR pCmdLine, int iCmdShow)
 {
 	DialogBoxParam(hInstance, MAKEINTRESOURCE(IDD_MAIN), 0, DlgProc, 0);
 	return 0;
-}
-
-void AppendMsg(const wchar_t *szBuffer)
-{
-	static DWORD dwPos;
-	if (0 == szBuffer)
-	{
-		dwPos = 0;
-		SendMessage(hEdit, EM_SETSEL, 0, -1);
-		SendMessage(hEdit, EM_REPLACESEL, FALSE, 0);
-	} else {
-		SendMessage(hEdit, EM_SETSEL, (WPARAM)&dwPos, (LPARAM)&dwPos);
-		SendMessage(hEdit, EM_REPLACESEL, 0, (LPARAM)szBuffer);
-		SendMessage(hEdit, EM_GETSEL, 0, (LPARAM)&dwPos);
-	}
-	return;
 }
 
 int mycmp(const wchar_t* src, const wchar_t* dst)
@@ -186,31 +171,31 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 		SendMessage(hDlg, WM_SETICON, ICON_BIG,
 					(LPARAM)LoadIcon((HINSTANCE)GetWindowLong(hDlg, GWL_HINSTANCE), MAKEINTRESOURCE(IDI_ICON1)));
 
-		hEdit = GetDlgItem(hDlg, IDC_EDIT);
-		SendMessage(hEdit, EM_LIMITTEXT, -1, 0);
-		AppendMsg(TEXT("拖放封包文件至此处...\r\n【注意】文件路径须小于260个字符\r\n"));
+		g_hEdit = GetDlgItem(hDlg, IDC_EDIT);
+		SendMessage(g_hEdit, EM_LIMITTEXT, -1, 0);
+		AppendMsg(g_hEdit, TEXT("拖放封包文件至此处...\r\n【注意】文件路径须小于260个字符\r\n"));
 
 		for (int i=0; i<THREADNUM; ++i)
 		{
 			if (!(tp[i].hEvent = CreateEvent(NULL, TRUE, FALSE, NULL)))
 			{
-				AppendMsg(TEXT("事件初始化错误！"));
+				AppendMsg(g_hEdit, TEXT("事件初始化错误！"));
 				EndDialog(hDlg, 0);
 			}
 			if (!(tp[i].queue = (wchar_t**)VirtualAlloc(NULL, sizeof(wchar_t**), MEM_COMMIT, PAGE_READWRITE)))
 			{
-				AppendMsg(TEXT("内存分配错误！"));
+				AppendMsg(g_hEdit, TEXT("内存分配错误！"));
 				EndDialog(hDlg, 0);
 			}
 			if (!(*(tp[i].queue) = (wchar_t*)VirtualAlloc(NULL, thread_param::QUEUE_SIZE * MAXPATH * sizeof(wchar_t),
 																MEM_COMMIT, PAGE_READWRITE)))
 			{
-				AppendMsg(TEXT("内存分配错误！"));
+				AppendMsg(g_hEdit, TEXT("内存分配错误！"));
 				EndDialog(hDlg, 0);
 			}
 			if (!(tp[i].hThread = CreateThread(NULL, 0, Thread, &tp[i], 0, NULL)))
 			{
-				AppendMsg(TEXT("线程创建失败！"));
+				AppendMsg(g_hEdit, TEXT("线程创建失败！"));
 				EndDialog(hDlg, 0);
 			}
 			tp[i].front = tp[i].tail = 0;
@@ -260,7 +245,11 @@ DWORD WINAPI Thread(PVOID pv)
 		StringCchCat(cur_dir, MAXPATH, &CurrentFile[l]);
 		CreateDirectory(cur_dir, 0);
 		
-		Entrance(cur_dir, CurrentFile);
+		if (Entrance(cur_dir, CurrentFile) < 0)     // 失败，尝试第2种格式的解码
+        {
+            AppendMsg(g_hEdit, L"解包失败，尝试另一种格式\r\n");
+            AdvHD2::Entrance(cur_dir, CurrentFile);
+        }
 		
 		EnterCriticalSection(&cs);
 		{
