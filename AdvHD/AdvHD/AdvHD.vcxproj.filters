@@ -24,6 +24,15 @@
     <ClCompile Include="pnap.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="functions.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="AdvHD2.h">
+      <Filter>头文件</Filter>
+    </ClCompile>
+    <ClCompile Include="AdvHD2.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="AdvHD.rc">
@@ -32,6 +41,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="functions.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

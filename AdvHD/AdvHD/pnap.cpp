@@ -28,7 +28,8 @@ struct PNA_IDX
 const char pos_title[] = "ID\th_offset\tv_offset\twidth\theight\r\n";
 const char pos_format[] = "%d\t\t\t%d\t\t\t%d\t\t\t%d\t\t\t%d\r\n";
 
-extern void AppendMsg(const wchar_t *Msg);
+extern HWND g_hEdit;
+extern void AppendMsg(HWND hOut, const wchar_t *Msg);
 
 bool IsPnaFile(const unsigned char *Data)
 {
@@ -99,7 +100,7 @@ int ExtractPNAPFile(unsigned char *Data, const wchar_t *CurDir, const wchar_t *F
 	CloseHandle(hIdx);
 
 	StringCchPrintf(szBuffer, MAX_PATH, L"[处理完成(%d)] %s\r\n", dwFileProcessed, FileName);
-	AppendMsg(szBuffer);
+	AppendMsg(g_hEdit, szBuffer);
 
 	return 0;
 }
