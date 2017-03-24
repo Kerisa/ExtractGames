@@ -44,7 +44,7 @@ int SeparateBmp::SaveToFile(const wchar_t *dir, const wchar_t *NameWithoutSuffix
 	if (Bpp == 32)
 	{
 		// Alpha»ìºÏ
-		BYTE *p = bmp + 54;
+		BYTE *p = Data + 54;
 		for (DWORD i = 0; i < Width * Height; ++i)
 		{
 			p[0] = p[0] * p[3] / 255 + 255 - p[3];
