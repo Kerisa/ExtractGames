@@ -2,3 +2,5 @@ Debug
 Release
 *.aps
 .vs
+*.suo
+*.user
