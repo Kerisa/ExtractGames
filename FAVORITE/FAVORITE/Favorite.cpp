@@ -29,10 +29,15 @@ int SeparateBmp::SaveToFile(const wchar_t *dir, const wchar_t *NameWithoutSuffix
 	wchar_t newname[MAXPATH] = {0};
 	wchar_t buf[MAXPATH] = {0};
 	BYTE bmp[sizeof(BmpHeader)];
-	StringCchCopy(format, MAXPATH, dir);
-	StringCchCat(format, MAXPATH, L"\\");
-	StringCchCat(format, MAXPATH, NameWithoutSuffix);
-	StringCchCat(format, MAXPATH, L"_%03d.bmp");
+	//StringCchCopy(format, MAXPATH, dir);
+	//StringCchCat(format, MAXPATH, L"\\");
+	//StringCchCat(format, MAXPATH, NameWithoutSuffix);
+	//StringCchCat(format, MAXPATH, L"_%03d.bmp");
+    wcscpy_s(format, MAXPATH, dir);
+	wcscat_s(format, MAXPATH, L"\\");
+	wcscat_s(format, MAXPATH, NameWithoutSuffix);
+	wcscat_s(format, MAXPATH, L"_%03d.bmp");
+
 
 	memcpy(bmp, BmpHeader, sizeof(BmpHeader));
 	*(PDWORD)(bmp +  0x2) = FileSize;

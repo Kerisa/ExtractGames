@@ -454,7 +454,7 @@ void XP3Entrance (
 }
 
 
-static void xor_decode(DWORD hash, BYTE extend_key, DWORD offset, PBYTE buf, DWORD len)    // 从offset开始解
+static void xor_decode(DWORD hash, DWORD extend_key, DWORD offset, PBYTE buf, DWORD len)    // 从offset开始解
 {
     for (DWORD i=offset; i<len; ++i)
         buf[i] ^= (BYTE)hash ^ extend_key;
@@ -462,7 +462,7 @@ static void xor_decode(DWORD hash, BYTE extend_key, DWORD offset, PBYTE buf, DWO
 }
 
 
-static void xor_decode_prettycation(DWORD hash, BYTE extend_key, DWORD offset, PBYTE buf, DWORD len)
+static void xor_decode_prettycation(DWORD hash, DWORD , DWORD offset, PBYTE buf, DWORD len)
 {
     for (DWORD i=offset; i<len; ++i)
         buf[i] ^= (BYTE)(hash>>0xc);
@@ -470,13 +470,48 @@ static void xor_decode_prettycation(DWORD hash, BYTE extend_key, DWORD offset, P
 }
 
 
-static void xor_decode_swansong(DWORD hash, BYTE extend_key, DWORD offset, PBYTE buf, DWORD len)
+static void xor_decode_swansong(DWORD hash, DWORD , DWORD offset, PBYTE buf, DWORD len)
 {
     BYTE ror = (BYTE)hash & 7, key = (BYTE)(hash >> 8);
     for (DWORD i=offset; i<len; ++i)
     {
         buf[i] = buf[i] ^ key;
         buf[i] = buf[i] >> ror | buf[i] << (8-ror);
+    }
+    return;
+}
+
+static void xor_decode_without_hash(DWORD , DWORD key, DWORD , PBYTE buf, DWORD len)
+{
+    DWORD dwordLen = len >> 2;
+    PDWORD ptr = (PDWORD)buf;
+    for (DWORD i=0; i<dwordLen; ++i)
+        *ptr++ ^= key;
+
+    DWORD remain = len - (dwordLen << 2);
+    for (; remain != 0; --remain)
+    {
+        buf[(dwordLen<<2) + remain - 1] ^= (BYTE)(key >> (remain - 1));
+    }
+    return;
+}
+
+void xor_decode_lovelycation(DWORD hash, DWORD extend_key, DWORD offset, PBYTE buf, DWORD len)
+{
+    BYTE key[5];
+    key[0] = (BYTE)(hash >> 8) & 0xff;
+    key[1] = (BYTE)(hash >> 8) & 0xff;
+    key[2] = (BYTE)(hash >> 1) & 0xff;
+    key[3] = (BYTE)(hash >> 7) & 0xff;
+    key[4] = (BYTE)(hash >> 5) & 0xff;
+    
+    for (int i=0; i<=0x64; ++i)
+    {
+        *buf++ ^= key[4];
+    }
+    for (int i=0x65; i<len; ++i)
+    {
+        *buf++ ^= key[i&4];
     }
     return;
 }
