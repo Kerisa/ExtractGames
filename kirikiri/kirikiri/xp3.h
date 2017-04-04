@@ -60,10 +60,12 @@ int     XP3ArcPraseEntryStage1(PVOID _idx, DWORD _len, std::vector<file_entry>& 
 void    XP3Entrance(const wchar_t *packName, const wchar_t *curDirectory, const char *choosedGame);
 
 
-typedef void(*_XOR_DECODE)	(DWORD hash, BYTE extend_key, DWORD offset, PBYTE buf, DWORD len);
-void xor_decode				(DWORD hash, BYTE extend_key, DWORD offset, PBYTE buf, DWORD len);
-void xor_decode_prettycation(DWORD hash, BYTE extend_key, DWORD offset, PBYTE buf, DWORD len);
-void xor_decode_swansong	(DWORD hash, BYTE extend_key, DWORD offset, PBYTE buf, DWORD len);
+typedef void(*_XOR_DECODE)	(DWORD hash, DWORD extend_key, DWORD offset, PBYTE buf, DWORD len);
+void xor_decode				(DWORD hash, DWORD extend_key, DWORD offset, PBYTE buf, DWORD len);
+void xor_decode_prettycation(DWORD hash, DWORD extend_key, DWORD offset, PBYTE buf, DWORD len);
+void xor_decode_lovelycation(DWORD hash, DWORD extend_key, DWORD offset, PBYTE buf, DWORD len);
+void xor_decode_swansong	(DWORD hash, DWORD extend_key, DWORD offset, PBYTE buf, DWORD len);
+void xor_decode_without_hash(DWORD hash, DWORD extend_key, DWORD offset, PBYTE buf, DWORD len);
 
 
 static const char unencry_game [] = "Unencrypted";      // 数据没有加密的游戏
@@ -72,15 +74,18 @@ static const char unencry_game [] = "Unencrypted";      // 数据没有加密的游戏
 static const struct _SIMPLE_XOR     // 数据xor过的游戏
 {
 	char *name;         // 游戏名
-	void (*p_decode)(DWORD hash, BYTE extend_key, DWORD offset, PBYTE buf, DWORD len);	
-	BYTE    extend_key;   // 除去hash外的额外的key
+	void (*p_decode)(DWORD hash, DWORD extend_key, DWORD offset, PBYTE buf, DWORD len);	
+	DWORD    extend_key;   // 除去hash外的额外的key
 	DWORD   offset;       // 从数据的offset字节开始解码
 }
 simple_xor_game [] = {
-    "kuranokunchi",	xor_decode,              0xCD, 0x0,
-    "amakoi",       xor_decode,              0x0, 0x0,
-    "prettycation", xor_decode_prettycation, 0x0, 0x5,
-    "swansong",     xor_decode_swansong,     0x0, 0x0,
+    {"kuranokunchi", xor_decode,              0xCD, 0x0,},
+    {"amakoi",       xor_decode,              0x0, 0x0,},
+    {"prettycation", xor_decode_prettycation, 0x0, 0x5,},
+    {"lovelycation", xor_decode_lovelycation, 0x0, 0x0,},
+    {"swansong",     xor_decode_swansong,     0x0, 0x0,},
+    //{"Otomedomain",  xor_decode_without_hash, 0x01010101, 0x0,},
+    //{"yabai",        xor_decode,              0x80000000, 0x0,},
 };
 
 

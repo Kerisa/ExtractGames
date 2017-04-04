@@ -31,8 +31,9 @@ int wmain(int argc, wchar_t **argv)
 
     printf("提取完毕.\n");
 
-
-    // 懒的写自动化测试了 随便测几个
+#ifdef _DEBUG
+    
+    // 随便测几个
     unsigned long long offset = 0, id = 0;
     if (tpkname.find(L"client.tpk") != std::wstring::npos)
     {
@@ -52,7 +53,8 @@ int wmain(int argc, wchar_t **argv)
         if (offset != 0x7cc90 || id != (unsigned long long)0x0a31cb1444577897)
             throw "Papapa4";
     }
-    
+
+#endif // DEBUG    
 
     return 0;
 }

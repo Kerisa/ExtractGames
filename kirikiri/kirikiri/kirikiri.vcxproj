@@ -93,6 +93,7 @@
     <ClCompile Include="cxdec\ojo2.cpp" />
     <ClCompile Include="cxdec\ojyo_cxdec.cpp" />
     <ClCompile Include="cxdec\oreaka_cxdec.cpp" />
+    <ClCompile Include="cxdec\otomedomain.cpp" />
     <ClCompile Include="cxdec\ruitomoTrial_cxdec.cpp" />
     <ClCompile Include="cxdec\ruitomo_cxdec.cpp" />
     <ClCompile Include="cxdec\sakurasaki_cxdec_callback.cpp" />

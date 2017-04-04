@@ -260,6 +260,24 @@ bool Merge::LoadFileList(const wchar_t *txtFileName)
     return true;
 }
 
+//void Merge::SetGroup(int num, ...)
+//{
+//    va_list arg_ptr;
+//    va_start(arg_ptr, num);
+//
+//    int tmp = num;
+//    while (tmp--)
+//    {
+//        int g = va_arg(arg_ptr, int);
+//        mGroup.push_back(g);
+//    }
+//    va_end(arg_ptr);
+//
+//    mInfo.resize(num);
+//    mGroupInitialized = true;
+//    return;
+//}
+
 void Merge::GotoNextLine(char **ptr, char *limit)
 {
     while (*ptr < limit && **ptr != '\n')

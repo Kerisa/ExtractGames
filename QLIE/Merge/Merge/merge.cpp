@@ -20,6 +20,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, PSTR pCmdLine, int iCmdShow)
 }
 
 
+bool IsFileExtensionBmp(const wchar_t *Name)
+{
+	int k = wcslen(Name);
+	while (k>0 && Name[k-1] != '.') --k;
+	return !wcscmp(&Name[k], L"bmp");
+}
+
+
 void OnDropFiles(HDROP hDrop, HWND hDlg, wchar_t *DirName, DWORD Len)
 {
 	HANDLE			hFindFile;
@@ -51,9 +59,13 @@ void OnDropFiles(HDROP hDrop, HWND hDlg, wchar_t *DirName, DWORD Len)
 
 			if (!(fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
 			{
-				SendMessage(hList, LB_ADDSTRING, 0, (LPARAM)Find);
-				StringCchPrintf(MsgBuf, 16, L"%u", cnt++);
-				SetDlgItemText(hDlg, IDC_TEXT, MsgBuf);
+				if (IsFileExtensionBmp(Find))
+				{
+					SendMessage(hList, LB_ADDSTRING, 0, (LPARAM)Find);
+
+					StringCchPrintf(MsgBuf, 16, L"%u", cnt++);
+					SetDlgItemText(hDlg, IDC_TEXT, MsgBuf);
+				}
 			}
 
 		}while(FindNextFile(hFindFile, &fd));

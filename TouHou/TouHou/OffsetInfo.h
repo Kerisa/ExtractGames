@@ -247,10 +247,10 @@ BGMIDX Index [] = {
 
 wchar_t GameName[][MAXPATH] = {
 	L"東方妖々夢　～ Perfect Cherry Blossom.",
-	L"東方萃夢想　～ Immaterial and Missing Power."
+	L"東方萃夢想　～ Immaterial and Missing Power.",
 	L"東方永夜抄　～ Imperishable Night.",
 	L"東方花映塚　～ Phantasmagoria of Flower View.",
-	L"東方文花帖　～ Shoot the Bullet."
+	L"東方文花帖　～ Shoot the Bullet.",
 	L"東方風神録　～ Mountain of Faith.",
 	L"", // L"東方緋想天　～ Scarlet Weather Rhapsody."
 	L"東方地霊殿　～ Subterranean Animism.",
@@ -263,5 +263,5 @@ wchar_t GameName[][MAXPATH] = {
 	L"",  // L"弹幕天邪鬼　～ Impossible Spell Card."
 	L"",  // L"东方深秘录　～ Urban Legend in Limbo."
 	L"",  // L"东方心绮楼　～ Hopeless Masquerade."
-	L""  // L"東方輝針城　～ Double Dealing Character."
+	L"",  // L"東方輝針城　～ Double Dealing Character."
 };
