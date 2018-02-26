@@ -1,6 +1,7 @@
 
 #include "merge.h"
 #include "picture.h"
+#include <assert.h>
 
 struct PngDetail
 {

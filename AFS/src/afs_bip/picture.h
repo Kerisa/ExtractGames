@@ -1,48 +1,7 @@
 #pragma once
 
-#include <assert.h>
-#include <stdio.h>
-#include <vector>
-
-
-struct ImageInfo
-{
-public:
-    int width;
-    int height;
-    int component;
-
-    // 像素点的颜色分量顺序按RGB(A)排列
-    // 高度与bmp一样是倒向的
-    unsigned char *ppixels;
-
-    ImageInfo() : ppixels(nullptr) { }
-    ImageInfo(ImageInfo && i)
-    {
-        width = i.width;
-        height = i.height;
-        component = i.component;
-        ppixels = i.ppixels;
-        i.ppixels = nullptr;
-    }
-    ~ImageInfo()
-    {
-        if (ppixels)
-            delete[] ppixels;
-    }
-private:
-    ImageInfo(const ImageInfo &) { }
-};
-
-
-
-bool GetImageInfo_Png_Impl(FILE *infile, ImageInfo *pinfo);
-bool GetImageRawData_Png_Impl(FILE *infile, ImageInfo *pinfo);
-bool SaveToNewPicture_Png_Impl(FILE *outfile, ImageInfo *pinfo);
-
-
-
 #include <functional>
+#include <string>
 
 #ifdef _UNICODE
 typedef std::wstring string_t;
