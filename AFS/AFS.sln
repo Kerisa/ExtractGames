@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "afs_bip", "src\afs_bip\afs_bip.vcxproj", "{0AEA1F4E-886A-44B7-AD44-5598BD9294EE}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "afs", "src\afs\afs.vcxproj", "{99EA9D71-5D9F-4C18-ACDF-9C4885054F75}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "afs_tim2", "src\afs_tim2\afs_tim2.vcxproj", "{BF1CC0CE-0E93-40B2-A64A-2B727F434746}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "afs_bip_t2p", "src\afs_bip_t2p\afs_bip_t2p.vcxproj", "{0AEA1F4E-886A-44B7-AD44-5598BD9294EE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -13,14 +15,18 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0AEA1F4E-886A-44B7-AD44-5598BD9294EE}.Debug|x86.ActiveCfg = Debug|Win32
-		{0AEA1F4E-886A-44B7-AD44-5598BD9294EE}.Debug|x86.Build.0 = Debug|Win32
-		{0AEA1F4E-886A-44B7-AD44-5598BD9294EE}.Release|x86.ActiveCfg = Release|Win32
-		{0AEA1F4E-886A-44B7-AD44-5598BD9294EE}.Release|x86.Build.0 = Release|Win32
 		{99EA9D71-5D9F-4C18-ACDF-9C4885054F75}.Debug|x86.ActiveCfg = Debug|Win32
 		{99EA9D71-5D9F-4C18-ACDF-9C4885054F75}.Debug|x86.Build.0 = Debug|Win32
 		{99EA9D71-5D9F-4C18-ACDF-9C4885054F75}.Release|x86.ActiveCfg = Release|Win32
 		{99EA9D71-5D9F-4C18-ACDF-9C4885054F75}.Release|x86.Build.0 = Release|Win32
+		{BF1CC0CE-0E93-40B2-A64A-2B727F434746}.Debug|x86.ActiveCfg = Debug|Win32
+		{BF1CC0CE-0E93-40B2-A64A-2B727F434746}.Debug|x86.Build.0 = Debug|Win32
+		{BF1CC0CE-0E93-40B2-A64A-2B727F434746}.Release|x86.ActiveCfg = Release|Win32
+		{BF1CC0CE-0E93-40B2-A64A-2B727F434746}.Release|x86.Build.0 = Release|Win32
+		{0AEA1F4E-886A-44B7-AD44-5598BD9294EE}.Debug|x86.ActiveCfg = Debug|Win32
+		{0AEA1F4E-886A-44B7-AD44-5598BD9294EE}.Debug|x86.Build.0 = Debug|Win32
+		{0AEA1F4E-886A-44B7-AD44-5598BD9294EE}.Release|x86.ActiveCfg = Release|Win32
+		{0AEA1F4E-886A-44B7-AD44-5598BD9294EE}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -9,39 +9,12 @@
 #include "merge.h"
 #include "struct.h"
 #include "lzss.h"
+#include "Common.h"
 
 
-std::string g_SaveDirectory;
-std::string g_TempDirectory;
+static std::string g_SaveDirectory;
+static std::string g_TempDirectory;
 
-
-std::string GetFilePath(const std::string & origin, bool withBackslash)
-{
-	if (origin.find_last_of('\\') != std::string::npos)
-	{
-		auto filePath = origin.substr(0, origin.find_last_of('\\') + (withBackslash ? 1 : 0));
-		return filePath;
-	}
-	else
-	{
-		return withBackslash ? ".\\" : ".";
-	}
-}
-
-std::string GetFileName(const std::string & origin, bool withExtension)
-{
-	auto fileName(origin);
-	if (origin.find_last_of('\\') != std::string::npos)
-	{
-		fileName = origin.substr(origin.find_last_of('\\') + 1);
-	}
-
-	if (!withExtension)
-	{
-		fileName = fileName.substr(0, fileName.find_last_of('.'));
-	}
-	return fileName;
-}
 
 bool HandleBipType2(const std::string & bipFileName, const char * const bipFileData, const char * const bipDataEnd, const char * const pngPackStart)
 {
@@ -112,21 +85,22 @@ bool ExtractPngFromBipType3(const unsigned char * const fileData, int dataLength
 {
 	const unsigned char * const dataEnd = fileData + dataLength;
 	const int pngFileNumber = *(int*)fileData;
-	const unsigned char *dataPtr = fileData + (1 + pngFileNumber) * sizeof(int);
+	const unsigned char *dataPtr = fileData + (((1 + pngFileNumber) * sizeof(int) + 15) & ~15);
 
 	int savedPngCount = 0;
 	for (int i = 0; dataPtr < dataEnd; ++i)
 	{
 		const PNG_PACK_TYPE3 * curPng = (const PNG_PACK_TYPE3 *)dataPtr;
 		const unsigned char *pngPicStart = dataPtr + sizeof(PNG_PACK_TYPE3);
-		dataPtr += curPng->PartSize + sizeof(TIM2_FILEHEADER) + sizeof(TIM2_PICTUREHEADER);
-		dataPtr = (fileData + ((int)(dataPtr - fileData + 15) & ~15));
 
 		if (memcmp(curPng->Magic, "PNGFILE3", 8) || memcmp(curPng->Tim2FileHeader.FileId, "TIM2", 4))
 		{
-			printf("invalid png unit %d, continue\n", i + 1);
-			continue;
+			printf("invalid png unit %d, stop\n", i + 1);
+			break;
 		}
+
+		dataPtr += curPng->PartSize + sizeof(TIM2_FILEHEADER) + sizeof(TIM2_PICTUREHEADER);
+		dataPtr = (fileData + ((int)(dataPtr - fileData + 15) & ~15));
 
 		int pngPicSize = curPng->PartSize - (sizeof(PNG_PACK_TYPE3) - sizeof(TIM2_FILEHEADER) - sizeof(TIM2_PICTUREHEADER));
 		auto saveName = g_SaveDirectory + GetFileName(curPng->FileNameWithDirectory, false) + ".png";
