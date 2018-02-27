@@ -5,26 +5,9 @@
 #include <string>
 #include <Windows.h>
 
-constexpr int AFS_MAGIC = 0x00534641;
+#include "Common.h"
+#include "struct.h"
 
-struct AFS_ENTRY
-{
-    int Offset{ 0 };
-    int Length{ 0 };
-};
-
-struct AFS_INDEX
-{
-    char FileName[32]{ 0 };
-    char UnknownBytes[16]{ 0 };
-};
-
-struct AFS_HEADER
-{
-    char Magic[4]{ 0 };
-    int  FileCount{ 0 };
-    struct AFS_ENTRY *Entries{ 0 };
-};
 
 
 int main(int argc, char ** argv)
@@ -81,11 +64,21 @@ int main(int argc, char ** argv)
         fread_s(data, pkgHeader.Entries[i].Length, 1, pkgHeader.Entries[i].Length, pkgFile);
 
         FILE * saveTo = NULL;
-        std::string fileName(savePath + pkgIndices[i].FileName);
+		std::string fileName(savePath + pkgIndices[i].FileName);
+		if (!memcmp(data, "OggS", 4))
+		{
+			fileName = ReplaceExtension(fileName, ".ogg");
+		}
+		else if (!memcmp(data, "RIFF", 4))
+		{
+			fileName = ReplaceExtension(fileName, ".wav");
+		}
+
         if (!fopen_s(&saveTo, fileName.c_str(), "wb"))
         {
             fwrite(data, 1, pkgHeader.Entries[i].Length, saveTo);
             fclose(saveTo);
+
             //printf("save file %s success.\n", fileName.c_str());
         }
         else

@@ -1,5 +1,28 @@
 #pragma once
 
+
+constexpr int AFS_MAGIC = 0x00534641;		// 'AFS\0'
+
+typedef struct
+{
+	int Offset{ 0 };
+	int Length{ 0 };
+} AFS_ENTRY;
+
+typedef struct
+{
+	char FileName[32]{ 0 };
+	char UnknownBytes[16]{ 0 };
+} AFS_INDEX;
+
+typedef struct
+{
+	char Magic[4]{ 0 };
+	int  FileCount{ 0 };
+	AFS_ENTRY *Entries{ 0 };
+} AFS_HEADER;
+
+
 typedef struct
 {
 	char Unknown[128]{ 0 };
@@ -95,3 +118,29 @@ typedef struct
 	int                PicWidth{ 0 };
 	int                PicHeight{ 0 };
 } PNG_PACK_TYPE3;		// 出现在16字节对齐的文件偏移中
+
+
+#pragma pack(push)
+#pragma pack(1)
+typedef struct {
+	unsigned short  bfType{ 0 };
+	unsigned long   bfSize{ 0 };
+	unsigned short  bfReserved1{ 0 };
+	unsigned short  bfReserved2{ 0 };
+	unsigned long   bfOffBits{ 0 };
+} BITMAP_FILE_HEADER;
+#pragma pack(pop)
+
+typedef struct {
+	unsigned long   biSize{ 0 };
+	long            biWidth{ 0 };
+	long            biHeight{ 0 };
+	unsigned short  biPlanes{ 1 };
+	unsigned short  biBitCount{ 0 };
+	unsigned long   biCompression{ 0 };		// = BI_RGB
+	unsigned long   biSizeImage{ 0 };
+	long            biXPelsPerMeter{ 0 };
+	long            biYPelsPerMeter{ 0 };
+	unsigned long   biClrUsed{ 0 };
+	unsigned long   biClrImportant{ 0 };
+} BITMAP_INFO_HEADER;

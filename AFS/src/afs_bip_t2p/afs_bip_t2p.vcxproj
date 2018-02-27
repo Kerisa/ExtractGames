@@ -83,16 +83,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\include\Common.cpp" />
     <ClCompile Include="bip.cpp" />
     <ClCompile Include="lzss.cpp" />
     <ClCompile Include="merge.cpp" />
     <ClCompile Include="picture.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\Common.h" />
+    <ClInclude Include="..\..\include\struct.h" />
     <ClInclude Include="lzss.h" />
     <ClInclude Include="merge.h" />
     <ClInclude Include="picture.h" />
-    <ClInclude Include="struct.h" />
     <ClInclude Include="tim2.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
