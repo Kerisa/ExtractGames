@@ -23,6 +23,7 @@ namespace Alisa
         bool SaveTo(const string_t & filename, E_ImageType type);
         void Clear();
         ImageInfo GetImageInfo() const;
+		bool Blend(const ImageImpl *obj, int offsetX, int offsetY, E_ImageBlendMode mode);
         bool CopyPixelInLine(int dstLineOffset, int dstRowOffset, ImageImpl * srcObj, int srcLineOffset, int srcRowOffset, int cnt = -1);
         void ModifyPixels(std::function<void(int row, int col, Pixel &)> func);
         void WalkPixels(std::function<void(int row, int col, const Pixel &)> func) const;
@@ -35,6 +36,8 @@ namespace Alisa
 
     private:
         E_ImageType GetImageType(const string_t & filename);
+		Pixel AlphaBlend(const Pixel & src, const Pixel & dst) const;
+		Pixel SrcCopy(const Pixel & src, const Pixel & dst) const;
 
     private:
         ImageInfo BaseInfo;
@@ -118,6 +121,11 @@ Alisa::ImageInfo Alisa::Image::GetImageInfo() const
 void Alisa::Image::Clear()
 {
     return Impl->Clear();
+}
+
+bool Alisa::Image::Blend(const Image * image, int offsetX, int offsetY, E_ImageBlendMode mode)
+{
+	return Impl->Blend(image->Impl, offsetX, offsetY, mode);
 }
 
 bool Alisa::Image::CopyPixelInLine(int dstLineOffset, int dstRowOffset, Image * srcObj, int srcLineOffset, int srcRowOffset, int cnt)
@@ -217,6 +225,43 @@ void Alisa::ImageImpl::Clear()
 Alisa::ImageInfo Alisa::ImageImpl::GetImageInfo() const
 {
     return BaseInfo;
+}
+
+bool Alisa::ImageImpl::Blend(const ImageImpl * obj, int offsetX, int offsetY, E_ImageBlendMode mode)
+{
+	if (offsetX < 0 || offsetX > BaseInfo.Width - obj->BaseInfo.Width ||
+		offsetY < 0 || offsetY > BaseInfo.Height - obj->BaseInfo.Height)
+	{
+		assert(0);
+		return false;
+	}
+
+	for (size_t h = 0; h < obj->BaseInfo.Height; ++h)
+	{
+		for (size_t w = 0; w < obj->BaseInfo.Width; ++w)
+		{
+			const auto & srcPixel = obj->Pixels[h][w];
+			if (srcPixel.A > 0)
+			{
+				auto & dstPixel = Pixels[offsetY + h][offsetX + w];
+
+				switch (mode)
+				{
+				case E_AlphaBlend:
+					dstPixel = AlphaBlend(srcPixel, dstPixel);
+					break;
+				case E_SrcOver:
+					dstPixel = SrcCopy(srcPixel, dstPixel);
+					break;
+				default:
+					assert(0);
+					return false;
+				}
+			}
+		}
+	}
+
+	return true;
 }
 
 bool Alisa::ImageImpl::CopyPixelInLine(int dstLineOffset, int dstRowOffset, ImageImpl * srcObj, int srcLineOffset, int srcRowOffset, int cnt)
@@ -370,6 +415,25 @@ Alisa::E_ImageType Alisa::ImageImpl::GetImageType(const string_t & filename)
     }
 
     return type;
+}
+
+Alisa::Pixel Alisa::ImageImpl::AlphaBlend(const Pixel & src, const Pixel & dst) const
+{
+	float srcA = (float)src.A / 0xff;
+	float dstA = (float)dst.A / 0xff;
+
+	Pixel blend;
+	blend.R = src.R * srcA + dst.R * (1 - srcA);
+	blend.G = src.G * srcA + dst.G * (1 - srcA);
+	blend.B = src.B * srcA + dst.B * (1 - srcA);
+	blend.A = (srcA + dstA * (1 - srcA)) * 0xff;
+
+	return blend;
+}
+
+Alisa::Pixel Alisa::ImageImpl::SrcCopy(const Pixel & src, const Pixel & dst) const
+{
+	return src;
 }
 
 

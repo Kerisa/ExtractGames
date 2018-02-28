@@ -85,8 +85,13 @@ bool MergeToBase(const std::string & basePngName, const PngGroup &group1, const 
 		part.Open(ele.first);
 		int blockOffsetX = atoi(ele.first.substr(ele.first.find('@') + 1).c_str());
 		int blockOffsetY = atoi(ele.first.substr(ele.first.find('_', ele.first.find('@')) + 1).c_str());
+		
+		// 主图经 DefaultMerge 后已经调整过像素顺序，因此将其他部分的像素顺序调整后再进行合并
+		part.ModifyPixels([](int row, int col, Alisa::Pixel &p) {
+			auto temp = p.R; p.R = p.B; p.B = temp;
+		});
 
-		image.Blend(part, blockOffsetX + ele.second.PicOffsetX, blockOffsetY + ele.second.PicOffsetY);
+		image.Blend(&part, blockOffsetX + ele.second.PicOffsetX, image.GetImageInfo().Height - blockOffsetY - ele.second.PicOffsetY - part.GetImageInfo().Height, Alisa::E_SrcOver);
 	}
 	for (auto & ele : group2)
 	{
@@ -95,7 +100,12 @@ bool MergeToBase(const std::string & basePngName, const PngGroup &group1, const 
 		int blockOffsetX = atoi(ele.first.substr(ele.first.find('@') + 1).c_str());
 		int blockOffsetY = atoi(ele.first.substr(ele.first.find('_', ele.first.find('@')) + 1).c_str());
 
-		image.Blend(part, blockOffsetX + ele.second.PicOffsetX, blockOffsetY + ele.second.PicOffsetY);
+		// 主图经 DefaultMerge 后已经调整过像素顺序，因此将其他部分的像素顺序调整后再进行合并
+		part.ModifyPixels([](int row, int col, Alisa::Pixel &p) {
+			auto temp = p.R; p.R = p.B; p.B = temp;
+		});
+
+		image.Blend(&part, blockOffsetX + ele.second.PicOffsetX, image.GetImageInfo().Height - blockOffsetY - ele.second.PicOffsetY - part.GetImageInfo().Height, Alisa::E_SrcOver);
 	}
 
 	image.SaveTo(newFileName, Alisa::E_ImageType_Png);
