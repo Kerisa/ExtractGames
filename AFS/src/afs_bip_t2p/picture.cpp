@@ -393,6 +393,7 @@ Alisa::E_ImageType Alisa::ImageImpl::GetImageType(const string_t & filename)
 
     unsigned char buf[4];
     fread_s(buf, sizeof(buf), sizeof(buf), 1, infile);
+    fclose(infile);
 
     E_ImageType type = E_ImageType_Unknown;
 
@@ -567,6 +568,7 @@ bool Alisa::ImageCodec::DecodePng(const string_t & filename, ImageImpl * img)
     //
     png_read_end(png_ptr, info_ptr);
     png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+    fclose(infile);
     delete[] lines;
     delete[] pPixels;
     return true;
