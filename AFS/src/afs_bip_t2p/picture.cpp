@@ -23,7 +23,7 @@ namespace Alisa
         bool SaveTo(const string_t & filename, E_ImageType type);
         void Clear();
         ImageInfo GetImageInfo() const;
-		bool Blend(const ImageImpl *obj, int offsetX, int offsetY, E_ImageBlendMode mode);
+        bool Blend(const ImageImpl *obj, int offsetX, int offsetY, E_ImageBlendMode mode);
         bool CopyPixelInLine(int dstLineOffset, int dstRowOffset, ImageImpl * srcObj, int srcLineOffset, int srcRowOffset, int cnt = -1);
         void ModifyPixels(std::function<void(int row, int col, Pixel &)> func);
         void WalkPixels(std::function<void(int row, int col, const Pixel &)> func) const;
@@ -36,8 +36,8 @@ namespace Alisa
 
     private:
         E_ImageType GetImageType(const string_t & filename);
-		Pixel AlphaBlend(const Pixel & src, const Pixel & dst) const;
-		Pixel SrcCopy(const Pixel & src, const Pixel & dst) const;
+        Pixel AlphaBlend(const Pixel & src, const Pixel & dst) const;
+        Pixel SrcCopy(const Pixel & src, const Pixel & dst) const;
 
     private:
         ImageInfo BaseInfo;
@@ -125,7 +125,7 @@ void Alisa::Image::Clear()
 
 bool Alisa::Image::Blend(const Image * image, int offsetX, int offsetY, E_ImageBlendMode mode)
 {
-	return Impl->Blend(image->Impl, offsetX, offsetY, mode);
+    return Impl->Blend(image->Impl, offsetX, offsetY, mode);
 }
 
 bool Alisa::Image::CopyPixelInLine(int dstLineOffset, int dstRowOffset, Image * srcObj, int srcLineOffset, int srcRowOffset, int cnt)
@@ -229,39 +229,39 @@ Alisa::ImageInfo Alisa::ImageImpl::GetImageInfo() const
 
 bool Alisa::ImageImpl::Blend(const ImageImpl * obj, int offsetX, int offsetY, E_ImageBlendMode mode)
 {
-	if (offsetX < 0 || offsetX > BaseInfo.Width - obj->BaseInfo.Width ||
-		offsetY < 0 || offsetY > BaseInfo.Height - obj->BaseInfo.Height)
-	{
-		assert(0);
-		return false;
-	}
+    if (offsetX < 0 || offsetX > BaseInfo.Width - obj->BaseInfo.Width ||
+        offsetY < 0 || offsetY > BaseInfo.Height - obj->BaseInfo.Height)
+    {
+        assert(0);
+        return false;
+    }
 
-	for (size_t h = 0; h < obj->BaseInfo.Height; ++h)
-	{
-		for (size_t w = 0; w < obj->BaseInfo.Width; ++w)
-		{
-			const auto & srcPixel = obj->Pixels[h][w];
-			if (srcPixel.A > 0)
-			{
-				auto & dstPixel = Pixels[offsetY + h][offsetX + w];
+    for (size_t h = 0; h < obj->BaseInfo.Height; ++h)
+    {
+        for (size_t w = 0; w < obj->BaseInfo.Width; ++w)
+        {
+            const auto & srcPixel = obj->Pixels[h][w];
+            if (srcPixel.A > 0)
+            {
+                auto & dstPixel = Pixels[offsetY + h][offsetX + w];
 
-				switch (mode)
-				{
-				case E_AlphaBlend:
-					dstPixel = AlphaBlend(srcPixel, dstPixel);
-					break;
-				case E_SrcOver:
-					dstPixel = SrcCopy(srcPixel, dstPixel);
-					break;
-				default:
-					assert(0);
-					return false;
-				}
-			}
-		}
-	}
+                switch (mode)
+                {
+                case E_AlphaBlend:
+                    dstPixel = AlphaBlend(srcPixel, dstPixel);
+                    break;
+                case E_SrcOver:
+                    dstPixel = SrcCopy(srcPixel, dstPixel);
+                    break;
+                default:
+                    assert(0);
+                    return false;
+                }
+            }
+        }
+    }
 
-	return true;
+    return true;
 }
 
 bool Alisa::ImageImpl::CopyPixelInLine(int dstLineOffset, int dstRowOffset, ImageImpl * srcObj, int srcLineOffset, int srcRowOffset, int cnt)
@@ -300,9 +300,9 @@ bool Alisa::ImageImpl::CopyPixelInLine(int dstLineOffset, int dstRowOffset, Imag
 
 void Alisa::ImageImpl::ModifyPixels(std::function<void(int row, int col, Pixel &)> func)
 {
-    for (int row = 0; row < Pixels.size(); ++row)
+    for (size_t row = 0; row < Pixels.size(); ++row)
     {
-        for (int col = 0; col < Pixels[row].size(); ++col)
+        for (size_t col = 0; col < Pixels[row].size(); ++col)
         {
             func(row, col, Pixels[row][col]);
         }
@@ -311,9 +311,9 @@ void Alisa::ImageImpl::ModifyPixels(std::function<void(int row, int col, Pixel &
 
 void Alisa::ImageImpl::WalkPixels(std::function<void(int row, int col, const Pixel &)> func) const
 {
-    for (int row = 0; row < Pixels.size(); ++row)
+    for (size_t row = 0; row < Pixels.size(); ++row)
     {
-        for (int col = 0; col < Pixels[row].size(); ++col)
+        for (size_t col = 0; col < Pixels[row].size(); ++col)
         {
             func(row, col, Pixels[row][col]);
         }
@@ -344,9 +344,9 @@ bool Alisa::ImageImpl::RemoveAlpha()
         return true;
 
     BaseInfo.Component = PixelType_RGB;
-    for (int i = 0; i < Pixels.size(); ++i)
+    for (size_t i = 0; i < Pixels.size(); ++i)
     {
-        for (int k = 0; k < Pixels[i].size(); ++k)
+        for (size_t k = 0; k < Pixels[i].size(); ++k)
         {
             Pixels[i][k].A = 0xff;
         }
@@ -364,9 +364,9 @@ bool Alisa::ImageImpl::AddAlpha()
         return false;
 
     BaseInfo.Component = PixelType_RGBA;
-    for (int i = 0; i < Pixels.size(); ++i)
+    for (size_t i = 0; i < Pixels.size(); ++i)
     {
-        for (int k = 0; k < Pixels[i].size(); ++k)
+        for (size_t k = 0; k < Pixels[i].size(); ++k)
         {
             Pixels[i][k].A = 0xff;
         }
@@ -420,21 +420,21 @@ Alisa::E_ImageType Alisa::ImageImpl::GetImageType(const string_t & filename)
 
 Alisa::Pixel Alisa::ImageImpl::AlphaBlend(const Pixel & src, const Pixel & dst) const
 {
-	float srcA = (float)src.A / 0xff;
-	float dstA = (float)dst.A / 0xff;
+    float srcA = (float)src.A / 0xff;
+    float dstA = (float)dst.A / 0xff;
 
-	Pixel blend;
-	blend.R = src.R * srcA + dst.R * (1 - srcA);
-	blend.G = src.G * srcA + dst.G * (1 - srcA);
-	blend.B = src.B * srcA + dst.B * (1 - srcA);
-	blend.A = (srcA + dstA * (1 - srcA)) * 0xff;
+    Pixel blend;
+    blend.R = src.R * srcA + dst.R * (1 - srcA);
+    blend.G = src.G * srcA + dst.G * (1 - srcA);
+    blend.B = src.B * srcA + dst.B * (1 - srcA);
+    blend.A = (srcA + dstA * (1 - srcA)) * 0xff;
 
-	return blend;
+    return blend;
 }
 
 Alisa::Pixel Alisa::ImageImpl::SrcCopy(const Pixel & src, const Pixel & dst) const
 {
-	return src;
+    return src;
 }
 
 
@@ -547,18 +547,25 @@ bool Alisa::ImageCodec::DecodePng(const string_t & filename, ImageImpl * img)
     assert(img->BaseInfo.Height > 0);
     img->BaseInfo.Width = width;
     img->BaseInfo.Component = pixel_byte;
+    
 
+    assert((int)&((Pixel*)0)->R == 0 && (int)&((Pixel*)0)->G == 1 && (int)&((Pixel*)0)->B == 2 && (int)&((Pixel*)0)->A == 3);
+
+    //
+    // png 图像是倒置的，读取到内存后将其倒转，即 Pixels[0] 对应逻辑上的第一行
+    // 如 lines[0] = 文件中的最后一行 = 对应逻辑上/显示上(屏幕坐标系)的第一行 = Pixels[0]
+    //
     img->Pixels.resize(height);
-    for (int i = 0; i < img->Pixels.size(); ++i)
+    for (size_t i = 0; i < img->Pixels.size(); ++i)
     {
         img->Pixels[i].resize(width);
-        for (int k = 0; k < img->Pixels[i].size(); ++k)
+        for (size_t k = 0; k < img->Pixels[i].size(); ++k)
         {
             Pixel & p = img->Pixels[i][k];
-            p.R = *(lines[img->Pixels.size() - 1 - i] + k * pixel_byte);
-            p.G = *(lines[img->Pixels.size() - 1 - i] + k * pixel_byte + 1);
-            p.B = *(lines[img->Pixels.size() - 1 - i] + k * pixel_byte + 2);
-            p.A = pixel_byte == PixelType_RGBA ? *(lines[img->Pixels.size() - 1 - i] + k * pixel_byte + 3) : 0xff;
+            p.R = *(lines[i] + k * pixel_byte);
+            p.G = *(lines[i] + k * pixel_byte + 1);
+            p.B = *(lines[i] + k * pixel_byte + 2);
+            p.A = pixel_byte == PixelType_RGBA ? *(lines[i] + k * pixel_byte + 3) : 0xff;
         }
     }
 
@@ -631,20 +638,31 @@ bool Alisa::ImageCodec::EncodePng(const string_t & filename, const ImageImpl * i
 
     lines = new unsigned char*[img->BaseInfo.Height * sizeof(unsigned char*)]; //列指针
 
-    png_int_32 i = 0;
-    png_int_32 h = img->BaseInfo.Height - 1;
-    while (h >= 0)//逆行序读取，因为位图是底到上型
+    //
+    // 同 DecodePng, 将其转置后保存
+    //
+    if (img->BaseInfo.Component == PixelType_RGBA)
     {
-        lines[i] = new unsigned char[img->BaseInfo.Width * img->BaseInfo.Component];
-        for (int w = 0; w < img->BaseInfo.Width; ++w)
+        assert((int)&((Pixel*)0)->R == 0 && (int)&((Pixel*)0)->G == 1 && (int)&((Pixel*)0)->B == 2 && (int)&((Pixel*)0)->A == 3);
+
+        for (png_int_32 i = 0; i < img->BaseInfo.Height; ++i)
         {
-            lines[i][w * img->BaseInfo.Component] = img->Pixels[h][w].R;
-            lines[i][w * img->BaseInfo.Component + 1] = img->Pixels[h][w].G;
-            lines[i][w * img->BaseInfo.Component + 2] = img->Pixels[h][w].B;
-            if (img->BaseInfo.Component == PixelType_RGBA)
-                lines[i][w * img->BaseInfo.Component + 3] = img->Pixels[h][w].A;
+            lines[i] = new unsigned char[img->BaseInfo.Width * img->BaseInfo.Component];
+            memcpy_s(lines[i], img->BaseInfo.Width * img->BaseInfo.Component, img->Pixels[i].data(), img->BaseInfo.Width * sizeof(Pixel));
         }
-        ++i, --h;
+    }
+    else
+    {
+        for (png_int_32 i = 0; i < img->BaseInfo.Height; ++i)
+        {
+            lines[i] = new unsigned char[img->BaseInfo.Width * img->BaseInfo.Component];
+            for (int w = 0; w < img->BaseInfo.Width; ++w)
+            {
+                lines[i][w * img->BaseInfo.Component]     = img->Pixels[i][w].R;
+                lines[i][w * img->BaseInfo.Component + 1] = img->Pixels[i][w].G;
+                lines[i][w * img->BaseInfo.Component + 2] = img->Pixels[i][w].B;
+            }
+        }
     }
 
     //

@@ -41,11 +41,11 @@ namespace Alisa
         E_ImageType_Jpg
     };
 
-	enum E_ImageBlendMode
-	{
-		E_SrcOver,
-		E_AlphaBlend,
-	};
+    enum E_ImageBlendMode
+    {
+        E_SrcOver,
+        E_AlphaBlend,
+    };
 
     constexpr int PixelType_RGB = 3;
     constexpr int PixelType_RGBA = 4;
@@ -69,7 +69,7 @@ namespace Alisa
         ImageInfo GetImageInfo() const;
         void Clear();
 
-		bool Blend(const Image *image, int offsetX, int offsetY, E_ImageBlendMode mode);
+        bool Blend(const Image *image, int offsetX, int offsetY, E_ImageBlendMode mode);
 
         bool CopyPixelInLine(int dstLineOffset, int dstRowOffset, Image * srcObj, int srcLineOffset, int srcRowOffset, int cnt = -1);
         void ModifyPixels(std::function<void(int row, int col, Pixel &)> func);

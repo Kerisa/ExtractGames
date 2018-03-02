@@ -50,8 +50,7 @@ bool DefaultMerge(const PngGroup & pngGroup, int mergeWidth, int mergeHeight, co
 		const PNG_PACK_TYPE2 * pngPack = &pngGroup[i].second;
 		for (int row = 0; row < info.Height; ++row)
 		{
-			// 位图要倒置
-			merge->CopyPixelInLine(mergeHeight - (image[i].BlockOffsetY + pngPack->PicOffsetY) - info.Height + row, image[i].BlockOffsetX + pngPack->PicOffsetX, image[i].Pic, row, 0);
+			merge->CopyPixelInLine((image[i].BlockOffsetY + pngPack->PicOffsetY) + row, image[i].BlockOffsetX + pngPack->PicOffsetX, image[i].Pic, row, 0);
 		}
 	}
 
@@ -71,7 +70,7 @@ bool DefaultMerge(const PngGroup & pngGroup, int mergeWidth, int mergeHeight, co
 }
 
 
-bool MergeToBase(const std::string & basePngName, const PngGroup &group1, const PngGroup &group2, const std::string & newFileName)
+bool MergeToBase(const std::string & basePngName, std::vector<const PngGroup *> &groups, const std::string & newFileName)
 {
 	bool success = false;
 
@@ -79,34 +78,23 @@ bool MergeToBase(const std::string & basePngName, const PngGroup &group1, const 
 	success = image.Open(basePngName);
 	assert(success);
 
-	for (auto & ele : group1)
-	{
-		Alisa::Image part;
-		part.Open(ele.first);
-		int blockOffsetX = atoi(ele.first.substr(ele.first.find('@') + 1).c_str());
-		int blockOffsetY = atoi(ele.first.substr(ele.first.find('_', ele.first.find('@')) + 1).c_str());
-		
-		// 主图经 DefaultMerge 后已经调整过像素顺序，因此将其他部分的像素顺序调整后再进行合并
-		part.ModifyPixels([](int row, int col, Alisa::Pixel &p) {
-			auto temp = p.R; p.R = p.B; p.B = temp;
-		});
+    for (auto & g : groups)
+    {
+        for (auto & ele : *g)
+        {
+            Alisa::Image part;
+            part.Open(ele.first);
+            int blockOffsetX = atoi(ele.first.substr(ele.first.find('@') + 1).c_str());
+            int blockOffsetY = atoi(ele.first.substr(ele.first.find('_', ele.first.find('@')) + 1).c_str());
 
-		image.Blend(&part, blockOffsetX + ele.second.PicOffsetX, image.GetImageInfo().Height - blockOffsetY - ele.second.PicOffsetY - part.GetImageInfo().Height, Alisa::E_SrcOver);
-	}
-	for (auto & ele : group2)
-	{
-		Alisa::Image part;
-		part.Open(ele.first);
-		int blockOffsetX = atoi(ele.first.substr(ele.first.find('@') + 1).c_str());
-		int blockOffsetY = atoi(ele.first.substr(ele.first.find('_', ele.first.find('@')) + 1).c_str());
+            // 主图经 DefaultMerge 后已经调整过像素顺序，因此将其他部分的像素顺序调整后再进行合并
+            part.ModifyPixels([](int row, int col, Alisa::Pixel &p) {
+                auto temp = p.R; p.R = p.B; p.B = temp;
+            });
 
-		// 主图经 DefaultMerge 后已经调整过像素顺序，因此将其他部分的像素顺序调整后再进行合并
-		part.ModifyPixels([](int row, int col, Alisa::Pixel &p) {
-			auto temp = p.R; p.R = p.B; p.B = temp;
-		});
-
-		image.Blend(&part, blockOffsetX + ele.second.PicOffsetX, image.GetImageInfo().Height - blockOffsetY - ele.second.PicOffsetY - part.GetImageInfo().Height, Alisa::E_SrcOver);
-	}
+            image.Blend(&part, blockOffsetX + ele.second.PicOffsetX, blockOffsetY + ele.second.PicOffsetY, Alisa::E_SrcOver);
+        }
+    }
 
 	image.SaveTo(newFileName, Alisa::E_ImageType_Png);
 	return true;
@@ -157,14 +145,30 @@ bool MergeCharacter(const PngGroup & pngGroup, int mergeWidth, int mergeHeight, 
 		return false;
 
 	// g[0] 为空
-	MergeToBase(basePngName, g[2], g[0], AppendFileName(newName, "_2"));
-	MergeToBase(basePngName, g[3], g[0], AppendFileName(newName, "_3"));
-	MergeToBase(basePngName, g[4], g[0], AppendFileName(newName, "_4"));
-	MergeToBase(basePngName, g[5], g[0], AppendFileName(newName, "_5"));
-	MergeToBase(basePngName, g[2], g[4], AppendFileName(newName, "_6"));
-	MergeToBase(basePngName, g[2], g[5], AppendFileName(newName, "_7"));
-	MergeToBase(basePngName, g[3], g[4], AppendFileName(newName, "_8"));
-	MergeToBase(basePngName, g[3], g[5], AppendFileName(newName, "_9"));
+	MergeToBase(basePngName, std::vector<const PngGroup *>(1, &g[2]), AppendFileName(newName, "_2"));
+	MergeToBase(basePngName, std::vector<const PngGroup *>(1, &g[3]), AppendFileName(newName, "_3"));
+	MergeToBase(basePngName, std::vector<const PngGroup *>(1, &g[4]), AppendFileName(newName, "_4"));
+	MergeToBase(basePngName, std::vector<const PngGroup *>(1, &g[5]), AppendFileName(newName, "_5"));
+
+    std::vector<const PngGroup *> temp;
+    temp.push_back(&g[2]);
+    temp.push_back(&g[4]);
+	MergeToBase(basePngName, temp, AppendFileName(newName, "_6"));
+    
+    temp.clear();
+    temp.push_back(&g[2]);
+    temp.push_back(&g[5]);
+	MergeToBase(basePngName, temp, AppendFileName(newName, "_7"));
+
+    temp.clear();
+    temp.push_back(&g[3]);
+    temp.push_back(&g[4]);
+	MergeToBase(basePngName, temp, AppendFileName(newName, "_8"));
+
+    temp.clear();
+    temp.push_back(&g[3]);
+    temp.push_back(&g[5]);
+	MergeToBase(basePngName, temp, AppendFileName(newName, "_9"));
 	return true;
 }
 

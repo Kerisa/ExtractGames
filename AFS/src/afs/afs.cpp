@@ -36,7 +36,7 @@ int main(int argc, char ** argv)
         return 0;
     }
 
-	printf("start extracting...\n");
+    printf("start extracting...\n");
 
     std::string savePath(argv[1]);
     savePath += "_extract\\";
@@ -64,15 +64,15 @@ int main(int argc, char ** argv)
         fread_s(data, pkgHeader.Entries[i].Length, 1, pkgHeader.Entries[i].Length, pkgFile);
 
         FILE * saveTo = NULL;
-		std::string fileName(savePath + pkgIndices[i].FileName);
-		if (!memcmp(data, "OggS", 4))
-		{
-			fileName = ReplaceExtension(fileName, ".ogg");
-		}
-		else if (!memcmp(data, "RIFF", 4))
-		{
-			fileName = ReplaceExtension(fileName, ".wav");
-		}
+        std::string fileName(savePath + pkgIndices[i].FileName);
+        if (!memcmp(data, "OggS", 4))
+        {
+            fileName = ReplaceExtension(fileName, ".ogg");
+        }
+        else if (!memcmp(data, "RIFF", 4))
+        {
+            fileName = ReplaceExtension(fileName, ".wav");
+        }
 
         if (!fopen_s(&saveTo, fileName.c_str(), "wb"))
         {
@@ -92,7 +92,7 @@ int main(int argc, char ** argv)
     delete[] pkgHeader.Entries;
     delete[] pkgIndices;
 
-	printf("extract finish.\n");
+    printf("extract finish.\n");
 
     return 0;
 }
