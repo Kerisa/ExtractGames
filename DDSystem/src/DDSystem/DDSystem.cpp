@@ -12,35 +12,35 @@ using namespace std;
 
 bool DDSystem::Open(const std::string & path)
 {
-	assert(mPackagePath.empty());
+    assert(mPackagePath.empty());
 
-	mStream.open(path, ios::binary);
-	if (!mStream.is_open())
-	{
-		return false;
-	}
+    mStream.open(path, ios::binary);
+    if (!mStream.is_open())
+    {
+        return false;
+    }
 
-	mPackagePath = path;
-	mStream.read((char*)&mHeader, sizeof(Header));
-	return true;
+    mPackagePath = path;
+    mStream.read((char*)&mHeader, sizeof(Header));
+    return true;
 }
 
 void DDSystem::Close()
 {
-	mStream.close();
+    mStream.close();
 }
 
 std::string DDSystem::ReadNullTerminateString(std::ifstream& stream)
 {
-	string str;
-	char b;
-	do
-	{
-		stream.read(&b, 1);
-		str += b;
-	} while (b != '\0');
+    string str;
+    char b;
+    do
+    {
+        stream.read(&b, 1);
+        str += b;
+    } while (b != '\0');
     str.pop_back();     // drop '\0'
-	return str;
+    return str;
 }
 
 std::string DDSystem::DetermineSuffix(std::vector<uint8_t>& plainData)
@@ -66,76 +66,76 @@ std::string DDSystem::DetermineSuffix(std::vector<uint8_t>& plainData)
 
 bool DDSystem::ExtractEntries()
 {
-	if (!mStream.is_open() || mPackagePath.empty())
-		return false;
+    if (!mStream.is_open() || mPackagePath.empty())
+        return false;
 
-	if (mHeader.Magic == Header::MAGIC_2)
-		return ExtractDDP2();
-	else if (mHeader.Magic == Header::MAGIC_3)
-		return ExtractDDP3();
-	else
-	{
-		assert("unkonwn header magic" && 0);
-		return false;
-	}
+    if (mHeader.Magic == Header::MAGIC_2)
+        return ExtractDDP2();
+    else if (mHeader.Magic == Header::MAGIC_3)
+        return ExtractDDP3();
+    else
+    {
+        assert("unkonwn header magic" && 0);
+        return false;
+    }
 }
 
 bool DDSystem::ExtractDDP2()
 {
-	mStream.seekg(sizeof(Header), ios::beg);
-	mEntries.clear();
-	for (uint32_t i = 0; i < mHeader.EntryCount; ++i)
-	{
-		Entry2 e;
-		mStream.read((char*)&e, sizeof(Entry2));
+    mStream.seekg(sizeof(Header), ios::beg);
+    mEntries.clear();
+    for (uint32_t i = 0; i < mHeader.EntryCount; ++i)
+    {
+        Entry2 e;
+        mStream.read((char*)&e, sizeof(Entry2));
 
-		NormalizedEntry entry;
-		entry.Offset = e.Offset;
-		entry.PlainSize = e.PlainSize;
-		entry.PackedSize = e.PackedSize;
+        NormalizedEntry entry;
+        entry.Offset = e.Offset;
+        entry.PlainSize = e.PlainSize;
+        entry.PackedSize = e.PackedSize;
 
-		ostringstream oss;
-		oss << "DefaultName_" << setfill('0') << setw(3) << mDefaultName++;
-		entry.NameWithoutSuffix = oss.str();
+        ostringstream oss;
+        oss << "DefaultName_" << setfill('0') << setw(3) << mDefaultName++;
+        entry.NameWithoutSuffix = oss.str();
 
-		mEntries.push_back(entry);
-	}
-	return true;
+        mEntries.push_back(entry);
+    }
+    return true;
 }
 
 bool DDSystem::ExtractDDP3()
 {
-	mEntries.clear();
+    mEntries.clear();
 
-	for (uint32_t i = 0; i < mHeader.EntryCount; ++i)
-	{
-		Entry3_L1 L1;
-		mStream.seekg(sizeof(Header) + i * sizeof(Entry3_L1), ios::beg);
-		mStream.read((char*)&L1, sizeof(Entry3_L1));
+    for (uint32_t i = 0; i < mHeader.EntryCount; ++i)
+    {
+        Entry3_L1 L1;
+        mStream.seekg(sizeof(Header) + i * sizeof(Entry3_L1), ios::beg);
+        mStream.read((char*)&L1, sizeof(Entry3_L1));
 
         if (L1.BlockSize < sizeof(Entry3_L2_Header))
             continue;
 
-		uint32_t readBytes = 0;
+        uint32_t readBytes = 0;
         mStream.seekg(L1.BlockOffset, ios::beg);
-		while (readBytes < L1.BlockSize - sizeof(Entry3_L2_Header))
-		{
-			Entry3_L2_Header L2;
-			mStream.read((char*)&L2, sizeof(Entry3_L2_Header));
-			string str = ReadNullTerminateString(mStream);
-			readBytes += L2.Size;
-			assert(str.size() + sizeof(Entry3_L2_Header) <= L2.Size);
+        while (readBytes < L1.BlockSize - sizeof(Entry3_L2_Header))
+        {
+            Entry3_L2_Header L2;
+            mStream.read((char*)&L2, sizeof(Entry3_L2_Header));
+            string str = ReadNullTerminateString(mStream);
+            readBytes += L2.Size;
+            assert(str.size() + sizeof(Entry3_L2_Header) <= L2.Size);
 
-			NormalizedEntry entry;
-			entry.Offset = L2.Offset;
-			entry.PlainSize = L2.PlainSize;
-			entry.PackedSize = L2.PackedSize == 0 ? L2.PlainSize : L2.PackedSize;
-			entry.NameWithoutSuffix = str;
-			assert(L2.PackedSize <= L2.PlainSize);
-			mEntries.push_back(entry);
-		}
-	}
-	return true;
+            NormalizedEntry entry;
+            entry.Offset = L2.Offset;
+            entry.PlainSize = L2.PlainSize;
+            entry.PackedSize = L2.PackedSize == 0 ? L2.PlainSize : L2.PackedSize;
+            entry.NameWithoutSuffix = str;
+            assert(L2.PackedSize <= L2.PlainSize);
+            mEntries.push_back(entry);
+        }
+    }
+    return true;
 }
 
 bool DDSystem::ProcessScriptFile(std::vector<uint8_t>& plainData)
@@ -176,30 +176,30 @@ bool DDSystem::ProcessScriptFile(std::vector<uint8_t>& plainData)
 
 bool DDSystem::ExtractResource(const std::string & saveDir)
 {
-	int saveCount = 0;
+    int saveCount = 0;
 
     // ´´½¨Ä¿Â¼
-    string cmd("mkdir " + saveDir);
+    string cmd("mkdir \"" + saveDir + "\"");
     system(cmd.c_str());
 
     std::setlocale(LC_ALL, "ja");
     std::wcout.imbue(std::locale("ja"));
 
-	for (auto& entry : mEntries)
-	{
-		vector<uint8_t> packedData, plainData;
+    for (auto& entry : mEntries)
+    {
+        vector<uint8_t> packedData, plainData;
         packedData.resize(entry.PackedSize);
         plainData.resize(entry.PlainSize);
         mStream.seekg(entry.Offset, ios::beg);
-		mStream.read((char*)packedData.data(), entry.PackedSize);
-		if (entry.PackedSize != entry.PlainSize)
-		{
-			Decompress(plainData.data(), plainData.size(), packedData.data(), packedData.size());
-		}
-		else
-		{
-			plainData = packedData;
-		}
+        mStream.read((char*)packedData.data(), entry.PackedSize);
+        if (entry.PackedSize != entry.PlainSize)
+        {
+            Decompress(plainData.data(), plainData.size(), packedData.data(), packedData.size());
+        }
+        else
+        {
+            plainData = packedData;
+        }
 
         if (!memcmp(plainData.data(), "DDSxHXB", 7))
         {
@@ -210,7 +210,7 @@ bool DDSystem::ExtractResource(const std::string & saveDir)
             }
         }
 
-		string suffix = DetermineSuffix(plainData);
+        string suffix = DetermineSuffix(plainData);
         string fileName = entry.NameWithoutSuffix;
         fileName += ".";
         fileName += suffix;
@@ -218,24 +218,24 @@ bool DDSystem::ExtractResource(const std::string & saveDir)
         filePath += fileName;
 
         vector<wchar_t> wstr;
-        wstr.resize(512);
-        mbstowcs_s(nullptr, wstr.data(), fileName.size(), fileName.c_str(), wstr.size());
+        wstr.resize(1024);
+        mbstowcs_s(nullptr, wstr.data(), filePath.size(), filePath.c_str(), wstr.size());
 
-		ofstream out;
-		out.open(wstr.data(), ios::binary);
-		if (!out.is_open())
-		{
-			cout << "create file [" + filePath + "] failed.\n";
-			continue;
-		}
+        ofstream out;
+        out.open(wstr.data(), ios::binary);
+        if (!out.is_open())
+        {
+            cout << "create file [" + filePath + "] failed.\n";
+            continue;
+        }
 
-		out.write((char*)plainData.data(), plainData.size());
-		out.close();
-		++saveCount;
+        out.write((char*)plainData.data(), plainData.size());
+        out.close();
+        ++saveCount;
         wcout << L"[" << wstr.data() << L"] saved.\n";
-	}
+    }
 
-	return saveCount == mEntries.size();
+    return saveCount == mEntries.size();
 }
 
 
