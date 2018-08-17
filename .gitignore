@@ -8,3 +8,15 @@ Release
 *.iobj
 *.ipdb
 *.ilk
+/DDSystem/bin/ConvTGATo32BitBmp_d.exe
+/DDSystem/bin/ConvTGATo32BitBmp_d.pdb
+/DDSystem/bin/DDSystem_d.exe
+/DDSystem/bin/DDSystem_d.pdb
+/DDSystem/bin/Merge_d.exe
+/DDSystem/bin/Merge_d.pdb
+/DDSystem/bin/ConvTGATo32BitBmp.exe
+/DDSystem/bin/ConvTGATo32BitBmp.pdb
+/DDSystem/bin/DDSystem.exe
+/DDSystem/bin/DDSystem.pdb
+/DDSystem/bin/Merge.exe
+/DDSystem/bin/Merge.pdb
