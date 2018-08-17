@@ -3,46 +3,6 @@
 #include <functional>
 #include <string>
 
-
-#if 0
-enum E_ImageType
-{
-    E_ImageType_Unknown,
-    E_ImageType_Bmp,
-    E_ImageType_Png,
-    E_ImageType_Jpg
-};
-
-struct ImageInfo
-{
-public:
-    int width;
-    int height;
-    int component;
-
-    // 像素点的颜色分量顺序按RGB(A)排列
-    // 高度与bmp一样是倒向的
-    unsigned char *ppixels;
-
-    ImageInfo() : ppixels(nullptr) { }
-    ImageInfo(ImageInfo && i)
-    {
-        width = i.width;
-        height = i.height;
-        component = i.component;
-        ppixels = i.ppixels;
-        i.ppixels = nullptr;
-    }
-    ~ImageInfo()
-    {
-        if (ppixels)
-            delete[] ppixels;
-    }
-private:
-    ImageInfo(const ImageInfo &) { }
-};
-#endif
-
 #pragma pack(push)
 #pragma pack(1)
 typedef struct
@@ -69,40 +29,6 @@ typedef struct {
 } _BITMAPINFOHEADER;
 
 #pragma pack(pop)
-
-#if 0
-int GetImageType(FILE *infile);
-
-bool GetImageInfo_Bmp_Impl(FILE *infile, ImageInfo *pinfo);
-bool GetImageInfo_Jpg_Impl(FILE *infile, ImageInfo *pinfo);
-bool GetImageInfo_Png_Impl(FILE *infile, ImageInfo *pinfo);
-
-bool GetImageRawData_Bmp_Impl(FILE *infile, ImageInfo *pinfo);
-bool GetImageRawData_Jpg_Impl(FILE *infile, ImageInfo *pinfo);
-bool GetImageRawData_Png_Impl(FILE *infile, ImageInfo *pinfo);
-
-bool SaveToNewPicture_Bmp_Impl(FILE *outfile, ImageInfo *pinfo);
-bool SaveToNewPicture_Jpg_Impl(FILE *outfile, ImageInfo *pinfo);
-bool SaveToNewPicture_Png_Impl(FILE *outfile, ImageInfo *pinfo);
-
-bool GetImageInfo(FILE *infile, ImageInfo *pinfo, E_ImageType type);
-
-bool GetImageRawData(FILE *infile, ImageInfo *pinfo, E_ImageType type);
-bool GetImageRawData(const wchar_t *filename, ImageInfo *pinfo);
-bool GetImageRawData(const char *filename, ImageInfo *pinfo);
-
-bool SaveToNewPicture(FILE *outfile, ImageInfo *pinfo, E_ImageType type);
-bool SaveToNewPicture(const wchar_t *filename, ImageInfo *pinfo, E_ImageType type);
-bool SaveToNewPicture(const char *filename, ImageInfo *pinfo, E_ImageType type);
-
-bool StretchPixels(const ImageInfo *in, ImageInfo *out);
-bool StretchPixels_Shrink(const ImageInfo *in, ImageInfo *out);
-bool StretchPixels_Expand(const ImageInfo *in, ImageInfo *out);
-
-int OtsuThresholding(const int *histogram, int total);
-
-bool CreateGray(const ImageInfo *in, ImageInfo *out);
-#endif
 
 
 #ifdef _UNICODE
