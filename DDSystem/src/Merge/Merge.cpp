@@ -3,27 +3,22 @@
 #include <algorithm>
 #include <cassert>
 #include <direct.h>
-
 #include <io.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
-//#include <map>
 #include <vector>
 #include <set>
 #include <string>
 
 #include "picture.h"
-#include "FreeImage.h"
 
-
-//#pragma comment(lib, "FreeImage.lib")
 
 using namespace std;
 
-set<string> getFiles(const string& _dir)
+set<string> GetFiles(const string& _dir)
 {
-    set<string> files;//存放文件名
+    set<string> files;
 
     assert(!_dir.empty());
     string dir = _dir;
@@ -41,8 +36,6 @@ set<string> getFiles(const string& _dir)
     else
     {
         while (_findnext(lf, &file) == 0) {
-            //输出文件名
-            //cout<<file.name<<endl;
             if (strcmp(file.name, ".") == 0 || strcmp(file.name, "..") == 0 || file.attrib & _A_SUBDIR)
                 continue;
             files.insert(file.name);
@@ -53,23 +46,22 @@ set<string> getFiles(const string& _dir)
     return files;
 }
 
-set<string> findFileNameBeginWith(const string& baseDir, const string& name, const string& ext, set<string>& files)
+set<string> findFileNameBeginWith(const string& baseDir, const string& nameWithoutExt, set<string>& files)
 {
     set<string> result;
-    
-    string removeAlpha(name);
+
+    string removeAlpha(nameWithoutExt);
     removeAlpha.pop_back();
 
-    auto it = files.begin();
-    //++it;
-    // 无脑配吧
-    for (; it != files.end(); ++it)
+    // 从文件名中无法推测所有情况，还是无脑配吧
+
+    for (auto it = files.begin(); it != files.end(); ++it)
     {
         size_t find;
-        if (isalpha(name.back()) || (isdigit(name.back()) && removeAlpha.back() == '_'))
+        if (isalpha(nameWithoutExt.back()) || (isdigit(nameWithoutExt.back()) && removeAlpha.back() == '_'))
             find = it->find(removeAlpha);
         else
-            find = it->find(name);   // 以 base 开头
+            find = it->find(nameWithoutExt);   // 以 base 开头
 
         if (find != string::npos)
         {
@@ -110,162 +102,83 @@ void SplitPath(const string& in, string* drv, string* path, string* name, string
 }
 
 
-void MergeAndSave(const string& _baseDir, const string& _base, set<string>& files, const string& _saveDir)
+void MergeAndSave(const string& _baseDir, const string& _baseNameWithExt, set<string>& files, const string& _saveDir)
 {
     set<string> set1; // face
     set<string> set2; // body
 
-    vector<char> namePart;  namePart.resize(_base.size());
-    vector<char> ext;   ext.resize(_base.size());
-    _splitpath_s(_base.c_str(), nullptr, 0, nullptr, 0, namePart.data(), namePart.size(), ext.data(), ext.size());
+    string namePart, ext;
+    SplitPath(_baseNameWithExt, nullptr, nullptr, &namePart, &ext);
 
-    string baseDir(_baseDir);
-    if (baseDir.back() != '\\')
-        baseDir += '\\';
+    assert(!_baseDir.empty() && _baseDir.back() == '\\');
+    assert(!_saveDir.empty() && _saveDir.back() == '\\');
 
-    string base(baseDir + _base);
+    string baseFullPath(_baseDir + _baseNameWithExt);
 
-    assert(!_saveDir.empty());
-    string saveDir(_saveDir);
-    if (saveDir.back() != '\\')
-        saveDir += '\\';
     int count = 1;
 
     for (auto& s : files)
     {
-        if (s == _base)
-            continue;
-
         if (s.find("body") != string::npos)
-            set2.insert(baseDir + s);
+            set2.insert(_baseDir + s);
         else if (s.find("face") != string::npos)
-            set1.insert(baseDir + s);
-        else
-            continue;
+            set1.insert(_baseDir + s);
     }
 
     cout << "process group:\n";
-    cout << "\t" << _base << "\n";
+    cout << "\t" << _baseDir << _baseNameWithExt << "\n";
     for (auto& s : set1)
         cout << "\t" << s << "\n";
     for (auto& s : set2)
         cout << "\t" << s << "\n";
     cout << "-------------------------------\n";
 
-    //FreeImage_SetOutputMessage(MsgOut);
-
-    //auto raw = FreeImage_Load(FreeImage_GetFileType(base.c_str()), base.c_str());
-    //FreeImage_Save(FIF_PNG, raw, (saveDir + _base + ".png").c_str());
-    //FreeImage_Unload(raw);
-
+    // copy
     Alisa::Image baseImg;
-    baseImg.Open(base);
-    baseImg.SaveTo(saveDir + _base + ".png", Alisa::E_ImageType_Png);
-
-
-    //Alisa::Image img;
-    //if (!img.Open(base))
-    //{
-    //    cout << "open file " << base << "failed.\n";
-    //    return;
-    //}
+    baseImg.Open(baseFullPath);
+    baseImg.SaveTo(_saveDir + _baseNameWithExt + ".png", Alisa::E_ImageType_Png);
 
     for (auto& s1 : set1)
     {
         ostringstream oss;
         oss << count++;
-        string path(saveDir + _base + oss.str() + ".png");
-        //int alpha = 0;
-        //auto raw = FreeImage_Load(FreeImage_GetFileType(base.c_str()), base.c_str());
-        //auto raw1 = FreeImage_Load(FreeImage_GetFileType(s1.c_str()), s1.c_str());
-        //auto ftype = FreeImage_GetFileType(s1.c_str());
-        //
-        //for (int i = 0; i < FreeImage_GetHeight(raw); ++i)
-        //{
-        //    FreeImage_ConvertLine24To32()
-        //}
+        string path(_saveDir + _baseNameWithExt + oss.str() + ".png");
 
-        //auto raw2 = FreeImage_ConvertToType(raw1, FreeImage_GetImageType(raw0));
-        //auto type2 = FreeImage_GetColorType(raw2);
-        //auto type0 = FreeImage_GetColorType(raw0);
-        //FreeImage_Paste(raw0, raw2, 0, 0, alpha);
-        //FreeImage_Save(FIF_PNG, raw2, path.c_str());
-        //FreeImage_Save(FIF_PNG, raw0, path.c_str());
-        //FreeImage_Unload(raw);
-        //FreeImage_Unload(raw1);
-        //FreeImage_Unload(raw2);
-
-        Alisa::Image baseImg;
-        baseImg.Open(base);
-
-        Alisa::Image img1;
+        Alisa::Image baseImg, img1;
+        baseImg.Open(baseFullPath);
         img1.Open(s1);
-
         baseImg.Blend(&img1, 0, 0, Alisa::E_ImageBlendMode::E_SrcOver);
-
         baseImg.SaveTo(path, Alisa::E_ImageType_Png);
     }
 
-    
     for (auto& s2 : set2)
     {
-        //ostringstream oss;
-        //oss << count++;
-        //string path(saveDir + _base + oss.str() + ".png");
-
-        //auto raw = FreeImage_Load(FreeImage_GetFileType(base.c_str()), base.c_str());
-        //auto raw1 = FreeImage_Load(FreeImage_GetFileType(s2.c_str()), s2.c_str());
-        //FreeImage_Paste(raw, raw1, 0, 0, 256);
-        //FreeImage_Save(FIF_PNG, raw, path.c_str());
-        //FreeImage_Unload(raw);
-        //FreeImage_Unload(raw1);
-
-        Alisa::Image baseImg;
-        baseImg.Open(base);
-
-        Alisa::Image img2;
-        img2.Open(s2);
-
-        baseImg.Blend(&img2, 0, 0, Alisa::E_ImageBlendMode::E_SrcOver);
-
         ostringstream oss;
         oss << count++;
-        baseImg.SaveTo(saveDir + _base + oss.str() + ".png", Alisa::E_ImageType_Png);
+        string path(_saveDir + _baseNameWithExt + oss.str() + ".png");
+
+        Alisa::Image baseImg, img2;
+        baseImg.Open(baseFullPath);
+        img2.Open(s2);
+        baseImg.Blend(&img2, 0, 0, Alisa::E_ImageBlendMode::E_SrcOver);
+        baseImg.SaveTo(path, Alisa::E_ImageType_Png);
     }
 
     for (auto& s2 : set2)
     {
         for (auto& s1 : set1)
         {
-            //ostringstream oss;
-            //oss << count++;
-            //string path(saveDir + _base + oss.str() + ".png");
-
-            //auto raw = FreeImage_Load(FreeImage_GetFileType(base.c_str()), base.c_str());
-            //auto raw1 = FreeImage_Load(FreeImage_GetFileType(s1.c_str()), s1.c_str());
-            //auto raw2 = FreeImage_Load(FreeImage_GetFileType(s2.c_str()), s2.c_str());
-            //FreeImage_Paste(raw, raw1, 0, 0, 256);
-            //FreeImage_Paste(raw, raw2, 0, 0, 256);
-            //FreeImage_Save(FIF_PNG, raw, path.c_str());
-            //FreeImage_Unload(raw);
-            //FreeImage_Unload(raw1);
-            //FreeImage_Unload(raw2);
-
-            Alisa::Image baseImg;
-            baseImg.Open(base);
-
-            Alisa::Image img1;
-            img1.Open(s1);
-
-            Alisa::Image img2;
-            img2.Open(s2);
-
-            baseImg.Blend(&img1, 0, 0, Alisa::E_ImageBlendMode::E_SrcOver);
-            baseImg.Blend(&img2, 0, 0, Alisa::E_ImageBlendMode::E_SrcOver);
-
             ostringstream oss;
             oss << count++;
-            baseImg.SaveTo(saveDir + _base + oss.str() + ".png", Alisa::E_ImageType_Png);
+            string path(_saveDir + _baseNameWithExt + oss.str() + ".png");
+
+            Alisa::Image baseImg, img1, img2;
+            baseImg.Open(baseFullPath);
+            img1.Open(s1);
+            img2.Open(s2);
+            baseImg.Blend(&img1, 0, 0, Alisa::E_ImageBlendMode::E_SrcOver);
+            baseImg.Blend(&img2, 0, 0, Alisa::E_ImageBlendMode::E_SrcOver);
+            baseImg.SaveTo(path, Alisa::E_ImageType_Png);
         }
     }
 }
@@ -281,7 +194,6 @@ int main(int argc, char** argv)
     }
 
 
-
     string baseDir(argv[1]);
     if (baseDir.back() != '\\')
         baseDir += '\\';
@@ -290,8 +202,8 @@ int main(int argc, char** argv)
     if (saveDir.back() != '\\')
         saveDir += '\\';
 
-    set<string> handled;
-    auto files = getFiles(baseDir);
+
+    auto files = GetFiles(baseDir);
     set<string> baseFiles;
     set<string> partFiles;
     for (auto& f : files)
@@ -312,14 +224,11 @@ int main(int argc, char** argv)
     while (!baseFiles.empty())
     {
         auto filename = *baseFiles.begin();
-        string name, ext;
-        SplitPath(filename, nullptr, nullptr, &name, &ext);
-        if (string(ext.data()) == ".bmp")
-        {
-            auto result = findFileNameBeginWith(baseDir, name, ext, partFiles);
-            if (!result.empty())
-                MergeAndSave(baseDir, filename, result, saveDir);
-        }
+        string name;
+        SplitPath(filename, nullptr, nullptr, &name, nullptr);
+        auto result = findFileNameBeginWith(baseDir, name, partFiles);
+        if (!result.empty())
+            MergeAndSave(baseDir, filename, result, saveDir);
         baseFiles.erase(filename);
     }
 

@@ -219,7 +219,7 @@ bool DDSystem::ExtractResource(const std::string & saveDir)
 
         vector<wchar_t> wstr;
         wstr.resize(1024);
-        mbstowcs_s(nullptr, wstr.data(), filePath.size(), filePath.c_str(), wstr.size());
+        mbstowcs_s(nullptr, wstr.data(), wstr.size(), filePath.c_str(), -1);
 
         ofstream out;
         out.open(wstr.data(), ios::binary);
@@ -266,7 +266,7 @@ int DDSystem::Decompress(uint8_t* dst, int dstLen, uint8_t* src, int srcLen)
     size_t v29; // edi
     int v30; // ecx
     uint8_t *i; // eax
-    
+
     int decompressed_length = 0;
     int remain_length = srcLen;
     int flag0;  // v0x24

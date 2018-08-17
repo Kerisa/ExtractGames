@@ -32,7 +32,7 @@ int main(int argc, char** argv)
     if (dir.back() != '\\')
         dir += '\\';
 
-    
+
     if (!dds.ExtractResource(dir))
     {
         cout << "some resource save failed.\n";
@@ -40,6 +40,6 @@ int main(int argc, char** argv)
     }
 
     dds.Close();
-    
+
     return 0;
 }
