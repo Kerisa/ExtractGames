@@ -22,7 +22,7 @@ public:
         uint32_t    PackLength;
         uint32_t    Offset;
     };
-    
+
     struct NormalizedEntry
     {
         enum TYPE {

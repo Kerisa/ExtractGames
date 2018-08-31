@@ -35,18 +35,27 @@ struct BreakPointInfo
     std::function<void(BreakPointInfo*, DEBUG_EVENT*)> Handler;
 };
 
+enum class GameVersion
+{
+    unkonwn = 0,
+    hearts_rorolog,
+    hearts_rorolog_hs,
+    support_game_count,
+};
+
 struct DebugInfo
 {
-    static const int MaxBPCount = 5;
-    static const BYTE int3 = 0xcc;
-    static const int DebugeeMemoryLimit = 1024 * 1024 * 600;
-    static const DWORD PalDllBase = 0x10000000;
+    static constexpr int MaxBPCount = 5;
+    static constexpr BYTE int3 = 0xcc;
+    static constexpr int DebugeeMemoryLimit = 1024 * 1024 * 600;
+    static constexpr std::array<DWORD, static_cast<int>(GameVersion::support_game_count)> PalDllBase{ 0x0, 0x10000000, 0x10000000 };
 
-    HANDLE  hProcess{ NULL };
-    LPVOID  mDllBaseAddr{ NULL };
-    DWORD   mExeImageBase{ NULL };
-    int     mCurrentImgIdx{ -1 };
-    bool    mStopDebugger{ false };
+    GameVersion mGameVersion{ GameVersion::unkonwn };
+    HANDLE      hProcess{ NULL };
+    LPVOID      mDllBaseAddr{ NULL };
+    DWORD       mExeImageBase{ NULL };
+    int         mCurrentImgIdx{ -1 };
+    bool        mStopDebugger{ false };
     std::vector<ImageInfo>&                 mImgList;
     std::array<BreakPointInfo, MaxBPCount>  mBP;
     std::string                             mSaveDir;
@@ -59,4 +68,5 @@ struct DebugInfo
 uint32_t Splite(const char * _str, const char * _delim, std::vector<std::string>& out);
 std::string FullPath(const std::string& in);
 void SplitPath(const std::string& in, std::string* drv, std::string* path, std::string* name, std::string* ext);
-bool DebugIt(const std::string& exePath, const std::string& exeDir, const std::string& saveDir, std::vector<ImageInfo>& imgList);
+bool IsValidGameVersion(GameVersion ver);
+bool DebugIt(const std::string& exePath, const std::string& exeDir, const std::string& saveDir, std::vector<ImageInfo>& imgList, GameVersion ver);
