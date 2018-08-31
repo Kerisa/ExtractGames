@@ -8,30 +8,45 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-    if (argc < 4)
+    if (argc < 5)
     {
-        cout << "usage:\n    Extract.exe [flag] <game exe file path> <save dir> <txt file content image name> [txt2 [txt3...]]\n"
-             << "    Flag:\n        -y\tskip starting prompt\n";
+        cout << "usage:\n    Extract.exe <Flag> <GameID> <GameEXEPath> <SaveDir> <ImageListTXTFile...>\n"
+             << "    Flag:\n"
+             << "        -y\tskip starting prompt\n"
+             << "    GameID:\n"
+             << "        1 : ナツイロココロログ\n"
+             << "        2 : ナツイロココロログ ～Happy Summer～\n";
         return 0;
     }
 
     bool skip;
     int txtFileStartIdx;
     string exePath, saveDir;
+    GameVersion gameVer;
     if (!_stricmp(argv[1], "-y"))
     {
         skip = true;
-        txtFileStartIdx = 4;
-        exePath = argv[2];
-        saveDir = argv[3];
+        gameVer = static_cast<GameVersion>(atoi(argv[2]));
+        exePath = argv[3];
+        saveDir = argv[4];
+        txtFileStartIdx = 5;
     }
     else
     {
         skip = false;
-        txtFileStartIdx = 3;
-        exePath = argv[1];
-        saveDir = argv[2];
+        gameVer = static_cast<GameVersion>(atoi(argv[1]));
+        exePath = argv[2];
+        saveDir = argv[3];
+        txtFileStartIdx = 4;
     }
+
+    if (!IsValidGameVersion(gameVer))
+    {
+        cout << "error game version.\n";
+        return 0;
+    }
+
+    setlocale(LC_ALL, "zh");
 
     saveDir = FullPath(saveDir);
     if (!saveDir.empty() && saveDir.back() != '\\')
@@ -45,7 +60,7 @@ int main(int argc, char** argv)
 
     if (!skip)
     {
-        cout << "enter after exit game<Enter>";
+        cout << "press enter after exit game<Enter>";
         getchar();
     }
 
@@ -84,7 +99,7 @@ int main(int argc, char** argv)
             break;
 
         auto task = std::make_shared<std::packaged_task<bool()>>(
-            [&]() { return DebugIt(exePath, exeDir, saveDir, imageFileList); }
+            [&]() { return DebugIt(exePath, exeDir, saveDir, imageFileList, gameVer); }
         );
         std::future<bool> ret = task->get_future();
         // 调式器需要重新启动线程

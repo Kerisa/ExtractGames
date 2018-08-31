@@ -77,6 +77,15 @@ void SplitPath(const string& in, string* drv, string* path, string* name, string
     if (ext) *ext = _ext.data();
 }
 
+bool IsValidGameVersion(GameVersion ver)
+{
+    if (static_cast<int>(ver) <= static_cast<int>(GameVersion::unkonwn) ||
+        static_cast<int>(ver) >= static_cast<int>(GameVersion::support_game_count))
+        return false;
+    else
+        return true;
+}
+
 
 // 获取目标进程首地址
 DWORD GetProcessImageBaseAddr(DWORD dwPID)
@@ -279,7 +288,7 @@ bool ModifyThreadContext(DWORD tid, std::function<bool(CONTEXT& ctx)> f)
     return true;
 }
 
-void InitBreakPoints(DEBUG_EVENT* de, DebugInfo* di)
+void InitHeartsRoRoLog(DEBUG_EVENT* de, DebugInfo* di)
 {
     SIZE_T D;
     di->mBP[0].mRemoteMemory = VirtualAllocEx(di->hProcess, NULL, 4096, MEM_COMMIT, PAGE_READWRITE);
@@ -397,7 +406,7 @@ void InitBreakPoints(DEBUG_EVENT* de, DebugInfo* di)
 
         WriteProcessMemory(di->hProcess, (LPVOID)self->mAddr, &self->mOldByte, 1, &D);
         self->mNeedResetBP = true;
-        
+
 
         assert(di->mCurrentImgIdx >= 0 && di->mCurrentImgIdx < di->mImgList.size());
         auto& img = di->mImgList[di->mCurrentImgIdx];
@@ -439,7 +448,180 @@ void InitBreakPoints(DEBUG_EVENT* de, DebugInfo* di)
     };
 }
 
-bool DebugIt(const string& exePath, const string& exeDir, const string& saveDir, vector<ImageInfo>& imgList)
+void InitHeartsRoRoLogHS(DEBUG_EVENT* de, DebugInfo* di)
+{
+    SIZE_T D;
+    di->mBP[0].mRemoteMemory = VirtualAllocEx(di->hProcess, NULL, 4096, MEM_COMMIT, PAGE_READWRITE);
+    assert(di->mBP[0].mRemoteMemory);
+    di->mBP[0].mAddr = di->mExeImageBase + 0x3be68;    // 0020BE68   53   push ebx
+    ReadProcessMemory(di->hProcess, (LPVOID)di->mBP[0].mAddr, &di->mBP[0].mOldByte, 1, &D);
+    WriteProcessMemory(di->hProcess, (LPVOID)di->mBP[0].mAddr, &DebugInfo::int3, 1, &D);
+    di->mBP[0].Handler = [di](BreakPointInfo* self, DEBUG_EVENT* de) {
+        SIZE_T D;
+        if (di->mCurrentImgIdx != -1)
+        {
+            assert("error image not saved" && 0);
+            cout << "error image not saved\n";
+            return;
+        }
+        for (size_t i = 0; i < di->mImgList.size(); ++i)
+        {
+            if (!di->mImgList[i].handled)
+            {
+                WriteProcessMemory(di->hProcess, self->mRemoteMemory, di->mImgList[i].name.c_str(), di->mImgList[i].name.size() + 1, &D);
+                di->mCurrentImgIdx = i;
+                break;
+            }
+        }
+        if (di->mCurrentImgIdx == -1)
+        {
+            cout << "all images saved.\n";
+            StopDebug(di);
+        }
+
+        WriteProcessMemory(di->hProcess, (LPVOID)self->mAddr, &self->mOldByte, 1, &D);
+        bool b = ModifyThreadContext(de->dwThreadId, [self](CONTEXT& ctx) {
+            --ctx.Eip;
+            ctx.EFlags |= 0x100;        // 设单步以便重新设置断点
+            ctx.Ebx = (DWORD)self->mRemoteMemory;
+            return true;
+        });
+        assert(b);
+        self->mNeedResetBP = true;
+    };
+
+    // 获取基础解码数据点1
+    di->mBP[1].mAddr = (DWORD)di->mDllBaseAddr + 0x26c4a;
+    ReadProcessMemory(di->hProcess, (LPVOID)di->mBP[1].mAddr, &di->mBP[1].mOldByte, 1, &D);
+    WriteProcessMemory(di->hProcess, (LPVOID)di->mBP[1].mAddr, &DebugInfo::int3, 1, &D);
+    di->mBP[1].Handler = [di](BreakPointInfo* self, DEBUG_EVENT* de) {
+        SIZE_T D;
+        DWORD espVal = 0;
+        bool b = ModifyThreadContext(de->dwThreadId, [self, &espVal](CONTEXT& ctx) {
+            --ctx.Eip;
+            ctx.EFlags |= 0x100;        // 设单步以便重新设置断点
+            espVal = ctx.Esp;
+            return true;
+        });
+        assert(b);
+
+        LPVOID buffer = NULL;
+        UINT width = 0;
+        UINT height = 0;
+        ReadProcessMemory(di->hProcess, (LPVOID)(espVal - 0x1c), &buffer, 4, &D);
+        ReadProcessMemory(di->hProcess, (LPVOID)(espVal - 0x10), &width, 4, &D);
+        ReadProcessMemory(di->hProcess, (LPVOID)(espVal - 0x14), &height, 4, &D);
+
+        //CloseHandle(hT);
+        WriteProcessMemory(di->hProcess, (LPVOID)self->mAddr, &self->mOldByte, 1, &D);
+        self->mNeedResetBP = true;
+
+        assert(di->mCurrentImgIdx >= 0 && di->mCurrentImgIdx < di->mImgList.size());
+        //UINT w2 = GetAlign2(width);
+        UINT length = width * height * 4;
+        di->mImgList[di->mCurrentImgIdx].width = width;
+        di->mImgList[di->mCurrentImgIdx].height = height;
+        di->mImgList[di->mCurrentImgIdx].dataLength = length;
+        di->mImgList[di->mCurrentImgIdx].remoteBufferAddr = buffer;
+        if (di->mImgList[di->mCurrentImgIdx].type == ImageInfo::Base)
+        {
+            PBYTE saveBuffer = (PBYTE)VirtualAlloc(NULL, length, MEM_COMMIT, PAGE_READWRITE);
+            ReadProcessMemory(di->hProcess, buffer, saveBuffer, length, &D);
+
+            Save32BppToFile((char*)saveBuffer, length, width, height, di->mSaveDir + di->mImgList[di->mCurrentImgIdx].name);
+            VirtualFree(saveBuffer, 0, MEM_RELEASE);
+
+            cout << di->mImgList[di->mCurrentImgIdx].name << " saved.\n";
+
+            di->mImgList[di->mCurrentImgIdx].handled = true;
+            di->mCurrentImgIdx = -1;
+
+            // 每次保存后判断内存使用量是否过多
+            if (IsMemoryExceed(di->hProcess, DebugInfo::DebugeeMemoryLimit))
+            {
+                StopDebug(di);
+            }
+        }
+    };
+
+    // 获取解码数据点2, 适用带差分的图像
+    di->mBP[3].mAddr = (DWORD)di->mDllBaseAddr + 0x13ea8;
+    ReadProcessMemory(di->hProcess, (LPVOID)di->mBP[3].mAddr, &di->mBP[3].mOldByte, 1, &D);
+    WriteProcessMemory(di->hProcess, (LPVOID)di->mBP[3].mAddr, &DebugInfo::int3, 1, &D);
+    di->mBP[3].Handler = [di](BreakPointInfo* self, DEBUG_EVENT* de) {
+        SIZE_T D;
+        bool b = ModifyThreadContext(de->dwThreadId, [self](CONTEXT& ctx) {
+            --ctx.Eip;
+            ctx.EFlags |= 0x100;        // 设单步以便重新设置断点
+            return true;
+        });
+        assert(b);
+
+
+        WriteProcessMemory(di->hProcess, (LPVOID)self->mAddr, &self->mOldByte, 1, &D);
+        self->mNeedResetBP = true;
+
+
+        assert(di->mCurrentImgIdx >= 0 && di->mCurrentImgIdx < di->mImgList.size());
+        auto& img = di->mImgList[di->mCurrentImgIdx];
+        assert(di->mImgList[di->mCurrentImgIdx].type == ImageInfo::Diff);
+        {
+            PBYTE saveBuffer = (PBYTE)VirtualAlloc(NULL, img.dataLength, MEM_COMMIT, PAGE_READWRITE);
+            ReadProcessMemory(di->hProcess, img.remoteBufferAddr, saveBuffer, img.dataLength, &D);
+            Save32BppToFile((char*)saveBuffer, img.dataLength, img.width, img.height, di->mSaveDir + img.name);
+            VirtualFree(saveBuffer, 0, MEM_RELEASE);
+
+            cout << di->mImgList[di->mCurrentImgIdx].name << " saved.\n";
+            img.handled = true;
+            di->mCurrentImgIdx = -1;
+
+            // 每次保存后判断内存使用量是否过多
+            if (IsMemoryExceed(di->hProcess, DebugInfo::DebugeeMemoryLimit))
+            {
+                StopDebug(di);
+            }
+        }
+    };
+
+    // 解码函数完成后返回时中断，重设 eip 继续解码
+    di->mBP[2].mAddr = di->mExeImageBase + 0x3be90;    // 0020BE90  test eax, eax
+    ReadProcessMemory(di->hProcess, (LPVOID)di->mBP[2].mAddr, &di->mBP[2].mOldByte, 1, &D);
+    WriteProcessMemory(di->hProcess, (LPVOID)di->mBP[2].mAddr, &DebugInfo::int3, 1, &D);
+    di->mBP[2].Handler = [di](BreakPointInfo* self, DEBUG_EVENT* de) {
+        SIZE_T D;
+        WriteProcessMemory(di->hProcess, (LPVOID)self->mAddr, &self->mOldByte, 1, &D);
+
+        bool b = ModifyThreadContext(de->dwThreadId, [self](CONTEXT& ctx) {
+            ctx.Eip -= (0x3a + 1);        // 回退以便继续下一个
+            ctx.EFlags |= 0x100;        // 设单步以便重新设置断点
+            ctx.Eax = (DWORD)self->mRemoteMemory;
+            return true;
+        });
+        assert(b);
+        self->mNeedResetBP = true;
+    };
+}
+
+void InitBreakPoints(DEBUG_EVENT* de, DebugInfo* di)
+{
+    switch (di->mGameVersion)
+    {
+    case GameVersion::hearts_rorolog:
+        InitHeartsRoRoLog(de, di);
+        break;
+
+    case GameVersion::hearts_rorolog_hs:
+        InitHeartsRoRoLogHS(de, di);
+        break;
+
+    default:
+        assert("unknown game version." && 0);
+        cout << "unknown game version.\n";
+        break;
+    }
+}
+
+bool DebugIt(const string& exePath, const string& exeDir, const string& saveDir, vector<ImageInfo>& imgList, GameVersion ver)
 {
     PROCESS_INFORMATION pi;
     if (!StartProcess(exePath, exeDir, false, &pi))
@@ -448,7 +630,8 @@ bool DebugIt(const string& exePath, const string& exeDir, const string& saveDir,
     DebugInfo di(imgList);
     di.hProcess = pi.hProcess;
     di.mSaveDir = saveDir;
-    
+    di.mGameVersion = ver;
+
     DEBUG_EVENT de;
     while (1)
     {
@@ -463,11 +646,11 @@ bool DebugIt(const string& exePath, const string& exeDir, const string& saveDir,
 
         BOOL b1 = WaitForDebugEvent(&de, 5000);
         assert(b1);
-        
+
         if (de.dwDebugEventCode == LOAD_DLL_DEBUG_EVENT)
         {
             // 加载地址 0x10000000
-            if (de.u.LoadDll.lpBaseOfDll == (LPVOID)DebugInfo::PalDllBase)
+            if (de.u.LoadDll.lpBaseOfDll == (LPVOID)DebugInfo::PalDllBase[static_cast<int>(ver)])
             {
                 HANDLE hPalDll = de.u.LoadDll.hFile;
                 CloseHandle(hPalDll);

@@ -719,7 +719,7 @@ bool Alisa::ImageCodec::DecodeBmp(const string_t & filename, ImageImpl * img, bo
     FilePointerHolder infile;
     if (infile.Open(filename, __T("rb")))
         return false;
-    
+
     _BITMAPFILEHEADER bfh;
     fread_s(&bfh, sizeof(_BITMAPFILEHEADER), sizeof(_BITMAPFILEHEADER), 1, infile);
     _BITMAPINFOHEADER bih;
@@ -919,7 +919,7 @@ bool Alisa::ImageCodec::DecodePng(const string_t & filename, ImageImpl * img, bo
         &width, &height, &bit_depth, &color_type,
         NULL, NULL, NULL);
     int pixel_byte = color_type == PNG_COLOR_TYPE_RGB ? 3 : 4;
-    
+
     img->BaseInfo.Height = height;
     assert(img->BaseInfo.Height > 0);
     img->BaseInfo.Width = width;
@@ -969,7 +969,7 @@ bool Alisa::ImageCodec::DecodePng(const string_t & filename, ImageImpl * img, bo
     // ¶ÁÈ¡ÏñËØ
     //
     png_read_image(png_ptr, (png_bytepp)lines);
-    
+
 
     assert((int)&((Pixel*)0)->R == 0 && (int)&((Pixel*)0)->G == 1 && (int)&((Pixel*)0)->B == 2 && (int)&((Pixel*)0)->A == 3);
 
