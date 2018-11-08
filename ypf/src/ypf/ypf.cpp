@@ -38,24 +38,8 @@ void YPF::Close()
     mPath.clear();
 }
 
-bool YPF::ExtractEntries()
+bool YPF::ExtractEntry_1D2(vector<char>& data, vector<char>& dataInv)
 {
-    if (mPath.empty())
-    {
-        cout << "未打开封包文件\n";
-        return false;
-    }
-
-    string packetDir;
-    
-    assert(mStream.is_open());
-    vector<char> data(mHeader.mDataStart - sizeof(mHeader));
-    mStream.seekg(sizeof(YpfHeader), ios::beg);
-    mStream.read(data.data(), data.size());
-    vector<char> dataInv(data.begin(), data.end());
-    for (char& c : dataInv) c = ~c;
-
-    mEntries.clear();
     size_t dataIndex = 0;
     while (dataIndex < data.size() && mEntries.size() < mHeader.mFileCount)
     {
@@ -74,19 +58,6 @@ bool YPF::ExtractEntries()
             return false;
         }
 
-        if (packetDir.empty())
-        {
-            packetDir = e.filename.substr(0, e.filename.find('\\'));
-        }
-        else
-        {
-            if (strncmp(packetDir.c_str(), e.filename.c_str(), packetDir.size()))
-            {
-                cout << "解析文件" << e.filename << "时发生错误\n";
-                return false;
-            }
-        }
-
         e.filetype = data[dataIndex];
         ++dataIndex;
         e.zlib_compressed = data[dataIndex] == 1;
@@ -98,7 +69,7 @@ bool YPF::ExtractEntries()
         e.offset = *(uint32_t*)&data[dataIndex];
         dataIndex += 4;
         dataIndex += 4;
-        
+
         mEntries.push_back(e);
     }
 
@@ -111,6 +82,75 @@ bool YPF::ExtractEntries()
     {
         return true;
     }
+}
+
+bool YPF::ExtractEntry_1DE(vector<char>& data, vector<char>& dataInv)
+{
+    size_t dataIndex = 0;
+    while (dataIndex < data.size() && mEntries.size() < mHeader.mFileCount)
+    {
+        NormalizedEntry e;
+
+        dataIndex += 5;
+        uint32_t old = dataIndex;
+        while (dataIndex < dataInv.size() && dataInv[dataIndex] != '.')
+            ++dataIndex;
+        dataIndex += 4;        // 后缀名
+        e.filename = string(&dataInv[old], &dataInv[dataIndex]);
+
+        if (PathFindExtension(e.filename.c_str()) == e.filename.c_str() + e.filename.size())
+        {
+            cout << "解析文件" << e.filename << "时发生错误\n";
+            return false;
+        }
+
+        e.filetype = data[dataIndex];
+        ++dataIndex;
+        e.zlib_compressed = data[dataIndex] == 1;
+        ++dataIndex;
+        e.original_length = *(uint32_t*)&data[dataIndex];
+        dataIndex += 4;
+        e.compressd_length = *(uint32_t*)&data[dataIndex];
+        dataIndex += 4;
+        e.offset = *(uint32_t*)&data[dataIndex];
+        dataIndex += 4;
+        dataIndex += 4; // skip zero
+        dataIndex += 4;
+
+        mEntries.push_back(e);
+    }
+
+    if (dataIndex != data.size() || mEntries.size() != mHeader.mFileCount)
+    {
+        cout << "有部分文件获取失败(" << mEntries.size() << "/" << mHeader.mFileCount << ")\n";
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+}
+
+bool YPF::ExtractEntries()
+{
+    if (mPath.empty())
+    {
+        cout << "未打开封包文件\n";
+        return false;
+    }
+        
+    assert(mStream.is_open());
+    vector<char> data(mHeader.mDataStart - sizeof(mHeader));
+    mStream.seekg(sizeof(YpfHeader), ios::beg);
+    mStream.read(data.data(), data.size());
+    vector<char> dataInv(data.begin(), data.end());
+    for (char& c : dataInv) c = ~c;
+
+    mEntries.clear();
+    if (mHeader.mVersionTmp == 0x1de)
+        return ExtractEntry_1DE(data, dataInv);
+    else
+        return ExtractEntry_1D2(data, dataInv);
 }
 
 bool YPF::ExtractResource(const std::string & saveDir)

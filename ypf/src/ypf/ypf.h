@@ -11,16 +11,15 @@ public:
     {
         static constexpr uint32_t MAGIC = '\0FPY';
         uint32_t mMagic;
-        uint32_t mUnknown1;
+        uint32_t mVersionTmp;
         uint32_t mFileCount;
         uint32_t mDataStart;
         uint8_t  mZero[16];
     };
 
-    struct YpfEntry
+    struct YpfEntry_1D2
     {
-        uint8_t unknown[3];
-        uint8_t name_length_correct;
+        uint32_t unknown;
         uint8_t name_length;     // 要解码
         uint8_t name[1];         // 要解码
         uint8_t filetype;
@@ -28,6 +27,20 @@ public:
         uint32_t original_length;
         uint32_t compressd_length;
         uint32_t offset;
+        uint32_t unknwon;      // 估计是 crc / alder32 之类的
+    };
+
+    struct YpfEntry_1DE
+    {
+        uint32_t unknown;
+        uint8_t name_length;     // 要解码
+        uint8_t name[1];         // 要解码
+        uint8_t filetype;
+        uint8_t zlib_compress_flag;
+        uint32_t original_length;
+        uint32_t compressd_length;
+        uint32_t offset;
+        uint32_t mZero;
         uint32_t unknwon;      // 估计是 crc / alder32 之类的
     };
 
@@ -49,6 +62,10 @@ public:
 
     std::string GetFolderOfPath(const std::string& fullPath);
     std::string ConvJPToChs(const std::string& str);
+
+private:
+    bool ExtractEntry_1D2(std::vector<char>& data, std::vector<char>& dataInv);
+    bool ExtractEntry_1DE(std::vector<char>& data, std::vector<char>& dataInv);
 
 private:
     std::vector<NormalizedEntry>    mEntries;
