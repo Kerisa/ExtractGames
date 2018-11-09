@@ -147,7 +147,7 @@ bool YPF::ExtractEntries()
     for (char& c : dataInv) c = ~c;
 
     mEntries.clear();
-    if (mHeader.mVersionTmp == 0x1de)
+    if (mHeader.mVersionTmp >= 0x1de)
         return ExtractEntry_1DE(data, dataInv);
     else
         return ExtractEntry_1D2(data, dataInv);
