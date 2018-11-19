@@ -1,24 +1,32 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kirikiri", "kirikiri\kirikiri.vcxproj", "{10DA06DC-943E-4003-819D-51928F59C7DD}"
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TLG", "src\TLG\TLG.vcxproj", "{0554BA40-7CFE-43CD-AE04-F1AA8B1CB1CD}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TLG", "TLG\TLG.vcxproj", "{0554BA40-7CFE-43CD-AE04-F1AA8B1CB1CD}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kirikiri", "src\kirikiri\kirikiri.vcxproj", "{10DA06DC-943E-4003-819D-51928F59C7DD}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CsvMerge", "src\CsvMerge\CsvMerge.vcxproj", "{A360F249-A365-45B7-A8DE-63C412330D29}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Win32 = Debug|Win32
-		Release|Win32 = Release|Win32
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{10DA06DC-943E-4003-819D-51928F59C7DD}.Debug|Win32.ActiveCfg = Debug|Win32
-		{10DA06DC-943E-4003-819D-51928F59C7DD}.Debug|Win32.Build.0 = Debug|Win32
-		{10DA06DC-943E-4003-819D-51928F59C7DD}.Release|Win32.ActiveCfg = Release|Win32
-		{10DA06DC-943E-4003-819D-51928F59C7DD}.Release|Win32.Build.0 = Release|Win32
-		{0554BA40-7CFE-43CD-AE04-F1AA8B1CB1CD}.Debug|Win32.ActiveCfg = Debug|Win32
-		{0554BA40-7CFE-43CD-AE04-F1AA8B1CB1CD}.Debug|Win32.Build.0 = Debug|Win32
-		{0554BA40-7CFE-43CD-AE04-F1AA8B1CB1CD}.Release|Win32.ActiveCfg = Release|Win32
-		{0554BA40-7CFE-43CD-AE04-F1AA8B1CB1CD}.Release|Win32.Build.0 = Release|Win32
+		{0554BA40-7CFE-43CD-AE04-F1AA8B1CB1CD}.Debug|x86.ActiveCfg = Debug|Win32
+		{0554BA40-7CFE-43CD-AE04-F1AA8B1CB1CD}.Debug|x86.Build.0 = Debug|Win32
+		{0554BA40-7CFE-43CD-AE04-F1AA8B1CB1CD}.Release|x86.ActiveCfg = Release|Win32
+		{0554BA40-7CFE-43CD-AE04-F1AA8B1CB1CD}.Release|x86.Build.0 = Release|Win32
+		{10DA06DC-943E-4003-819D-51928F59C7DD}.Debug|x86.ActiveCfg = Debug|Win32
+		{10DA06DC-943E-4003-819D-51928F59C7DD}.Debug|x86.Build.0 = Debug|Win32
+		{10DA06DC-943E-4003-819D-51928F59C7DD}.Release|x86.ActiveCfg = Release|Win32
+		{10DA06DC-943E-4003-819D-51928F59C7DD}.Release|x86.Build.0 = Release|Win32
+		{A360F249-A365-45B7-A8DE-63C412330D29}.Debug|x86.ActiveCfg = Debug|Win32
+		{A360F249-A365-45B7-A8DE-63C412330D29}.Debug|x86.Build.0 = Debug|Win32
+		{A360F249-A365-45B7-A8DE-63C412330D29}.Release|x86.ActiveCfg = Release|Win32
+		{A360F249-A365-45B7-A8DE-63C412330D29}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
