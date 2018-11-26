@@ -1,7 +1,7 @@
 #include <Windows.h>
 #include <string>
+#include <map>
 #include <vector>
-#include "types.h"
 #include "error.h"
 #include "resource.h"
 #include "xp3.h"
@@ -12,6 +12,35 @@ using std::vector;
 using std::wstring;
 
 
+std::map<std::wstring, std::string> GameNameMap = {
+    { L"<默认：直接提取>", "Unencrypted" },
+    { L"さくら、咲きました。", "sakurasaki" },
+    { L"倉野くんちのふたご事情", "kuranokunchi" },
+    { L"あま恋シロップス ～恥じらう恋心でシたくなる甘神様の恋祭り～", "amakoi" },
+    { L"カミツレ ～7の二乗不思議～", "Unencrypted" },
+    { L"すたーらいと★アイドル -COLORFUL TOP STAGE！-", "Unencrypted" },
+    { L"あまたらすリドルスター", "Unencrypted" },
+    { L"カラフル☆きゅあ～ 缤纷少女", "colorfulcure" },
+    { L"ＰＲＥＴＴＹ×Ｃ∧ＴＩＯＮ", "prettycation" },
+    { L"your diary ＋H", "kuranokunchi" },
+    { L"迷える2人とセカイのすべて", "Unencrypted" },
+    { L"迷える2人とセカイのすべて LOVEHEAVEN300％", "Unencrypted" },
+    { L"ヤリまん娘 ～俺の妹はビチビチビッチ～", "Unencrypted" },
+    { L"公園いたずらシミュレータ ver.MAKO", "Unencrypted" },
+    { L"PRETTY×CATION2", "prettycation" },
+    { L"エロ本を捨ててから兄の様子がおかしい", "anioka" },
+    { L"SWANSONG", "swansong" },
+    { L"恋がさくころ桜どき", "koisakura" },
+    { L"ずっとすきして たくさんすきして", "sukisuki" },
+    { L"俺と5人の嫁さんがラブラブなのは、未来からきた赤ちゃんのおかげに違いない！？", "oreaka" },
+    { L"妹のセイイキ(未完成)", "seiiki" },
+    { L"オトメ＊ドメイン", "Otomedomain" },
+    { L"LOVELY×CATION2", "lovelycation" },
+    { L"出会って5分は俺のもの！ 時間停止と不可避な運命", "deai5bu" },
+
+};
+
+
 static int THREAD_NUM = 2;
 
 
@@ -19,9 +48,8 @@ struct thread_param
 {
     HANDLE hEvent;
     HANDLE hThread;
-    UNCOM unCom;
     bool thread_exit;
-    char ChooseGame[32];
+    std::string ChooseGame;
     vector<wstring> queue;
 };
 
@@ -29,7 +57,6 @@ HWND             hEdit, hCombo;
 HANDLE             hThread;
 CRITICAL_SECTION cs;
 
-extern UNCOM unCom;
 
 DWORD WINAPI Thread(PVOID pv);
 void OnDropFiles(HDROP hDrop, HWND hwnd, thread_param* ptp);
@@ -79,7 +106,6 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
     static thread_param *tp = new thread_param[THREAD_NUM];
     static HMODULE        hZlib;
     static bool            thread_paused;
-    UNCOM                tmp = 0;
     TCHAR                szBuffer[MAX_PATH];
 
     switch (msg)
@@ -91,36 +117,30 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
             MESSAGE(L"缺少zlib.dll文件！");
             EndDialog(hDlg, 0);
         }
-        
-        if (!(tmp = (UNCOM)GetProcAddress(hZlib, "uncompress")))
+
+        if (!(unCom = (UNCOMPRESS)GetProcAddress(hZlib, "uncompress")))
         {
             MESSAGE(L"解码函数获取失败！");
             EndDialog(hDlg, 0);
         }
 
-//----------------------------------------------------------
+        //----------------------------------------------------------
 
         hEdit = GetDlgItem(hDlg, IDC_EDIT);
         SendMessage(hEdit, EM_LIMITTEXT, -1, 0);
         AppendMsg(L"选择对应游戏后拖放xp3文件到此处...\r\n");
 
-//----------------------------------------------------------
+        //----------------------------------------------------------
 
         hCombo = GetDlgItem(hDlg, IDC_COMBO);
-        for (int i=IDS_STRING099; i<=IDS_STRING122; ++i)    // 改为对应游戏(字符串)数量
+        for (auto pair : GameNameMap)
         {
-            LoadString((HINSTANCE)GetWindowLong(hDlg, GWL_HINSTANCE), i, szBuffer, MAX_PATH);
-            SendMessage(hCombo, CB_ADDSTRING, 0, (LPARAM)szBuffer);
+            SendMessage(hCombo, CB_ADDSTRING, 0, (LPARAM)pair.first.c_str());
         }
 
-//----------------------------------------------------------
+        //----------------------------------------------------------
 
-        if (!tp)
-        {
-            AppendMsg(L"内存分配错误！\r\n");
-            EndDialog(hDlg, 0);
-        }
-        for (int i=0; i<THREAD_NUM; ++i)
+        for (int i = 0; i < THREAD_NUM; ++i)
         {
             if (!(tp[i].hEvent = CreateEvent(NULL, TRUE, FALSE, NULL)))
             {
@@ -132,10 +152,8 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
                 MESSAGE(L"线程创建失败！\r\n");
                 EndDialog(hDlg, 0);
             }
-            
+
             tp[i].thread_exit = false;
-            tp[i].unCom = tmp;
-            unCom = tmp;
         }
         InitializeCriticalSection(&cs);
         return TRUE;
@@ -145,26 +163,26 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
         {
             if (thread_paused)
             {
-                for (int i=0; i<THREAD_NUM; ++i)
+                for (int i = 0; i < THREAD_NUM; ++i)
                     ResumeThread(tp[i].hThread);
                 SetDlgItemText(hDlg, IDC_PAUSE, L"暂停(&P)");
             }
             else
             {
-                for (int i=0; i<THREAD_NUM; ++i)
+                for (int i = 0; i < THREAD_NUM; ++i)
                     SuspendThread(tp[i].hThread);
                 SetDlgItemText(hDlg, IDC_PAUSE, L"继续(&R)");
             }
             thread_paused ^= 1;
         }
         return TRUE;
-                
+
     case WM_DROPFILES:
         OnDropFiles((HDROP)wParam, hDlg, tp);
         return TRUE;
 
     case WM_CLOSE:
-        for (int i=0; i<THREAD_NUM; ++i)
+        for (int i = 0; i < THREAD_NUM; ++i)
         {
             tp[i].thread_exit = true;
             SetEvent(tp[i].hEvent);
@@ -177,7 +195,7 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 }
 
 
-typedef int (*CallBack)(struct CB* pcb, PTSTR path);
+typedef int(*CallBack)(struct CB* pcb, PTSTR path);
 
 
 struct CB
@@ -191,7 +209,7 @@ struct CB
 int callback(struct CB* pcb, wchar_t *path)
 {
     int len = wcslen(path);
-    while(len>=0 && path[len-1] != '.') --len;
+    while (len >= 0 && path[len - 1] != '.') --len;
 
     if (!pcb->filter || !wcscmp(&path[len], pcb->filter))
     {
@@ -203,7 +221,7 @@ int callback(struct CB* pcb, wchar_t *path)
         }
         LeaveCriticalSection(&cs);
 
-        pcb->cnt = (pcb->cnt+1) % THREAD_NUM;    // 转下一个线程
+        pcb->cnt = (pcb->cnt + 1) % THREAD_NUM;    // 转下一个线程
     }
     return 0;
 }
@@ -217,14 +235,14 @@ int ExpandDirectory(PTSTR lpszPath, CallBack callback, struct CB* pcb)
     int                cnt = 0;
 
     // Path\*.*
-    StringCchCopy(lpPath,   MAX_PATH, lpszPath);
-    StringCchCat (lpPath,   MAX_PATH, L"\\");
+    StringCchCopy(lpPath, MAX_PATH, lpszPath);
+    StringCchCat(lpPath, MAX_PATH, L"\\");
     StringCchCopy(lpSearch, MAX_PATH, lpPath);
-    StringCchCat (lpSearch, MAX_PATH, L"*.*");
+    StringCchCat(lpSearch, MAX_PATH, L"*.*");
 
     if (INVALID_HANDLE_VALUE != (hFindFile = FindFirstFile(lpSearch, &FindData)))
     {
-        do{
+        do {
             // 完整文件名
             StringCchCopy(lpFind, MAX_PATH, lpPath);
             StringCchCat(lpFind, MAX_PATH, FindData.cFileName);
@@ -235,7 +253,7 @@ int ExpandDirectory(PTSTR lpszPath, CallBack callback, struct CB* pcb)
                     ExpandDirectory(lpFind, callback, pcb);
             }
             else callback(pcb, lpFind);
-        }while(FindNextFile(hFindFile, &FindData));
+        } while (FindNextFile(hFindFile, &FindData));
         FindClose(hFindFile);
         return 0;
     }
@@ -244,7 +262,7 @@ int ExpandDirectory(PTSTR lpszPath, CallBack callback, struct CB* pcb)
 
 
 DWORD AppendFileToQueue(wchar_t *pInBuf, CallBack callback, struct CB *pcb)
-{    
+{
     if (FILE_ATTRIBUTE_DIRECTORY == GetFileAttributes(pInBuf))
         ExpandDirectory(pInBuf, callback, pcb);
     else callback(pcb, pInBuf);
@@ -257,29 +275,30 @@ void OnDropFiles(HDROP hDrop, HWND hDlg, thread_param* ptp)
 {
     struct CB cb;
     wchar_t FileName[MAX_PATH];
-    char szBuffer[128];
     DWORD i, FileNum;
 
-    cb.cnt      = 0;
+    cb.cnt = 0;
     cb.filter = 0;
-    cb.ptp      = ptp;
+    cb.ptp = ptp;
 
-    u32 idx = SendMessage(hCombo, CB_GETCURSEL, 0, 0);
+    LRESULT idx = SendMessage(hCombo, CB_GETCURSEL, 0, 0);
     if (idx == CB_ERR)
     {
         MessageBox(hDlg, L"请先选择对应的游戏", L"提示", MB_ICONINFORMATION);
         return;
     }
 
+    WCHAR szBuffer[MAX_PATH];
+    SendMessage(hCombo, CB_GETLBTEXT, idx, (LPARAM)szBuffer);
+    auto it = GameNameMap.find(szBuffer);
+    assert(it != GameNameMap.end());
+    for (int i = 0; i < THREAD_NUM; ++i)
+        ptp[i].ChooseGame = it->second;
 
-    LoadStringA((HINSTANCE)GetWindowLong(hDlg, GWL_HINSTANCE), idx+499, szBuffer, 128);
-    for (int i=0; i<THREAD_NUM; ++i)
-        StringCchCopyA(ptp[i].ChooseGame, sizeof(ptp[i].ChooseGame), szBuffer);
 
+    FileNum = DragQueryFile(hDrop, -1, NULL, 0);
 
-    FileNum  = DragQueryFile(hDrop, -1, NULL, 0);
-
-    for (i=0; i<FileNum; ++i)
+    for (i = 0; i < FileNum; ++i)
     {
         DragQueryFile(hDrop, i, (LPTSTR)FileName, MAX_PATH);
         AppendFileToQueue(FileName, callback, &cb);
@@ -292,10 +311,10 @@ void OnDropFiles(HDROP hDrop, HWND hDlg, thread_param* ptp)
 DWORD WINAPI Thread(PVOID pv)
 {
     DWORD          dwNowProcess = 0;
-    thread_param *ptp = (thread_param*) pv;
+    thread_param *ptp = (thread_param*)pv;
     wchar_t          cur_dir[MAX_PATH], CurrentFile[MAX_PATH];
-    
-    
+
+
     while (1)
     {
         WaitForSingleObject(ptp->hEvent, INFINITE);
@@ -305,7 +324,7 @@ DWORD WINAPI Thread(PVOID pv)
         EnterCriticalSection(&cs);
         {
             StringCchCopy(CurrentFile, MAX_PATH, (wchar_t *)ptp->queue.back().c_str());
-            ptp->queue.pop_back();            
+            ptp->queue.pop_back();
         }
         LeaveCriticalSection(&cs);
 
@@ -313,20 +332,20 @@ DWORD WINAPI Thread(PVOID pv)
         StringCchCopy(cur_dir, MAX_PATH, CurrentFile);
 
         DWORD l = wcslen(cur_dir);
-        while(l && cur_dir[l-1] != '\\') --l;
+        while (l && cur_dir[l - 1] != '\\') --l;
         cur_dir[l] = '\0';
 
         StringCchCat(cur_dir, MAX_PATH, L"[extract] ");
         StringCchCat(cur_dir, MAX_PATH, &CurrentFile[l]);
         CreateDirectory(cur_dir, 0);
-        
+
 
         XP3Entrance(CurrentFile, cur_dir, ptp->ChooseGame);
-        
+
 
         if (0 == ptp->queue.size())
-                ResetEvent(ptp->hEvent);
-        
+            ResetEvent(ptp->hEvent);
+
     }
     return 0;
 }

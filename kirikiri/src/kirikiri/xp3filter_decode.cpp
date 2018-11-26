@@ -12,7 +12,7 @@ extern void xp3filter_decode_dec(struct xp3filter *);
 static const char *xp3filter_decode_parameter;
 static void (*xp3filter_decode_handler)(struct xp3filter *);
 
-void xp3filter_decode(char *game, WCHAR *name, BYTE *buf, DWORD len, DWORD offset, DWORD total_len, DWORD hash)
+void xp3filter_decode(char *game, const WCHAR *name, BYTE *buf, DWORD len, DWORD offset, DWORD total_len, DWORD hash)
 {
 	struct xp3filter xp3filter;
 
@@ -37,7 +37,7 @@ void xp3filter_decode(char *game, WCHAR *name, BYTE *buf, DWORD len, DWORD offse
 
 // 后处理。
 // 有的加密系统，hash是针对加密后的数据的。
-void xp3filter_post_decode(WCHAR *name, BYTE *buf, DWORD len, DWORD hash)
+void xp3filter_post_decode(const WCHAR *name, BYTE *buf, DWORD len, DWORD hash)
 {
 	struct xp3filter xp3filter;
 

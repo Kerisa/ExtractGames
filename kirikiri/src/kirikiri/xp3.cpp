@@ -1,151 +1,13 @@
 
 #include "xp3.h"
-
-UNCOM unCom;
-
-int is_xp3_file(HANDLE hFile)
-{
-    DWORD R;
-    char magic[11];
-
-    SetFilePointer(hFile, 0, NULL, FILE_BEGIN);
-    ReadFile(hFile, magic, 11, &R, NULL);
-    return !memcmp(magic, "XP3\r\n \n\x1A\x8B\x67\x01", 11);
-}
+#include <iterator>
+#include <functional>
+#include <map>
+using namespace std;
 
 
-PBYTE uncompress_xp3_idx(HANDLE hFile, PDWORD idx_len, UNCOM unCom)
-{
-    DWORD ByteRead;
-    xp3_file_header header;
+UNCOMPRESS unCom;
 
-    SetFilePointer(hFile, 11, NULL, FILE_BEGIN);
-    ReadFile(hFile, &header.offset_lo, 4, &ByteRead, NULL);
-    ReadFile(hFile, &header.offset_hi, 4, &ByteRead, NULL);
-
-    if (header.offset_lo != 0x17)
-        SetFilePointer(hFile, header.offset_lo, (PLONG)&header.offset_hi, FILE_BEGIN);
-    else
-    {
-        ReadFile(hFile, &header.minor_version, 4, &ByteRead, NULL);
-        ReadFile(hFile, &header.flag, 1, &ByteRead, NULL);
-        ReadFile(hFile, &header.index_size_lo, 4, &ByteRead, NULL);
-        ReadFile(hFile, &header.index_size_hi, 4, &ByteRead, NULL);
-        ReadFile(hFile, &header.index_offset_lo, 4, &ByteRead, NULL);
-        ReadFile(hFile, &header.index_offset_hi, 4, &ByteRead, NULL);
-
-        SetFilePointer(hFile, header.index_offset_lo, (PLONG)&header.index_offset_hi, FILE_BEGIN);
-    }
-
-    BYTE  idx_flag;
-    DWORD idx_size_lo;
-    DWORD idx_size_hi;
-    DWORD idx_uncom_lo;
-    DWORD idx_uncom_hi;
-
-    ReadFile(hFile,     &idx_flag, 1, &ByteRead, NULL);
-    ReadFile(hFile,  &idx_size_lo, 4, &ByteRead, NULL);
-    ReadFile(hFile,  &idx_size_hi, 4, &ByteRead, NULL);
-    if (idx_flag)
-    {
-        ReadFile(hFile, &idx_uncom_lo, 4, &ByteRead, NULL);
-        ReadFile(hFile, &idx_uncom_hi, 4, &ByteRead, NULL);
-    }
-    else
-    {
-        idx_uncom_lo = idx_size_lo;
-        idx_uncom_hi = idx_size_hi;
-    }
-
-    PBYTE idx = (u8*)VirtualAlloc(NULL, idx_size_lo, MEM_COMMIT, PAGE_READWRITE);
-    PBYTE idx_raw = (u8*)VirtualAlloc(NULL, idx_uncom_lo, MEM_COMMIT, PAGE_READWRITE);
-    if (!idx || !idx_raw)
-    {
-        AppendMsg(L"内存分配失败！");
-        return 0;
-    }
-
-    ReadFile(hFile, idx, idx_size_lo, &ByteRead, NULL);
-    if (idx_flag)
-        unCom((PBYTE)idx_raw, &idx_uncom_lo, (PBYTE)idx, idx_size_lo);
-    else
-        memcpy(idx_raw, idx, idx_size_lo);
-
-    VirtualProtect(idx_raw, idx_uncom_lo, PAGE_READONLY, NULL);
-    VirtualFree(idx, idx_size_lo, MEM_DECOMMIT);
-    VirtualFree(idx, 0, MEM_RELEASE);
-
-    *idx_len = idx_uncom_lo;
-    return idx_raw;
-}
-
-
-static int SplitFileNameAndSave (
-        const wchar_t *cur_dir,
-        const wchar_t *file_name,
-        PVOID unpack,
-        DWORD file_length
-        )
-{
-    DWORD ByteWrite;
-    wchar_t buf[MAX_PATH] = {0}, buf2[MAX_PATH];
-
-    StringCchCopy(buf, MAX_PATH, cur_dir);
-    StringCchCat (buf, MAX_PATH, L"\\");
-    StringCchCat (buf, MAX_PATH, file_name);
-
-    int len = wcslen(buf);
-    int i = wcslen(cur_dir) + 1;
-    wchar_t *p = buf, *end = buf + len;
-    while (p <= end && i < len)
-    {
-        while(buf[i] != '\\' && buf[i] != '/' && buf[i] != '\0') ++i;
-        if (buf[i] == '/') buf[i] = '\\';
-        if (i<len)
-        {
-            wchar_t tmp = buf[i];
-            buf[i] = '\0';
-
-            CreateDirectoryW(p, 0);
-            buf[i] = tmp;
-            ++i;
-        }
-    }
-
-    HANDLE hFile;
-    int ret = 0;
-    do {
-        hFile = CreateFile(buf, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
-        if (hFile == INVALID_HANDLE_VALUE)
-        {
-            StringCchPrintf(buf2, MAX_PATH, L"[文件创建错误]%s\r\n", file_name);
-            ret = ERR_FILE_CREATE;
-            break;
-        }
-
-        WriteFile(hFile, unpack, file_length, &ByteWrite, NULL);
-
-        if (ByteWrite != file_length)
-        {
-            StringCchPrintf(buf2, MAX_PATH, L"[文件写入错误]%s\r\n", file_name);
-            ret = ERR_FILE_ERITE;
-            break;
-        }
-
-        int t = GetLastError();
-        if (!t || t == ERROR_ALREADY_EXISTS)
-            StringCchPrintf(buf2, MAX_PATH, L"[已保存]%s\r\n", file_name);
-        else
-        {
-            StringCchPrintf(buf2, MAX_PATH, L"[无法保存]%s\r\n", file_name);
-            ret = ERR_FILE_OTHERS;
-        }
-    } while(0);
-
-    AppendMsg(buf2);
-    CloseHandle(hFile);
-    return ret;
-}
 
 
 DWORD HaveExtraEntryChunk(const char *game)
@@ -159,19 +21,206 @@ DWORD HaveExtraEntryChunk(const char *game)
     return 0;
 }
 
-int XP3ArcPraseEntryStage0 (
-        PVOID _idx, DWORD _len,
-        std::vector<file_entry>& Entry
+int XP3ArcPraseEntryStage1 (
+        PVOID _idx,
+        DWORD _len,
+        std::vector<file_entry>& Entry,
+        DWORD chunk
         )
 {
+    /////////////////////////////////////////
+    // Format:
+    // <magic> <length>  <adlr>   <filename>
+    // 4Bytes + 8Bytes + 4Bytes + 2Bytes+wcharstring
+    /////////////////////////////////////////
+    if (!chunk)
+        return 1;
+
+    PBYTE pEnd = (PBYTE)_idx + _len, p = (PBYTE)_idx;
+    int walk = -1;
+    while (p < pEnd && *(PDWORD)p != chunk) ++p;
+    for (DWORD i=0; i<Entry.size(); ++i)
+        if (*(PDWORD)(p+0xc) == Entry[i].checksum)
+        {
+            walk = i + 1;
+            wcscpy_s(Entry[i].file_name, file_entry::StrCapacity, (wchar_t*)(p + 0x12));
+            p += 0x12 + wcslen((wchar_t*)(p + 0x12));
+        }
+
+    assert(walk != -1);
+
+    while (p < pEnd)
+    {
+        if (*(PDWORD)p == chunk)
+        {
+            wcscpy_s(Entry[walk++].file_name, file_entry::StrCapacity, (wchar_t*)(p + 0x12));
+            p += 0x12 + wcslen((wchar_t*)(p + 0x12));
+        }
+        else
+            ++p;
+    }
+
+    return 0;
+}
+
+
+void XP3Entrance(const wchar_t *packName, const wchar_t *curDirectory, const std::string& choosedGame)
+{
+    DWORD idx_size = 0;
+    wchar_t szBuffer[MAX_PATH];
+
+    auto fucker = CreateXP3Handler(choosedGame);
+
+    bool success = fucker->Open(packName);
+    assert(success);
+    auto entries = fucker->XP3ArcPraseEntryStage0(fucker->GetPlainIndexBytes());
+    int saveFileCount = fucker->ExtractData(entries, curDirectory);
+    fucker->Close();
+    delete fucker;
+
+    if (entries.size() == saveFileCount)
+    {
+        StringCchPrintf(szBuffer, MAX_PATH,
+            L"[提取完成(%d/%d)]%s\r\n", saveFileCount, saveFileCount, packName);
+        AppendMsg(szBuffer);
+    }
+    else
+    {
+        StringCchPrintf(szBuffer, MAX_PATH, L"提取%d个文件，共%d个，有%d个发生错误\r\n%s\r\n",
+            saveFileCount, entries.size(), entries.size() - saveFileCount, packName);
+        MessageBox(0, szBuffer, L"提示", MB_ICONWARNING);
+    }
+}
+
+EncryptedXP3 * CreateXP3Handler(const std::string & gameName)
+{
+    static map<string, std::function<EncryptedXP3*()>> list{
+        { "kuranokunchi",   []() { return new kuranokunchi; } },
+        { "amakoi",         []() { return new amakoi;       } },
+        { "prettycation",   []() { return new prettycation; } },
+        { "lovelycation",   []() { return new lovelycation; } },
+        { "swansong",       []() { return new swansong;     } },
+        { "deai5bu",        []() { return new deai5bu;      } },
+
+        // cxdec
+        { "colorfulcure",   []() { return new colorfulcure; } },
+    };
+
+    auto it = list.find(gameName);
+    if (it != list.end())
+        return it->second();
+    else
+        return new EncryptedXP3;
+}
+
+EncryptedXP3::~EncryptedXP3()
+{
+    Close();
+}
+
+bool EncryptedXP3::Open(const std::wstring & path)
+{
+    assert(!mStream.is_open());
+    mStream.open(path, ios::binary);
+    if (!mStream.is_open())
+    {
+        assert("open failed xp3 packet" && 0);
+        return false;
+    }
+
+    if (!IsValid())
+    {
+        Close();
+        assert("not valid xp3 packet" && 0);
+        return false;
+    }
+
+    mPath = path;
+    return true;
+}
+
+void EncryptedXP3::Close()
+{
+    if (mStream.is_open())
+        mStream.close();
+    mPath.clear();
+}
+
+bool EncryptedXP3::IsValid()
+{
+    vector<char> magic(11);
+    assert(mStream.is_open());
+    mStream.seekg(0, ios::beg);
+    mStream.read(magic.data(), magic.size());
+
+    return !memcmp(magic.data(), "XP3\r\n \n\x1A\x8B\x67\x01", magic.size());
+}
+
+std::vector<char> EncryptedXP3::GetPlainIndexBytes()
+{
+    xp3_file_header header;
+
+    mStream.seekg(11, ios::beg);
+    mStream.read((char*)&header.offset, 8);
+
+    if (header.offset != 0x17)
+    {
+        mStream.seekg(header.offset, ios::beg);
+    }
+    else
+    {
+        mStream.read((char*)&header.minor_version, 4);
+        mStream.read((char*)&header.flag, 1);
+        mStream.read((char*)&header.index_size, 8);
+        mStream.read((char*)&header.index_offset, 8);
+        mStream.seekg(header.index_offset, ios::beg);
+    }
+
+    BYTE  idx_flag;
+    uint64_t idx_size;
+    uint64_t idx_uncom;
+
+    mStream.read((char*)&idx_flag, 1);
+    mStream.read((char*)&idx_size, 8);
+    if (idx_flag)
+    {
+        mStream.read((char*)&idx_uncom, 8);
+    }
+    else
+    {
+        idx_uncom = idx_size;
+    }
+
+    vector<char> idx(idx_size);
+    vector<char> idx_raw(idx_uncom);
+
+    mStream.read(idx.data(), idx.size());
+    if (idx_flag)
+    {
+        uint32_t detLen = (uint32_t)idx_uncom;
+        unCom(idx_raw.data(), &detLen, idx.data(), idx_size);
+    }
+    else
+    {
+        idx_raw = idx;
+    }
+
+    return idx_raw;
+}
+
+std::vector<file_entry> EncryptedXP3::XP3ArcPraseEntryStage0(const std::vector<char>& plainBytes)
+{
+    std::vector<file_entry> Entry;
+
+
     static const DWORD _file = 0x656C6946, _adlr = 0x726c6461,
         _segm = 0x6d676573, _info = 0x6f666e69,
-        flag_file = 0x1,    flag_adlr = 0x2,
-        flag_segm = 0x4,    flag_info = 0x8,
-        flag_all  = 0xf;
+        flag_file = 0x1, flag_adlr = 0x2,
+        flag_segm = 0x4, flag_info = 0x8,
+        flag_all = 0xf;
 
     PBYTE info_sec_end = nullptr;
-    PBYTE pEnd = (PBYTE)_idx + _len, p = (PBYTE)_idx;
+    PBYTE pEnd = (PBYTE)plainBytes.data() + plainBytes.size(), p = (PBYTE)plainBytes.data();
 
     assert(*(PDWORD)p == _file);
 
@@ -246,7 +295,7 @@ int XP3ArcPraseEntryStage0 (
                 fe.encryption_flag = *((PDWORD)p);    // 好像这个标志也没啥用
                 p += 0x14;  // 跳过info中的长度信息
 
-                // 剩下的是文件名长度和文件名
+                            // 剩下的是文件名长度和文件名
                 int buf_size = (int)*((PWORD)p);
                 if (buf_size >= _countof(fe.file_name))
                 {
@@ -256,7 +305,7 @@ int XP3ArcPraseEntryStage0 (
                 p += 0x2;
                 memset(fe.file_name, 0, _countof(fe.file_name));
                 memcpy(fe.file_name, (wchar_t*)p, buf_size * sizeof(wchar_t));
-                
+
                 p = info_sec_end;
 
                 flag |= flag_info;
@@ -268,250 +317,202 @@ int XP3ArcPraseEntryStage0 (
         Entry.push_back(fe);
     }
 
-    return 0;
+    return Entry;
 }
 
-
-int XP3ArcPraseEntryStage1 (
-        PVOID _idx,
-        DWORD _len,
-        std::vector<file_entry>& Entry,
-        DWORD chunk
-        )
+int EncryptedXP3::ExtractData(const std::vector<file_entry>& Entry, const std::wstring& saveDir)
 {
-    /////////////////////////////////////////
-    // Format:
-    // <magic> <length>  <adlr>   <filename>
-    // 4Bytes + 8Bytes + 4Bytes + 2Bytes+wcharstring
-    /////////////////////////////////////////
-    if (!chunk)
-        return 1;
+    uint32_t cnt_savefile = 0;
 
-    PBYTE pEnd = (PBYTE)_idx + _len, p = (PBYTE)_idx;
-    int walk = -1;
-    while (p < pEnd && *(PDWORD)p != chunk) ++p;
-    for (DWORD i=0; i<Entry.size(); ++i)
-        if (*(PDWORD)(p+0xc) == Entry[i].checksum)
-        {
-            walk = i + 1;
-            wcscpy_s(Entry[i].file_name, file_entry::StrCapacity, (wchar_t*)(p + 0x12));
-            p += 0x12 + wcslen((wchar_t*)(p + 0x12));
-        }
-
-    assert(walk != -1);
-
-    while (p < pEnd)
+    for (const file_entry& fe : Entry)
     {
-        if (*(PDWORD)p == chunk)
+        uint32_t file_pkg_len = 0;
+        uint32_t file_org_len = 0;
+        for (int i = 0; i<fe.part; ++i)
         {
-            wcscpy_s(Entry[walk++].file_name, file_entry::StrCapacity, (wchar_t*)(p + 0x12));
-            p += 0x12 + wcslen((wchar_t*)(p + 0x12));
-        }
-        else
-            ++p;
-    }
-
-    return 0;
-}
-
-
-int XP3SaveResource (
-        const HANDLE hFile,
-        std::vector<file_entry>& Entry,
-        const char *game,
-        const wchar_t *cur_dir
-        )
-{
-    _XOR_DECODE p_decode = (_XOR_DECODE)0x80000000;
-    DWORD R, game_idx, offset_hi, cnt_savefile = 0;
-
-
-    if (!strcmp(game, unencry_game))    // 决定解密使用的函数
-        p_decode = 0;
-    else for (int i=0; i<sizeof(simple_xor_game)/sizeof(simple_xor_game[0]); ++i)
-        if (!strcmp(game, simple_xor_game[i].name))
-        {
-            p_decode = simple_xor_game[i].p_decode;
-            game_idx = i;
-            break;
+            file_pkg_len += (uint32_t)fe.info[i].pkg_length;
+            file_org_len += (uint32_t)fe.info[i].orig_length;
         }
 
+        uint32_t file_read = 0;
+        vector<char> cipher(file_pkg_len);
 
-    for each(file_entry fe in Entry)
-    {
-        DWORD file_pkg_len = 0;
-        DWORD file_org_len = 0;
-        for (int i=0; i<fe.part; ++i)
+        for (int i = 0; i<fe.part; ++i)
         {
-            file_pkg_len += (DWORD)fe.info[i].pkg_length;
-            file_org_len += (DWORD)fe.info[i].orig_length;
+            mStream.seekg(fe.info[i].offset, ios::beg);
+            mStream.read(cipher.data() + file_read, (uint32_t)fe.info[i].pkg_length);
+            file_read += (uint32_t)fe.info[i].pkg_length;
         }
 
-        DWORD file_read = 0;
-        PBYTE cipher = (PBYTE)VirtualAlloc(NULL, file_pkg_len, MEM_COMMIT, PAGE_READWRITE);
-
-        for (int i=0; i<fe.part; ++i)
-        {
-            offset_hi = (DWORD)(fe.info[i].offset >> 32);
-            SetFilePointer(hFile, (DWORD)fe.info[i].offset, (PLONG)&offset_hi, FILE_BEGIN);
-            ReadFile(hFile, cipher + file_read, (DWORD)fe.info[i].pkg_length, &R, NULL);
-            file_read += (DWORD)fe.info[i].pkg_length;
-        }
-
-        PBYTE unpack = (PBYTE)VirtualAlloc(NULL, file_org_len, MEM_COMMIT, PAGE_READWRITE);
-        DWORD unpack_len = (DWORD)file_org_len;
-        DWORD unpack_offset = 0;
-
+        vector<char> unpack(file_org_len);
         if (fe.info[0].compress_flag)
-            unCom(unpack, &unpack_len, cipher, file_pkg_len);
+        {
+            uint32_t unpack_len = (uint32_t)file_org_len;
+            unCom(unpack.data(), &unpack_len, cipher.data(), file_pkg_len);
+        }
         else
-            memcpy(unpack, cipher, file_org_len);
+        {
+            assert(file_pkg_len == file_org_len);
+            unpack = cipher;
+        }
 
-//*****************************************************************************//
-        do {
-            if (!p_decode) break;
-            else if (p_decode == (_XOR_DECODE)0x80000000)
-                xp3filter_decode(const_cast<char*>(game), fe.file_name, unpack, file_org_len, unpack_offset, file_org_len, fe.checksum);
-            else
-                p_decode(fe.checksum, simple_xor_game[game_idx].extend_key, simple_xor_game[game_idx].offset, unpack, file_org_len);
 
-        }while(0);
-//*****************************************************************************//
+        if (DoExtractData(fe, unpack))
+            if (!SplitFileNameAndSave(saveDir.c_str(), fe.file_name, unpack))
+                ++cnt_savefile;
 
-        if (!SplitFileNameAndSave(cur_dir, fe.file_name, unpack, file_org_len))
-            ++cnt_savefile;
-
-        VirtualFree(unpack, 0, MEM_RELEASE);
-        VirtualFree(cipher, 0, MEM_RELEASE);
     }
 
     return cnt_savefile;
 }
 
-
-void XP3Entrance (
-        const wchar_t *packName,
-        const wchar_t *curDirectory,
-        const char *choosedGame
-        )
+bool EncryptedXP3::DoExtractData(const file_entry& fe, std::vector<char>& unpackData)
 {
-    DWORD idx_size = 0;
-    PBYTE uncompress_idx;
-    HANDLE hFile;
-    wchar_t szBuffer[MAX_PATH];
+    // 默认
+    return true;
+}
 
+int EncryptedXP3::SplitFileNameAndSave(const wstring& cur_dir, const wstring& file_name, const vector<char>& unpackData)
+{
+    DWORD ByteWrite;
+    wstring buf;
+
+    buf = cur_dir + L"\\" + file_name;
+
+    int len = buf.size();
+    int i = cur_dir.size() + 1;
+    const wchar_t* p = buf.c_str();
+    const wchar_t* end = buf.c_str() + len;
+    while (p <= end && i < len)
+    {
+        while (buf[i] != '\\' && buf[i] != '/' && buf[i] != '\0') ++i;
+        if (buf[i] == '/') buf[i] = '\\';
+        if (i<len)
+        {
+            wchar_t tmp = buf[i];
+            buf[i] = '\0';
+
+            CreateDirectoryW(p, 0);
+            buf[i] = tmp;
+            ++i;
+        }
+    }
+
+    wstring buf2;
+    HANDLE hFile;
+    int ret = 0;
     do {
-        hFile = CreateFile(packName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, 0);
+        hFile = CreateFile(buf.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
         if (hFile == INVALID_HANDLE_VALUE)
         {
-            StringCchPrintf(szBuffer, MAX_PATH, L"无法打开文件, 跳过\r\n%s\r\n", packName);
-            AppendMsg(szBuffer);
+            buf2 = L"[文件创建错误]" + file_name + L"\r\n";
+            ret = ERR_FILE_CREATE;
             break;
         }
 
-        if (!is_xp3_file(hFile))
+        WriteFile(hFile, unpackData.data(), unpackData.size(), &ByteWrite, NULL);
+
+        if (ByteWrite != unpackData.size())
         {
-            StringCchPrintf(szBuffer, MAX_PATH, L"错误的xp3文件:%s\r\n", packName);
-            AppendMsg(szBuffer);
+            buf2 = L"[文件写入错误]" + file_name + L"\r\n";
+            ret = ERR_FILE_ERITE;
             break;
         }
 
-        uncompress_idx = uncompress_xp3_idx(hFile, &idx_size, unCom);
-
-        if (!uncompress_idx)
+        int t = GetLastError();
+        if (!t || t == ERROR_ALREADY_EXISTS)
         {
-            AppendMsg(L"xp3索引提取失败\r\n");
-            break;
-        }
-
-        std::vector<file_entry> Entry;
-        XP3ArcPraseEntryStage0(uncompress_idx, idx_size, Entry);
-
-        DWORD chunk = 0;
-        if ((chunk = HaveExtraEntryChunk(choosedGame)))
-            XP3ArcPraseEntryStage1(uncompress_idx, idx_size, Entry, chunk);
-
-        DWORD save_file = XP3SaveResource(hFile, Entry, choosedGame, curDirectory);
-
-        if (Entry.size() == save_file)
-        {
-            StringCchPrintf(szBuffer, MAX_PATH,
-                L"[提取完成(%d/%d)]%s\r\n", save_file, save_file, packName);
-            AppendMsg(szBuffer);
+            buf2 = L"[已保存]" + file_name + L"\r\n";
         }
         else
         {
-            StringCchPrintf(szBuffer, MAX_PATH, L"提取%d个文件，共%d个，有%d个发生错误\r\n%s\r\n",
-                save_file, Entry.size(), Entry.size() - save_file, packName);
-            MessageBox(0, szBuffer, L"提示", MB_ICONWARNING);
+            buf2 = L"[无法保存]" + file_name + L"\r\n";
+            ret = ERR_FILE_OTHERS;
         }
     } while (0);
 
-    if (uncompress_idx)
-        VirtualFree(uncompress_idx, 0, MEM_RELEASE);
-
+    AppendMsg(buf2.c_str());
     CloseHandle(hFile);
+    return ret;
 }
 
 
-static void xor_decode(DWORD hash, DWORD extend_key, DWORD offset, PBYTE buf, DWORD len)    // 从offset开始解
+
+
+bool kuranokunchi::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
 {
-    for (DWORD i=offset; i<len; ++i)
-        buf[i] ^= (BYTE)hash ^ extend_key;
-    return;
+    for (size_t i = 0; i<unpackData.size(); ++i)
+        unpackData[i] ^= (uint8_t)fe.checksum ^ 0xcd;
+    return true;
 }
 
-
-static void xor_decode_prettycation(DWORD hash, DWORD , DWORD offset, PBYTE buf, DWORD len)
+bool amakoi::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
 {
-    for (DWORD i=offset; i<len; ++i)
-        buf[i] ^= (BYTE)(hash>>0xc);
-    return;
+    for (size_t i = 0; i<unpackData.size(); ++i)
+        unpackData[i] ^= (uint8_t)fe.checksum;
+    return true;
 }
 
-
-static void xor_decode_swansong(DWORD hash, DWORD , DWORD offset, PBYTE buf, DWORD len)
+bool prettycation::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
 {
-    BYTE ror = (BYTE)hash & 7, key = (BYTE)(hash >> 8);
-    for (DWORD i=offset; i<len; ++i)
-    {
-        buf[i] = buf[i] ^ key;
-        buf[i] = buf[i] >> ror | buf[i] << (8-ror);
-    }
-    return;
+    for (size_t i = 5; i<unpackData.size(); ++i)
+        unpackData[i] ^= (uint8_t)(fe.checksum >> 0xc);
+    return true;
 }
 
-static void xor_decode_without_hash(DWORD , DWORD key, DWORD , PBYTE buf, DWORD len)
+bool lovelycation::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
 {
-    DWORD dwordLen = len >> 2;
-    PDWORD ptr = (PDWORD)buf;
-    for (DWORD i=0; i<dwordLen; ++i)
-        *ptr++ ^= key;
+    char* buf = unpackData.data();
 
-    DWORD remain = len - (dwordLen << 2);
-    for (; remain != 0; --remain)
-    {
-        buf[(dwordLen<<2) + remain - 1] ^= (BYTE)(key >> (remain - 1));
-    }
-    return;
-}
+    uint8_t key[5];
+    key[0] = (uint8_t)(fe.checksum >> 8) & 0xff;
+    key[1] = (uint8_t)(fe.checksum >> 8) & 0xff;
+    key[2] = (uint8_t)(fe.checksum >> 1) & 0xff;
+    key[3] = (uint8_t)(fe.checksum >> 7) & 0xff;
+    key[4] = (uint8_t)(fe.checksum >> 5) & 0xff;
 
-void xor_decode_lovelycation(DWORD hash, DWORD extend_key, DWORD offset, PBYTE buf, DWORD len)
-{
-    BYTE key[5];
-    key[0] = (BYTE)(hash >> 8) & 0xff;
-    key[1] = (BYTE)(hash >> 8) & 0xff;
-    key[2] = (BYTE)(hash >> 1) & 0xff;
-    key[3] = (BYTE)(hash >> 7) & 0xff;
-    key[4] = (BYTE)(hash >> 5) & 0xff;
-    
-    for (int i=0; i<=0x64; ++i)
+    for (size_t i = 0; i <= 0x64; ++i)
     {
         *buf++ ^= key[4];
     }
-    for (int i=0x65; i<len; ++i)
+    for (size_t i = 0x65; i<unpackData.size(); ++i)
     {
-        *buf++ ^= key[i&4];
+        *buf++ ^= key[i & 4];
     }
-    return;
+    return true;
+}
+
+bool swansong::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
+{
+    uint8_t ror = (uint8_t)fe.checksum & 7;
+    uint8_t key = (uint8_t)(fe.checksum >> 8);
+    for (size_t i = 0; i<unpackData.size(); ++i)
+    {
+        unpackData[i] ^= key;
+        unpackData[i] = unpackData[i] >> ror | unpackData[i] << (8 - ror);
+    }
+    return true;
+}
+
+bool deai5bu::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
+{
+    uint32_t key = 0x35353535;
+
+    size_t dwordLen = unpackData.size() >> 2;
+    uint32_t* ptr = (uint32_t*)unpackData.data();
+    for (size_t i = 0; i<dwordLen; ++i)
+        *ptr++ ^= key;
+
+    size_t remain = unpackData.size() - (dwordLen << 2);
+    for (; remain != 0; --remain)
+    {
+        unpackData[(dwordLen << 2) + remain - 1] ^= (uint8_t)(key >> (remain - 1));
+    }
+    return true;
+}
+
+bool colorfulcure::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
+{
+    xp3filter_decode("colorfulcure", fe.file_name, (uint8_t*)unpackData.data(), unpackData.size(), 0, unpackData.size(), fe.checksum);
+    return true;
 }

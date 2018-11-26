@@ -76,7 +76,6 @@
     <ClInclude Include="cxdec\cxdec.h" />
     <ClInclude Include="error.h" />
     <ClInclude Include="resource.h" />
-    <ClInclude Include="types.h" />
     <ClInclude Include="xp3.h" />
     <ClInclude Include="xp3filter_decode.h" />
   </ItemGroup>
