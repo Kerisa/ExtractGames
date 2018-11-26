@@ -155,7 +155,7 @@ static int xcode_building(struct cxdec_callback *callback, DWORD seed, void *sta
 struct cxdec {
 	BYTE *xcode;			// 容纳128个解密函数，每个函数100字节
 	void *address_list[128];// 128个解密函数的地址(用index索引)
-	u32 current_count;		// 当前有效的解密函数的个数
+	unsigned int current_count;		// 当前有效的解密函数的个数
 	DWORD index_list[100];	// 记录有效的index编号
 	int init_flag;
 };
@@ -223,12 +223,12 @@ static void __cxdec_decode(struct cxdec_callback *callback, DWORD hash, DWORD of
 	key[10] = ret[0];
 	DWORD key1 = ret[1] >> 16;
 	DWORD key2 = ret[1] & 0xffff;
-	*(u32 *)&key[0] = key1;
+	*(unsigned int *)&key[0] = key1;
 
 	if (key1 == key2)
 		++key2;
 
-	*(u32 *)&key[4] = key2;
+	*(unsigned int *)&key[4] = key2;
 	
 	if (!key[10])
 		key[10] = 1;
