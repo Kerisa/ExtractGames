@@ -1,8 +1,11 @@
 
 #include "xp3.h"
 #include <iterator>
+#include <iostream>
 #include <functional>
 #include <map>
+#include <sstream>
+
 using namespace std;
 
 
@@ -73,7 +76,16 @@ void XP3Entrance(const wchar_t *packName, const wchar_t *curDirectory, const std
 
     bool success = fucker->Open(packName);
     assert(success);
+    if (!success)
+    {
+        delete fucker;
+        return;
+    }
+
+    wstring txt(packName);
+    txt += L"_entries.txt";
     auto entries = fucker->XP3ArcPraseEntryStage0(fucker->GetPlainIndexBytes());
+    fucker->DumpEntriesToFile(entries, txt.c_str());
     int saveFileCount = fucker->ExtractData(entries, curDirectory);
     fucker->Close();
     delete fucker;
@@ -101,6 +113,7 @@ EncryptedXP3 * CreateXP3Handler(const std::string & gameName)
         { "lovelycation",   []() { return new lovelycation; } },
         { "swansong",       []() { return new swansong;     } },
         { "deai5bu",        []() { return new deai5bu;      } },
+        { "kamiyabai",      []() { return new kamiyabai;    } },
 
         // cxdec
         { "colorfulcure",   []() { return new colorfulcure; } },
@@ -320,6 +333,47 @@ std::vector<file_entry> EncryptedXP3::XP3ArcPraseEntryStage0(const std::vector<c
     return Entry;
 }
 
+void EncryptedXP3::DumpEntriesToFile(const std::vector<file_entry>& entries, const std::wstring & path)
+{
+    ofstream out(path, ios::binary);
+    if (!out.is_open())
+    {
+        wcout << L"DumpEntries: create file [" << path << L"] failed.\n";
+        return;
+    }
+
+    for (size_t i = 0; i < entries.size(); ++i)
+    {
+        string str;
+        str += "file name: ";
+
+        int n = WideCharToMultiByte(CP_UTF8, NULL, entries[i].file_name, -1, NULL, NULL, NULL, NULL);
+        vector<char> mcb(n + 1);
+        WideCharToMultiByte(CP_UTF8, NULL, entries[i].file_name, -1, mcb.data(), n, NULL, NULL);
+        str += mcb.data();
+
+        stringstream s0;
+        s0 << "\nchecksum: " << std::hex << entries[i].checksum << "\nencryption_flag: " << std::hex << entries[i].encryption_flag << "\n";
+        str += s0.str();
+
+        for (int k = 0; k < entries[i].part; ++k)
+        {
+            stringstream ss;
+            ss << "parts " << k + 1 << ":\n    ";
+            ss << "offset: " << std::hex << entries[i].info[k].offset << "\n    ";
+            ss << "orignal: " << std::hex << entries[i].info[k].orig_length << "\n    ";
+            ss << "packet: " << std::hex << entries[i].info[k].pkg_length << "\n    ";
+            ss << "compress_flag: " << std::hex << entries[i].info[k].compress_flag << "\n";
+            str += ss.str();
+        }
+
+        str += "---------------------------------------------\n\n";
+        out.write(str.c_str(), str.size());
+    }
+
+    out.close();
+}
+
 int EncryptedXP3::ExtractData(const std::vector<file_entry>& Entry, const std::wstring& saveDir)
 {
     uint32_t cnt_savefile = 0;
@@ -514,5 +568,22 @@ bool deai5bu::DoExtractData(const file_entry & fe, std::vector<char>& unpackData
 bool colorfulcure::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
 {
     xp3filter_decode("colorfulcure", fe.file_name, (uint8_t*)unpackData.data(), unpackData.size(), 0, unpackData.size(), fe.checksum);
+    return true;
+}
+
+bool kamiyabai::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
+{
+    uint32_t key = 0xcdcdcdcd;
+
+    size_t dwordLen = unpackData.size() >> 2;
+    uint32_t* ptr = (uint32_t*)unpackData.data();
+    for (size_t i = 0; i<dwordLen; ++i)
+        *ptr++ ^= key;
+
+    size_t remain = unpackData.size() - (dwordLen << 2);
+    for (; remain != 0; --remain)
+    {
+        unpackData[(dwordLen << 2) + remain - 1] ^= (uint8_t)(key >> (remain - 1));
+    }
     return true;
 }

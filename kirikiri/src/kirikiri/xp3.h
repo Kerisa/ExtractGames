@@ -78,6 +78,7 @@ public:
 
     std::vector<char> GetPlainIndexBytes();
     std::vector<file_entry> XP3ArcPraseEntryStage0(const std::vector<char>& plainBytes);
+    void DumpEntriesToFile(const std::vector<file_entry>& entries, const std::wstring& path);
     int ExtractData(const std::vector<file_entry>& entries, const std::wstring& saveDir);
 
     int SplitFileNameAndSave(const std::wstring& cur_dir, const std::wstring& file_name, const std::vector<char>& unpackData);
@@ -121,6 +122,12 @@ public:
 };
 
 class deai5bu : public EncryptedXP3
+{
+public:
+    bool DoExtractData(const file_entry& fe, std::vector<char>& unpackData) override;
+};
+
+class kamiyabai : public EncryptedXP3
 {
 public:
     bool DoExtractData(const file_entry& fe, std::vector<char>& unpackData) override;

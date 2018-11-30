@@ -37,7 +37,7 @@ std::map<std::wstring, std::string> GameNameMap = {
     { L"オトメ＊ドメイン", "Otomedomain" },
     { L"LOVELY×CATION2", "lovelycation" },
     { L"出会って5分は俺のもの！ 時間停止と不可避な運命", "deai5bu" },
-
+    { L"神頼みしすぎて俺の未来がヤバい。", "kamiyabai" },
 };
 
 
