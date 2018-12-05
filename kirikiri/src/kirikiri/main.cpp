@@ -12,33 +12,7 @@ using std::vector;
 using std::wstring;
 
 
-std::map<std::wstring, std::string> GameNameMap = {
-    { L"<默认：直接提取>", "Unencrypted" },
-    { L"さくら、咲きました。", "sakurasaki" },
-    { L"倉野くんちのふたご事情", "kuranokunchi" },
-    { L"あま恋シロップス ～恥じらう恋心でシたくなる甘神様の恋祭り～", "amakoi" },
-    { L"カミツレ ～7の二乗不思議～", "Unencrypted" },
-    { L"すたーらいと★アイドル -COLORFUL TOP STAGE！-", "Unencrypted" },
-    { L"あまたらすリドルスター", "Unencrypted" },
-    { L"カラフル☆きゅあ～ 缤纷少女", "colorfulcure" },
-    { L"ＰＲＥＴＴＹ×Ｃ∧ＴＩＯＮ", "prettycation" },
-    { L"your diary ＋H", "kuranokunchi" },
-    { L"迷える2人とセカイのすべて", "Unencrypted" },
-    { L"迷える2人とセカイのすべて LOVEHEAVEN300％", "Unencrypted" },
-    { L"ヤリまん娘 ～俺の妹はビチビチビッチ～", "Unencrypted" },
-    { L"公園いたずらシミュレータ ver.MAKO", "Unencrypted" },
-    { L"PRETTY×CATION2", "prettycation" },
-    { L"エロ本を捨ててから兄の様子がおかしい", "anioka" },
-    { L"SWANSONG", "swansong" },
-    { L"恋がさくころ桜どき", "koisakura" },
-    { L"ずっとすきして たくさんすきして", "sukisuki" },
-    { L"俺と5人の嫁さんがラブラブなのは、未来からきた赤ちゃんのおかげに違いない！？", "oreaka" },
-    { L"妹のセイイキ(未完成)", "seiiki" },
-    { L"オトメ＊ドメイン", "Otomedomain" },
-    { L"LOVELY×CATION2", "lovelycation" },
-    { L"出会って5分は俺のもの！ 時間停止と不可避な運命", "deai5bu" },
-    { L"神頼みしすぎて俺の未来がヤバい。", "kamiyabai" },
-};
+extern std::map<std::wstring, GameInfomation> GameNameMap;
 
 
 static int THREAD_NUM = 2;
@@ -49,7 +23,7 @@ struct thread_param
     HANDLE hEvent;
     HANDLE hThread;
     bool thread_exit;
-    std::string ChooseGame;
+    std::wstring ChooseGame;
     vector<wstring> queue;
 };
 
@@ -106,7 +80,6 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
     static thread_param *tp = new thread_param[THREAD_NUM];
     static HMODULE        hZlib;
     static bool            thread_paused;
-    TCHAR                szBuffer[MAX_PATH];
 
     switch (msg)
     {
@@ -293,7 +266,7 @@ void OnDropFiles(HDROP hDrop, HWND hDlg, thread_param* ptp)
     auto it = GameNameMap.find(szBuffer);
     assert(it != GameNameMap.end());
     for (int i = 0; i < THREAD_NUM; ++i)
-        ptp[i].ChooseGame = it->second;
+        ptp[i].ChooseGame = szBuffer;
 
 
     FileNum = DragQueryFile(hDrop, -1, NULL, 0);
