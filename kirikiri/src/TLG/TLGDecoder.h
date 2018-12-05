@@ -50,7 +50,7 @@ typedef struct
 
 typedef struct
 {
-    s8 mark[11];		// "TLG6.0\x0raw\x1a"
+    s8 mark[11];        // "TLG6.0\x0raw\x1a"
     u8 colors;
     u8 flag;
     u8 type;

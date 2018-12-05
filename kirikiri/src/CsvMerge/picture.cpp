@@ -1236,7 +1236,7 @@ bool Alisa::ImageCodec::EncodeJpg(const string_t & filename, const ImageImpl * i
     int row_stride = cinfo.image_width * cinfo.input_components;
 
     // jpg¥¢¥ÊÀ≥–Úµ»”⁄œ‘ æÀ≥–Ú
-    JSAMPROW row_pointer[1];	/* pointer to JSAMPLE row[s] */
+    JSAMPROW row_pointer[1];    /* pointer to JSAMPLE row[s] */
     while (cinfo.next_scanline < cinfo.image_height) {
         row_pointer[0] = &translate[cinfo.next_scanline * row_stride];
         jpeg_write_scanlines(&cinfo, row_pointer, 1);

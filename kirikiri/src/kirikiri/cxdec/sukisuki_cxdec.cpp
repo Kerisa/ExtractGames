@@ -4,7 +4,7 @@ static int xcode_building_stage0(struct cxdec_xcode_status *xcode, int stage);
 static int xcode_building_stage1(struct cxdec_xcode_status *xcode, int stage);
 
 static BYTE EncryptionControlBlock[4096] = {
-		0x20, 0x45, 0x6E, 0x63, 0x72, 0x79, 0x70, 0x74, 0x69, 0x6F, 
+        0x20, 0x45, 0x6E, 0x63, 0x72, 0x79, 0x70, 0x74, 0x69, 0x6F, 
 0x6E, 0x20, 0x63, 0x6F, 0x6E, 0x74, 0x72, 0x6F, 0x6C, 0x20, 
 0x62, 0x6C, 0x6F, 0x63, 0x6B, 0x20, 0x2D, 0x2D, 0x20, 0x53, 
 0x74, 0x61, 0x74, 0x69, 0x63, 0x61, 0x6C, 0x6C, 0x79, 0x20, 
@@ -418,202 +418,202 @@ static BYTE EncryptionControlBlock[4096] = {
 //1E0015F0
 static int xcode_building_first_stage(struct cxdec_xcode_status *xcode)
 {
-  	switch (xcode_rand(xcode) % 3) {
-  	case 1:
-		// MOV ESI, EncryptionControlBlock
-		// MOV EAX, DWORD PTR DS:[ESI+((xcode_rand(xcode) & 0x3ff) << 2)]
-		if (!push_bytexcode(xcode, 0xbe)
-				|| !push_dwordxcode(xcode, (DWORD)EncryptionControlBlock)
-				|| !push_2bytesxcode(xcode, 0x8b, 0x86)
-				|| !push_dwordxcode(xcode, (xcode_rand(xcode) & 0x3ff) << 2))
-			return 0;
-		break;
-	case 2:
-  		// MOV EAX, EDI
-  		if (!push_2bytesxcode(xcode, 0x8b, 0xc7))
-  			return 0;
-		break;
-  	case 0:
-		// MOV EAX, xcode_rand(xcode)
-		if (!push_bytexcode(xcode, 0xb8)
-				|| !push_dwordxcode(xcode, xcode_rand(xcode)))
-			return 0;
-  		break;
-  	}
-  	return 1;
+      switch (xcode_rand(xcode) % 3) {
+      case 1:
+        // MOV ESI, EncryptionControlBlock
+        // MOV EAX, DWORD PTR DS:[ESI+((xcode_rand(xcode) & 0x3ff) << 2)]
+        if (!push_bytexcode(xcode, 0xbe)
+                || !push_dwordxcode(xcode, (DWORD)EncryptionControlBlock)
+                || !push_2bytesxcode(xcode, 0x8b, 0x86)
+                || !push_dwordxcode(xcode, (xcode_rand(xcode) & 0x3ff) << 2))
+            return 0;
+        break;
+    case 2:
+          // MOV EAX, EDI
+          if (!push_2bytesxcode(xcode, 0x8b, 0xc7))
+              return 0;
+        break;
+      case 0:
+        // MOV EAX, xcode_rand(xcode)
+        if (!push_bytexcode(xcode, 0xb8)
+                || !push_dwordxcode(xcode, xcode_rand(xcode)))
+            return 0;
+          break;
+      }
+      return 1;
 }
 // 1E0016B0
 static int xcode_building_stage0(struct cxdec_xcode_status *xcode, int stage)
 {
-	if (stage == 1)
-		return xcode_building_first_stage(xcode);
+    if (stage == 1)
+        return xcode_building_first_stage(xcode);
 
     if (xcode_rand(xcode) & 1) {
-		if (!xcode_building_stage1(xcode, stage - 1))
-			return 0;
+        if (!xcode_building_stage1(xcode, stage - 1))
+            return 0;
     } else {
-		if (!xcode_building_stage0(xcode, stage - 1))
-			return 0;
+        if (!xcode_building_stage0(xcode, stage - 1))
+            return 0;
     }
 
     switch (xcode_rand(xcode) & 7) {
-	case 2:
-		// NOT EAX
-		if (!push_2bytesxcode(xcode, 0xf7, 0xd0))
-			return 0;
+    case 2:
+        // NOT EAX
+        if (!push_2bytesxcode(xcode, 0xf7, 0xd0))
+            return 0;
         break;
-	case 7:
-		// MOV ESI, EncryptionControlBlock
-		// AND EAX, 3FFh
-		// MOV EAX, DWORD PTR DS:[ESI+EAX*4]
+    case 7:
+        // MOV ESI, EncryptionControlBlock
+        // AND EAX, 3FFh
+        // MOV EAX, DWORD PTR DS:[ESI+EAX*4]
         if (!push_bytexcode(xcode, 0xbe)
-  				|| !push_dwordxcode(xcode, (DWORD)EncryptionControlBlock)
-				|| !push_bytexcode(xcode, 0x25)
-				|| !push_dwordxcode(xcode, 0x3ff)
-				|| !push_3bytesxcode(xcode, 0x8b, 0x04, 0x86))
-			return 0;
+                  || !push_dwordxcode(xcode, (DWORD)EncryptionControlBlock)
+                || !push_bytexcode(xcode, 0x25)
+                || !push_dwordxcode(xcode, 0x3ff)
+                || !push_3bytesxcode(xcode, 0x8b, 0x04, 0x86))
+            return 0;
         break;
-	case 5:
-		// DEC EAX
-		if (!push_bytexcode(xcode, 0x48))
-			return 0;
+    case 5:
+        // DEC EAX
+        if (!push_bytexcode(xcode, 0x48))
+            return 0;
         break;
-	case 3:
-		// NEG EAX
+    case 3:
+        // NEG EAX
         if (!push_2bytesxcode(xcode, 0xf7, 0xd8))
-			return 0;
-		break;
-	case 6:
+            return 0;
+        break;
+    case 6:
         if (xcode_rand(xcode) & 1) {
-        	// ADD EAX, xcode_rand(xcode)
-			if (!push_bytexcode(xcode, 0x05))
-            	return 0;
+            // ADD EAX, xcode_rand(xcode)
+            if (!push_bytexcode(xcode, 0x05))
+                return 0;
         } else {
-        	// SUB EAX, xcode_rand(xcode)
-			if (!push_bytexcode(xcode, 0x2d))
-            	return 0;
+            // SUB EAX, xcode_rand(xcode)
+            if (!push_bytexcode(xcode, 0x2d))
+                return 0;
         }
         if (!push_dwordxcode(xcode, xcode_rand(xcode)))
-        	return 0;
+            return 0;
         break;
-	case 4:
-		// PUSH EBX
-		// MOV EBX, EAX
-		// AND EBX, AAAAAAAA
-		// AND EAX, 55555555
-		// SHR EBX, 1
-		// SHL EAX, 1
-		// OR EAX, EBX
-		// POP EBX
-		if (!push_bytexcode(xcode, 0x53)
-				|| !push_2bytesxcode(xcode, 0x89, 0xc3)
-				|| !push_6bytesxcode(xcode, 0x81, 0xe3, 0xaa, 0xaa, 0xaa, 0xaa)
-				|| !push_5bytesxcode(xcode, 0x25, 0x55, 0x55, 0x55, 0x55)
-				|| !push_2bytesxcode(xcode, 0xd1, 0xeb)
-				|| !push_2bytesxcode(xcode, 0xd1, 0xe0)
-				|| !push_2bytesxcode(xcode, 0x09, 0xd8)
-				|| !push_bytexcode(xcode, 0x5b))
-			return 0;
-		break;
-	case 1:
-		// INC EAX
-		if (!push_bytexcode(xcode, 0x40))
-			return 0;
-		break;
-	case 0:
-		// XOR EAX, xcode_rand(xcode)
-		if (!push_bytexcode(xcode, 0x35) 
-				|| !push_dwordxcode(xcode, xcode_rand(xcode)))
-			return 0;
+    case 4:
+        // PUSH EBX
+        // MOV EBX, EAX
+        // AND EBX, AAAAAAAA
+        // AND EAX, 55555555
+        // SHR EBX, 1
+        // SHL EAX, 1
+        // OR EAX, EBX
+        // POP EBX
+        if (!push_bytexcode(xcode, 0x53)
+                || !push_2bytesxcode(xcode, 0x89, 0xc3)
+                || !push_6bytesxcode(xcode, 0x81, 0xe3, 0xaa, 0xaa, 0xaa, 0xaa)
+                || !push_5bytesxcode(xcode, 0x25, 0x55, 0x55, 0x55, 0x55)
+                || !push_2bytesxcode(xcode, 0xd1, 0xeb)
+                || !push_2bytesxcode(xcode, 0xd1, 0xe0)
+                || !push_2bytesxcode(xcode, 0x09, 0xd8)
+                || !push_bytexcode(xcode, 0x5b))
+            return 0;
         break;
-	}
-	return 1;
+    case 1:
+        // INC EAX
+        if (!push_bytexcode(xcode, 0x40))
+            return 0;
+        break;
+    case 0:
+        // XOR EAX, xcode_rand(xcode)
+        if (!push_bytexcode(xcode, 0x35) 
+                || !push_dwordxcode(xcode, xcode_rand(xcode)))
+            return 0;
+        break;
+    }
+    return 1;
 }
 // 0x1E001900
 static int xcode_building_stage1(struct cxdec_xcode_status *xcode, int stage)
 {
-	if (stage == 1)
-		return xcode_building_first_stage(xcode);
+    if (stage == 1)
+        return xcode_building_first_stage(xcode);
 
-	// PUSH EBX
-	if (!push_bytexcode(xcode, 0x53))
-		return 0;
+    // PUSH EBX
+    if (!push_bytexcode(xcode, 0x53))
+        return 0;
 
-	if (xcode_rand(xcode) & 1) {
-		if (!xcode_building_stage1(xcode, stage - 1))
-			return 0;
-	} else {
-		if (!xcode_building_stage0(xcode, stage - 1))
-			return 0;
-	}
+    if (xcode_rand(xcode) & 1) {
+        if (!xcode_building_stage1(xcode, stage - 1))
+            return 0;
+    } else {
+        if (!xcode_building_stage0(xcode, stage - 1))
+            return 0;
+    }
 
-	// MOV EBX, EAX
-	if (!push_2bytesxcode(xcode, 0x89, 0xc3))
-		return 0;
+    // MOV EBX, EAX
+    if (!push_2bytesxcode(xcode, 0x89, 0xc3))
+        return 0;
 
-	if (xcode_rand(xcode) & 1) {
-		if (!xcode_building_stage1(xcode, stage - 1))
-			return 0;
-	} else {
-		if (!xcode_building_stage0(xcode, stage - 1))
-			return 0;
-	}
+    if (xcode_rand(xcode) & 1) {
+        if (!xcode_building_stage1(xcode, stage - 1))
+            return 0;
+    } else {
+        if (!xcode_building_stage0(xcode, stage - 1))
+            return 0;
+    }
 
-	switch (xcode_rand(xcode) % 6) {
-	case 1:
-		// ADD EAX, EBX
-		if (!push_2bytesxcode(xcode, 0x01, 0xd8))
-			return 0;
-		break;
+    switch (xcode_rand(xcode) % 6) {
+    case 1:
+        // ADD EAX, EBX
+        if (!push_2bytesxcode(xcode, 0x01, 0xd8))
+            return 0;
+        break;
     case 4:
-		// PUSH ECX
-		// MOV ECX, EBX
-		// AND ECX, 0F
-		// SHR EAX, CL
-		// POP ECX
-		if (!push_bytexcode(xcode, 0x51)
-				|| !push_2bytesxcode(xcode, 0x89, 0xd9)
-				|| !push_3bytesxcode(xcode, 0x83, 0xe1, 0x0f)
-				|| !push_2bytesxcode(xcode, 0xd3, 0xe8)
-				|| !push_bytexcode(xcode, 0x59))
-			return 0;
-		break;
+        // PUSH ECX
+        // MOV ECX, EBX
+        // AND ECX, 0F
+        // SHR EAX, CL
+        // POP ECX
+        if (!push_bytexcode(xcode, 0x51)
+                || !push_2bytesxcode(xcode, 0x89, 0xd9)
+                || !push_3bytesxcode(xcode, 0x83, 0xe1, 0x0f)
+                || !push_2bytesxcode(xcode, 0xd3, 0xe8)
+                || !push_bytexcode(xcode, 0x59))
+            return 0;
+        break;
     case 0:
-    	// PUSH ECX
-    	// MOV ECX, EBX
-    	// AND ECX, 0F
-    	// SHL EAX, CL
-    	// POP ECX
-		if (!push_bytexcode(xcode, 0x51) 
-				|| !push_2bytesxcode(xcode, 0x89, 0xd9)
-				|| !push_3bytesxcode(xcode, 0x83, 0xe1, 0x0f)
-				|| !push_2bytesxcode(xcode, 0xd3, 0xe0)
-				|| !push_bytexcode(xcode, 0x59))
-			return 0;
-		break;
+        // PUSH ECX
+        // MOV ECX, EBX
+        // AND ECX, 0F
+        // SHL EAX, CL
+        // POP ECX
+        if (!push_bytexcode(xcode, 0x51) 
+                || !push_2bytesxcode(xcode, 0x89, 0xd9)
+                || !push_3bytesxcode(xcode, 0x83, 0xe1, 0x0f)
+                || !push_2bytesxcode(xcode, 0xd3, 0xe0)
+                || !push_bytexcode(xcode, 0x59))
+            return 0;
+        break;
     case 3:
-    	// NEG EAX, ADD EAX, EBX
-		if (!push_2bytesxcode(xcode, 0xf7, 0xd8) 
-				|| !push_2bytesxcode(xcode, 0x01, 0xd8))
-			return 0;
-		break;
+        // NEG EAX, ADD EAX, EBX
+        if (!push_2bytesxcode(xcode, 0xf7, 0xd8) 
+                || !push_2bytesxcode(xcode, 0x01, 0xd8))
+            return 0;
+        break;
     case 5:
-    	// IMUL EAX, EBX
-		if (!push_3bytesxcode(xcode, 0x0f,  0xaf, 0xc3))
-			return 0;
-		break;
+        // IMUL EAX, EBX
+        if (!push_3bytesxcode(xcode, 0x0f,  0xaf, 0xc3))
+            return 0;
+        break;
     case 2:
-    	// SUB EAX, EBX
-		if (!push_2bytesxcode(xcode, 0x29, 0xd8))
-			return 0;
-		break;
-	}
-	// POP EBX
-	return push_bytexcode(xcode, 0x5b);
+        // SUB EAX, EBX
+        if (!push_2bytesxcode(xcode, 0x29, 0xd8))
+            return 0;
+        break;
+    }
+    // POP EBX
+    return push_bytexcode(xcode, 0x5b);
 }
 
 struct cxdec_callback sukisuki_cxdec_callback = {
-	"sukisuki",
-	{ 0x22B, 0x6C8},
-	xcode_building_stage1
+    "sukisuki",
+    { 0x22B, 0x6C8},
+    xcode_building_stage1
 };
