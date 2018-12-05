@@ -2,8 +2,6 @@
 #include "xp3.h"
 #include <iterator>
 #include <iostream>
-#include <functional>
-#include <map>
 #include <sstream>
 
 using namespace std;
@@ -67,12 +65,18 @@ int XP3ArcPraseEntryStage1 (
 }
 
 
-void XP3Entrance(const wchar_t *packName, const wchar_t *curDirectory, const std::string& choosedGame)
+void XP3Entrance(const wchar_t *packName, const wchar_t *curDirectory, const std::wstring& choosedGame)
 {
     DWORD idx_size = 0;
     wchar_t szBuffer[MAX_PATH];
 
     auto fucker = CreateXP3Handler(choosedGame);
+    if (!fucker)
+    {
+        StringCchPrintf(szBuffer, MAX_PATH, L"无法处理的游戏[%s]\r\n", choosedGame.c_str());
+        AppendMsg(szBuffer);
+        return;
+    }
 
     bool success = fucker->Open(packName);
     assert(success);
@@ -84,7 +88,13 @@ void XP3Entrance(const wchar_t *packName, const wchar_t *curDirectory, const std
 
     wstring txt(packName);
     txt += L"_entries.txt";
-    auto entries = fucker->XP3ArcPraseEntryStage0(fucker->GetPlainIndexBytes());
+    auto rawBytes = fucker->GetPlainIndexBytes();
+    ofstream idx(txt + L".0.txt");
+    assert(idx.is_open());
+    idx.write(rawBytes.data(), rawBytes.size());
+    idx.close();
+
+    auto entries = fucker->ExtractEntries(rawBytes);
     fucker->DumpEntriesToFile(entries, txt.c_str());
     int saveFileCount = fucker->ExtractData(entries, curDirectory);
     fucker->Close();
@@ -104,26 +114,59 @@ void XP3Entrance(const wchar_t *packName, const wchar_t *curDirectory, const std
     }
 }
 
-EncryptedXP3 * CreateXP3Handler(const std::string & gameName)
+std::map<std::wstring, GameInfomation> GameNameMap = {
+    { L"<默认：直接提取>", { "Unencrypted", []() { return new EncryptedXP3; }} },
+    { L"さくら、咲きました。", { "sakurasaki", []() { return nullptr; } } },
+    { L"倉野くんちのふたご事情", { "kuranokunchi", []() { return new kuranokunchi; }} },
+    { L"あま恋シロップス ～恥じらう恋心でシたくなる甘神様の恋祭り～", { "amakoi", []() { return new amakoi; } } },
+    { L"カミツレ ～7の二乗不思議～", { "Unencrypted", []() { return new EncryptedXP3; } } },
+    { L"すたーらいと★アイドル -COLORFUL TOP STAGE！-", { "Unencrypted", []() { return new EncryptedXP3; } } },
+    { L"あまたらすリドルスター",{ "Unencrypted", []() { return new EncryptedXP3; } } },
+    { L"カラフル☆きゅあ～ 缤纷少女", { "colorfulcure", []() { return new colorfulcure; }} },
+    { L"ＰＲＥＴＴＹ×Ｃ∧ＴＩＯＮ", { "prettycation", []() { return new prettycation; }} },
+    { L"your diary ＋H",{ "kuranokunchi", []() { return new kuranokunchi; } } },
+    { L"迷える2人とセカイのすべて",{ "Unencrypted", []() { return new EncryptedXP3; } } },
+    { L"迷える2人とセカイのすべて LOVEHEAVEN300％",{ "Unencrypted", []() { return new EncryptedXP3; } } },
+    { L"ヤリまん娘 ～俺の妹はビチビチビッチ～",{ "Unencrypted", []() { return new EncryptedXP3; } } },
+    { L"公園いたずらシミュレータ ver.MAKO",{ "Unencrypted", []() { return new EncryptedXP3; } } },
+    { L"PRETTY×CATION2", { "prettycation", []() { return new prettycation; } } },
+    { L"エロ本を捨ててから兄の様子がおかしい", { "anioka", []() { return nullptr; } } },
+    { L"SWANSONG", { "swansong", []() { return new swansong; }} },
+    { L"恋がさくころ桜どき", { "koisakura", []() { return nullptr; } } },
+    { L"ずっとすきして たくさんすきして", { "sukisuki", []() { return nullptr; } } },
+    { L"俺と5人の嫁さんがラブラブなのは、未来からきた赤ちゃんのおかげに違いない！？", { "oreaka", []() { return nullptr; } } },
+    { L"妹のセイイキ(未完成)", { "seiiki", []() { return nullptr; } } },
+    { L"オトメ＊ドメイン", { "Otomedomain", []() { return nullptr; } } },
+    { L"LOVELY×CATION2", { "lovelycation", []() { return new lovelycation; }} },
+    { L"出会って5分は俺のもの！ 時間停止と不可避な運命", { "deai5bu", []() { return new deai5bu; }} },
+    { L"神頼みしすぎて俺の未来がヤバい。", { "kamiyabai", []() { return new kamiyabai; }} },
+    { L"9-nine-ここのつここのかここのいろ", { "palette 9-nine", []() { return new palette_9_nine; } } },
+};
+
+EncryptedXP3 * CreateXP3Handler(const std::wstring & gameName)
 {
-    static map<string, std::function<EncryptedXP3*()>> list{
-        { "kuranokunchi",   []() { return new kuranokunchi; } },
-        { "amakoi",         []() { return new amakoi;       } },
-        { "prettycation",   []() { return new prettycation; } },
-        { "lovelycation",   []() { return new lovelycation; } },
-        { "swansong",       []() { return new swansong;     } },
-        { "deai5bu",        []() { return new deai5bu;      } },
-        { "kamiyabai",      []() { return new kamiyabai;    } },
+    //static map<string, std::function<EncryptedXP3*()>> list{
+    //    { "kuranokunchi",   []() { return new kuranokunchi; } },
+    //    { "amakoi",         []() { return new amakoi;       } },
+    //    { "prettycation",   []() { return new prettycation; } },
+    //    { "lovelycation",   []() { return new lovelycation; } },
+    //    { "swansong",       []() { return new swansong;     } },
+    //    { "deai5bu",        []() { return new deai5bu;      } },
+    //    { "kamiyabai",      []() { return new kamiyabai;    } },
 
-        // cxdec
-        { "colorfulcure",   []() { return new colorfulcure; } },
-    };
+    //    // cxdec
+    //    { "colorfulcure",   []() { return new colorfulcure; } },
+    //};
 
-    auto it = list.find(gameName);
-    if (it != list.end())
-        return it->second();
-    else
-        return new EncryptedXP3;
+    //auto it = list.find(gameName);
+    //if (it != list.end())
+    //    return it->second();
+    //else
+    //    return new EncryptedXP3;
+
+    auto it = GameNameMap.find(gameName);
+    assert(it != GameNameMap.end());
+    return it->second.Handler();
 }
 
 EncryptedXP3::~EncryptedXP3()
@@ -161,7 +204,7 @@ void EncryptedXP3::Close()
 
 bool EncryptedXP3::IsValid()
 {
-    vector<char> magic(11);
+    vector<char> magic(sizeof(mHeader.magic));
     assert(mStream.is_open());
     mStream.seekg(0, ios::beg);
     mStream.read(magic.data(), magic.size());
@@ -171,22 +214,23 @@ bool EncryptedXP3::IsValid()
 
 std::vector<char> EncryptedXP3::GetPlainIndexBytes()
 {
-    xp3_file_header header;
+    mStream.seekg(0, ios::beg);
+    mStream.read((char*)&mHeader.magic, sizeof(mHeader.magic));
+    assert(!memcmp(mHeader.magic, "XP3\r\n \n\x1A\x8B\x67\x01", sizeof(mHeader.magic)));
 
-    mStream.seekg(11, ios::beg);
-    mStream.read((char*)&header.offset, 8);
+    mStream.read((char*)&mHeader.offset, 8);
 
-    if (header.offset != 0x17)
+    if (mHeader.offset != 0x17)
     {
-        mStream.seekg(header.offset, ios::beg);
+        mStream.seekg(mHeader.offset, ios::beg);
     }
     else
     {
-        mStream.read((char*)&header.minor_version, 4);
-        mStream.read((char*)&header.flag, 1);
-        mStream.read((char*)&header.index_size, 8);
-        mStream.read((char*)&header.index_offset, 8);
-        mStream.seekg(header.index_offset, ios::beg);
+        mStream.read((char*)&mHeader.minor_version, 4);
+        mStream.read((char*)&mHeader.flag, 1);
+        mStream.read((char*)&mHeader.index_size, 8);
+        mStream.read((char*)&mHeader.index_offset, 8);
+        mStream.seekg(mHeader.index_offset, ios::beg);
     }
 
     BYTE  idx_flag;
@@ -232,8 +276,8 @@ std::vector<file_entry> EncryptedXP3::XP3ArcPraseEntryStage0(const std::vector<c
         flag_segm = 0x4, flag_info = 0x8,
         flag_all = 0xf;
 
-    PBYTE info_sec_end = nullptr;
-    PBYTE pEnd = (PBYTE)plainBytes.data() + plainBytes.size(), p = (PBYTE)plainBytes.data();
+    PBYTE p = (PBYTE)plainBytes.data();
+    PBYTE pEnd = p + plainBytes.size();
 
     assert(*(PDWORD)p == _file);
 
@@ -301,9 +345,9 @@ std::vector<file_entry> EncryptedXP3::XP3ArcPraseEntryStage0(const std::vector<c
                 flag |= flag_segm;
                 break;
 
-            case _info:
+            case _info: {
                 assert(!(flag & flag_info));
-                info_sec_end = p + 0xc + *((PDWORD)(p + 0x4));
+                PBYTE info_sec_end = p + 0xc + *((PDWORD)(p + 0x4));
                 p += 0xc;
                 fe.encryption_flag = *((PDWORD)p);    // 好像这个标志也没啥用
                 p += 0x14;  // 跳过info中的长度信息
@@ -323,6 +367,7 @@ std::vector<file_entry> EncryptedXP3::XP3ArcPraseEntryStage0(const std::vector<c
 
                 flag |= flag_info;
                 break;
+            }
             }
         }   // end while (p < pEnd && flag != flag_all)
 
@@ -372,6 +417,11 @@ void EncryptedXP3::DumpEntriesToFile(const std::vector<file_entry>& entries, con
     }
 
     out.close();
+}
+
+std::vector<file_entry> EncryptedXP3::ExtractEntries(const std::vector<char>& plainBytes)
+{
+    return XP3ArcPraseEntryStage0(plainBytes);
 }
 
 int EncryptedXP3::ExtractData(const std::vector<file_entry>& Entry, const std::wstring& saveDir)
@@ -586,4 +636,143 @@ bool kamiyabai::DoExtractData(const file_entry & fe, std::vector<char>& unpackDa
         unpackData[(dwordLen << 2) + remain - 1] ^= (uint8_t)(key >> (remain - 1));
     }
     return true;
+}
+
+std::vector<file_entry> palette_9_nine::XP3ArcPraseEntryStage0(const std::vector<char>& plainBytes)
+{
+    std::vector<file_entry> Entry;
+    std::vector<file_entry> nameList;
+
+
+    static const DWORD _file = 0x656C6946, _adlr = 0x726c6461,
+        _segm = 0x6d676573, _info = 0x6f666e69, _hnfn = 0x6e666e68,
+        flag_file = 0x1, flag_adlr = 0x2,
+        flag_segm = 0x4, flag_info = 0x8,
+        flag_all = 0xf;
+
+    PBYTE p = (PBYTE)plainBytes.data();
+    PBYTE pEnd = p + plainBytes.size();
+
+    assert(*(PDWORD)p == _hnfn);
+    p += *(PDWORD)(p + 4) + 0xc;  // skip protection warning
+
+    while (*(PDWORD)p == _hnfn)
+    {
+        uint64_t length = *(uint64_t*)(p + 4);
+        uint32_t checksum = *(uint32_t*)(p + 12);
+        uint32_t nameLen = *(uint16_t*)(p + 16);
+        std::wstring name = (wchar_t*)(p + 18);
+        p += length + 12;
+
+        file_entry fe;
+        fe.checksum = checksum;
+        wcscpy_s(fe.file_name, _countof(fe.file_name), name.c_str());
+        nameList.push_back(fe);
+    }
+
+    while (p < pEnd)
+    {
+        //////////////////////////////////////
+        // 31<-------3----2----1--->0
+        //          info segm adlr file
+        //////////////////////////////////////
+        int flag = 0;
+        file_entry fe;
+        memset(&fe, 0, sizeof(fe));
+        PBYTE SingleEnd = pEnd;
+
+        while (p < SingleEnd && flag != flag_all)
+        {
+            switch (*(PDWORD)p)
+            {
+            default:
+                ++p;
+                break;
+
+            case _file:
+                assert(!(flag & flag_file));
+                SingleEnd = p + *(PDWORD)(p + 4) + 0xc;
+                p += 0xc;
+                flag |= flag_file;
+                break;
+
+            case _adlr:
+                assert(!(flag & flag_adlr));
+                p += 0xc;
+                fe.checksum = *((PDWORD)p);
+                p += 4;
+                flag |= flag_adlr;
+                break;
+
+            case _segm:
+                assert(!(flag & flag_segm));
+                if (*(PDWORD)(p + 4) % 0x1c == 0)
+                {
+                    fe.part = *(PDWORD)(p + 4) / 0x1c;
+                    p += 0xC;
+                    for (int i = 0; i < fe.part; ++i)
+                    {
+                        fe.info[i].compress_flag = *(PDWORD)p;
+                        p += 4;    // 1 compressed
+                        fe.info[i].offset = *(PULONG64)p;
+                        p += 8;
+                        fe.info[i].orig_length = *(PULONG64)p;
+                        p += 8;
+                        fe.info[i].pkg_length = *(PULONG64)p;
+                        p += 8;
+                    }
+                }
+                else
+                {   // 不应该进来
+                    assert(0);
+                    AppendMsg(L"错误的文件索引记录\r\n");
+                    while (*(PDWORD)p != _file) ++p;    // 跳过这个索引
+                }
+
+                flag |= flag_segm;
+                break;
+
+            case _info: {
+                assert(!(flag & flag_info));
+                PBYTE info_sec_end = p + 0xc + *((PDWORD)(p + 0x4));
+                p += 0xc;
+                fe.encryption_flag = *((PDWORD)p);    // 好像这个标志也没啥用
+                p += 0x14;  // 跳过info中的长度信息
+
+                            // 剩下的是文件名长度和文件名
+                int buf_size = (int)*((PWORD)p);
+                if (buf_size >= _countof(fe.file_name))
+                {
+                    MessageBox(0, L"文件名超出缓冲区长度\r\n", L"提示", MB_ICONWARNING | MB_OK);
+                    buf_size = _countof(fe.file_name) - 1;
+                }
+                p += 0x2;
+                memset(fe.file_name, 0, _countof(fe.file_name));
+                memcpy(fe.file_name, (wchar_t*)p, buf_size * sizeof(wchar_t));
+
+                p = info_sec_end;
+
+                flag |= flag_info;
+                break;
+            }
+            }
+        }   // end while (p < pEnd && flag != flag_all)
+
+        assert(flag == flag_all);
+        Entry.push_back(fe);
+    }
+
+    assert(Entry.size() >= nameList.size());
+    size_t n = 0;
+    for (size_t i = 0; i < Entry.size(); ++i)
+    {
+        if (Entry[i].checksum != nameList[n].checksum)
+            continue;
+
+        wcscpy_s(Entry[i].file_name, _countof(Entry[i].file_name), nameList[n].file_name);
+        ++n;
+    }
+
+    assert(n == nameList.size());
+    return Entry;
 }
