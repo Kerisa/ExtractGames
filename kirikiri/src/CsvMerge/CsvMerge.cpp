@@ -110,10 +110,10 @@ int main(int argc, char** argv)
         {
             continue;
         }
-        else if (param.size() != 9)
+        else if (param.size() < 9)
         {
-            cout << "csv record format error.\n";
-            return 1;
+            cout << "skip invalid line [" << lines[i] << "].\n";
+            continue;
         }
         if (param[2].empty())
             continue;
