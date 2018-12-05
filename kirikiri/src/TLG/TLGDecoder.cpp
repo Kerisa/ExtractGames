@@ -113,221 +113,221 @@ TVPTLG6DecodeGolombValuesForFirst(
     BYTE *bit_pool
 )
 {
-	/*
-		decode values packed in "bit_pool".
-		values are coded using golomb code.
+    /*
+        decode values packed in "bit_pool".
+        values are coded using golomb code.
 
-		"ForFirst" function do dword access to pixelbuf,
-		clearing with zero except for blue (least siginificant byte).
-	*/
+        "ForFirst" function do dword access to pixelbuf,
+        clearing with zero except for blue (least siginificant byte).
+    */
 
-	int n = TVP_TLG6_GOLOMB_N_COUNT - 1; /* output counter */
-	int a = 0; /* summary of absolute values of errors */
+    int n = TVP_TLG6_GOLOMB_N_COUNT - 1; /* output counter */
+    int a = 0; /* summary of absolute values of errors */
 
-	int bit_pos = 1;
-	BYTE zero = (*bit_pool & 1) ? 0 : 1;
+    int bit_pos = 1;
+    BYTE zero = (*bit_pool & 1) ? 0 : 1;
 
-	char *limit = pixelbuf + pixel_count * 4;
-	while (pixelbuf < limit) {
-		/* get running count */
-		int count;
+    char *limit = pixelbuf + pixel_count * 4;
+    while (pixelbuf < limit) {
+        /* get running count */
+        int count;
 
-		{
-			u32 t = TVP_TLG6_FETCH_32BITS(bit_pool) >> bit_pos;
-			int b = TVPTLG6LeadingZeroTable[t & (TVP_TLG6_LeadingZeroTable_SIZE - 1)];
-			int bit_count = b;
+        {
+            u32 t = TVP_TLG6_FETCH_32BITS(bit_pool) >> bit_pos;
+            int b = TVPTLG6LeadingZeroTable[t & (TVP_TLG6_LeadingZeroTable_SIZE - 1)];
+            int bit_count = b;
 
-			while (!b) {
-				bit_count += TVP_TLG6_LeadingZeroTable_BITS;
-				bit_pos += TVP_TLG6_LeadingZeroTable_BITS;
-				bit_pool += bit_pos >> 3;
-				bit_pos &= 7;
-				t = TVP_TLG6_FETCH_32BITS(bit_pool) >> bit_pos;
-				b = TVPTLG6LeadingZeroTable[t & (TVP_TLG6_LeadingZeroTable_SIZE - 1)];
-				bit_count += b;
-			}
+            while (!b) {
+                bit_count += TVP_TLG6_LeadingZeroTable_BITS;
+                bit_pos += TVP_TLG6_LeadingZeroTable_BITS;
+                bit_pool += bit_pos >> 3;
+                bit_pos &= 7;
+                t = TVP_TLG6_FETCH_32BITS(bit_pool) >> bit_pos;
+                b = TVPTLG6LeadingZeroTable[t & (TVP_TLG6_LeadingZeroTable_SIZE - 1)];
+                bit_count += b;
+            }
 
-			bit_pos += b;
-			bit_pool += bit_pos >> 3;
-			bit_pos &= 7;
+            bit_pos += b;
+            bit_pool += bit_pos >> 3;
+            bit_pos &= 7;
 
-			bit_count--;
-			count = 1 << bit_count;
-			count += ((TVP_TLG6_FETCH_32BITS(bit_pool) >> (bit_pos)) & (count - 1));
+            bit_count--;
+            count = 1 << bit_count;
+            count += ((TVP_TLG6_FETCH_32BITS(bit_pool) >> (bit_pos)) & (count - 1));
 
-			bit_pos += bit_count;
-			bit_pool += bit_pos >> 3;
-			bit_pos &= 7;
-		}
+            bit_pos += bit_count;
+            bit_pool += bit_pos >> 3;
+            bit_pos &= 7;
+        }
 
-		if (zero) {
-			/* zero values */
+        if (zero) {
+            /* zero values */
 
-			/* fill distination with zero */
-			do { *(u32 *)pixelbuf = 0; pixelbuf += 4; } while (--count);
+            /* fill distination with zero */
+            do { *(u32 *)pixelbuf = 0; pixelbuf += 4; } while (--count);
 
-			zero ^= 1;
-		} else {
-			/* non-zero values */
+            zero ^= 1;
+        } else {
+            /* non-zero values */
 
-			/* fill distination with glomb code */
+            /* fill distination with glomb code */
 
-			do {
-				int k = TVPTLG6GolombBitLengthTable[a][n], v, sign;
+            do {
+                int k = TVPTLG6GolombBitLengthTable[a][n], v, sign;
 
-				u32 t = TVP_TLG6_FETCH_32BITS(bit_pool) >> bit_pos;
-				int bit_count;
-				int b;
-				if (t) {
-					b = TVPTLG6LeadingZeroTable[t & (TVP_TLG6_LeadingZeroTable_SIZE-1)];
-					bit_count = b;
-					while (!b) {
-						bit_count += TVP_TLG6_LeadingZeroTable_BITS;
-						bit_pos += TVP_TLG6_LeadingZeroTable_BITS;
-						bit_pool += bit_pos >> 3;
-						bit_pos &= 7;
-						t = TVP_TLG6_FETCH_32BITS(bit_pool) >> bit_pos;
-						b = TVPTLG6LeadingZeroTable[t & (TVP_TLG6_LeadingZeroTable_SIZE - 1)];
-						bit_count += b;
-					}
-					bit_count--;
-				} else {
-					bit_pool += 5;
-					bit_count = bit_pool[-1];
-					bit_pos = 0;
-					t = TVP_TLG6_FETCH_32BITS(bit_pool);
-					b = 0;
-				}
+                u32 t = TVP_TLG6_FETCH_32BITS(bit_pool) >> bit_pos;
+                int bit_count;
+                int b;
+                if (t) {
+                    b = TVPTLG6LeadingZeroTable[t & (TVP_TLG6_LeadingZeroTable_SIZE-1)];
+                    bit_count = b;
+                    while (!b) {
+                        bit_count += TVP_TLG6_LeadingZeroTable_BITS;
+                        bit_pos += TVP_TLG6_LeadingZeroTable_BITS;
+                        bit_pool += bit_pos >> 3;
+                        bit_pos &= 7;
+                        t = TVP_TLG6_FETCH_32BITS(bit_pool) >> bit_pos;
+                        b = TVPTLG6LeadingZeroTable[t & (TVP_TLG6_LeadingZeroTable_SIZE - 1)];
+                        bit_count += b;
+                    }
+                    bit_count--;
+                } else {
+                    bit_pool += 5;
+                    bit_count = bit_pool[-1];
+                    bit_pos = 0;
+                    t = TVP_TLG6_FETCH_32BITS(bit_pool);
+                    b = 0;
+                }
 
-				v = (bit_count << k) + ((t >> b) & ((1 << k) - 1));
-				sign = (v & 1) - 1;
-				v >>= 1;
-				a += v;
-				*(u32 *)pixelbuf = (unsigned char)((v ^ sign) + sign + 1);
-				pixelbuf += 4;
+                v = (bit_count << k) + ((t >> b) & ((1 << k) - 1));
+                sign = (v & 1) - 1;
+                v >>= 1;
+                a += v;
+                *(u32 *)pixelbuf = (unsigned char)((v ^ sign) + sign + 1);
+                pixelbuf += 4;
 
-				bit_pos += b;
-				bit_pos += k;
-				bit_pool += bit_pos >> 3;
-				bit_pos &= 7;
+                bit_pos += b;
+                bit_pos += k;
+                bit_pool += bit_pos >> 3;
+                bit_pos &= 7;
 
-				if (--n < 0) {
-					a >>= 1;
-					n = TVP_TLG6_GOLOMB_N_COUNT - 1;
-				}
-			} while (--count);
-			zero ^= 1;
-		}
-	}
+                if (--n < 0) {
+                    a >>= 1;
+                    n = TVP_TLG6_GOLOMB_N_COUNT - 1;
+                }
+            } while (--count);
+            zero ^= 1;
+        }
+    }
 }
 
 static void TVPTLG6DecodeGolombValues(char *pixelbuf,
-									  int pixel_count,
-									  BYTE *bit_pool)
+                                      int pixel_count,
+                                      BYTE *bit_pool)
 {
-	/*
-		decode values packed in "bit_pool".
-		values are coded using golomb code.
-	*/
+    /*
+        decode values packed in "bit_pool".
+        values are coded using golomb code.
+    */
 
-	int n = TVP_TLG6_GOLOMB_N_COUNT - 1; /* output counter */
-	int a = 0; /* summary of absolute values of errors */
+    int n = TVP_TLG6_GOLOMB_N_COUNT - 1; /* output counter */
+    int a = 0; /* summary of absolute values of errors */
 
-	int bit_pos = 1;
-	BYTE zero = (*bit_pool & 1) ? 0 : 1;
+    int bit_pos = 1;
+    BYTE zero = (*bit_pool & 1) ? 0 : 1;
 
-	char *limit = pixelbuf + pixel_count * 4;
+    char *limit = pixelbuf + pixel_count * 4;
 
-	while (pixelbuf < limit) {
-		/* get running count */
-		int count;
+    while (pixelbuf < limit) {
+        /* get running count */
+        int count;
 
-		{
-			u32 t = TVP_TLG6_FETCH_32BITS(bit_pool) >> bit_pos;
-			int b = TVPTLG6LeadingZeroTable[t & (TVP_TLG6_LeadingZeroTable_SIZE-1)];
-			int bit_count = b;
-			while (!b) {
-				bit_count += TVP_TLG6_LeadingZeroTable_BITS;
-				bit_pos += TVP_TLG6_LeadingZeroTable_BITS;
-				bit_pool += bit_pos >> 3;
-				bit_pos &= 7;
-				t = TVP_TLG6_FETCH_32BITS(bit_pool) >> bit_pos;
-				b = TVPTLG6LeadingZeroTable[t & (TVP_TLG6_LeadingZeroTable_SIZE - 1)];
-				bit_count += b;
-			}
+        {
+            u32 t = TVP_TLG6_FETCH_32BITS(bit_pool) >> bit_pos;
+            int b = TVPTLG6LeadingZeroTable[t & (TVP_TLG6_LeadingZeroTable_SIZE-1)];
+            int bit_count = b;
+            while (!b) {
+                bit_count += TVP_TLG6_LeadingZeroTable_BITS;
+                bit_pos += TVP_TLG6_LeadingZeroTable_BITS;
+                bit_pool += bit_pos >> 3;
+                bit_pos &= 7;
+                t = TVP_TLG6_FETCH_32BITS(bit_pool) >> bit_pos;
+                b = TVPTLG6LeadingZeroTable[t & (TVP_TLG6_LeadingZeroTable_SIZE - 1)];
+                bit_count += b;
+            }
 
-			bit_pos += b;
-			bit_pool += bit_pos >> 3;
-			bit_pos &= 7;
+            bit_pos += b;
+            bit_pool += bit_pos >> 3;
+            bit_pos &= 7;
 
-			bit_count--;
-			count = 1 << bit_count;
-			count += ((TVP_TLG6_FETCH_32BITS(bit_pool) >> (bit_pos)) & (count - 1));
+            bit_count--;
+            count = 1 << bit_count;
+            count += ((TVP_TLG6_FETCH_32BITS(bit_pool) >> (bit_pos)) & (count - 1));
 
-			bit_pos += bit_count;
-			bit_pool += bit_pos >> 3;
-			bit_pos &= 7;
-		}
+            bit_pos += bit_count;
+            bit_pool += bit_pos >> 3;
+            bit_pos &= 7;
+        }
 
-		if (zero) {
-			/* zero values */
+        if (zero) {
+            /* zero values */
 
-			/* fill distination with zero */
-			do { *pixelbuf = 0; pixelbuf+=4; } while(--count);
+            /* fill distination with zero */
+            do { *pixelbuf = 0; pixelbuf+=4; } while(--count);
 
-			zero ^= 1;
-		} else {
-			/* non-zero values */
+            zero ^= 1;
+        } else {
+            /* non-zero values */
 
-			/* fill distination with glomb code */
+            /* fill distination with glomb code */
 
-			do {
-				int k = TVPTLG6GolombBitLengthTable[a][n], v, sign;
+            do {
+                int k = TVPTLG6GolombBitLengthTable[a][n], v, sign;
 
-				u32 t = TVP_TLG6_FETCH_32BITS(bit_pool) >> bit_pos;
-				int bit_count;
-				int b;
-				if (t) {
-					b = TVPTLG6LeadingZeroTable[t & (TVP_TLG6_LeadingZeroTable_SIZE - 1)];
-					bit_count = b;
-					while (!b) {
-						bit_count += TVP_TLG6_LeadingZeroTable_BITS;
-						bit_pos += TVP_TLG6_LeadingZeroTable_BITS;
-						bit_pool += bit_pos >> 3;
-						bit_pos &= 7;
-						t = TVP_TLG6_FETCH_32BITS(bit_pool) >> bit_pos;
-						b = TVPTLG6LeadingZeroTable[t & (TVP_TLG6_LeadingZeroTable_SIZE - 1)];
-						bit_count += b;
-					}
-					bit_count--;
-				} else {
-					bit_pool += 5;
-					bit_count = bit_pool[-1];
-					bit_pos = 0;
-					t = TVP_TLG6_FETCH_32BITS(bit_pool);
-					b = 0;
-				}
+                u32 t = TVP_TLG6_FETCH_32BITS(bit_pool) >> bit_pos;
+                int bit_count;
+                int b;
+                if (t) {
+                    b = TVPTLG6LeadingZeroTable[t & (TVP_TLG6_LeadingZeroTable_SIZE - 1)];
+                    bit_count = b;
+                    while (!b) {
+                        bit_count += TVP_TLG6_LeadingZeroTable_BITS;
+                        bit_pos += TVP_TLG6_LeadingZeroTable_BITS;
+                        bit_pool += bit_pos >> 3;
+                        bit_pos &= 7;
+                        t = TVP_TLG6_FETCH_32BITS(bit_pool) >> bit_pos;
+                        b = TVPTLG6LeadingZeroTable[t & (TVP_TLG6_LeadingZeroTable_SIZE - 1)];
+                        bit_count += b;
+                    }
+                    bit_count--;
+                } else {
+                    bit_pool += 5;
+                    bit_count = bit_pool[-1];
+                    bit_pos = 0;
+                    t = TVP_TLG6_FETCH_32BITS(bit_pool);
+                    b = 0;
+                }
 
-				v = (bit_count << k) + ((t >> b) & ((1 <<k ) - 1));
-				sign = (v & 1) - 1;
-				v >>= 1;
-				a += v;
-				*pixelbuf = (char)((v ^ sign) + sign + 1);
-				pixelbuf += 4;
+                v = (bit_count << k) + ((t >> b) & ((1 <<k ) - 1));
+                sign = (v & 1) - 1;
+                v >>= 1;
+                a += v;
+                *pixelbuf = (char)((v ^ sign) + sign + 1);
+                pixelbuf += 4;
 
-				bit_pos += b;
-				bit_pos += k;
-				bit_pool += bit_pos >> 3;
-				bit_pos &= 7;
+                bit_pos += b;
+                bit_pos += k;
+                bit_pool += bit_pos >> 3;
+                bit_pos &= 7;
 
-				if (--n < 0) {
-					a >>= 1;
-					n = TVP_TLG6_GOLOMB_N_COUNT - 1;
-				}
-			} while (--count);
-			zero ^= 1;
-		}
-	}
+                if (--n < 0) {
+                    a >>= 1;
+                    n = TVP_TLG6_GOLOMB_N_COUNT - 1;
+                }
+            } while (--count);
+            zero ^= 1;
+        }
+    }
 }
 
 u32 make_gt_mask(u32 a, u32 b)
@@ -372,32 +372,32 @@ u32 avg(u32 a, u32 b, u32 c, u32 v)
 }
 
 #define TVP_TLG6_DO_CHROMA_DECODE_PROTO(B, G, R, A, POST_INCREMENT) do \
-			{ \
-				u32 u = *prevline; \
-				p = med(p, u, up, \
-					(0xff0000 & ((R) << 16)) + (0xff00 & ((G) << 8)) + (0xff & (B)) + ((A) << 24) ); \
-				up = u; \
-				*curline = p; \
-				curline++; \
-				prevline++; \
-				POST_INCREMENT \
-			} while (--w);
+            { \
+                u32 u = *prevline; \
+                p = med(p, u, up, \
+                    (0xff0000 & ((R) << 16)) + (0xff00 & ((G) << 8)) + (0xff & (B)) + ((A) << 24) ); \
+                up = u; \
+                *curline = p; \
+                curline++; \
+                prevline++; \
+                POST_INCREMENT \
+            } while (--w);
 #define TVP_TLG6_DO_CHROMA_DECODE_PROTO2(B, G, R, A, POST_INCREMENT) do \
-			{ \
-				u32 u = *prevline; \
-				p = avg(p, u, up, \
-					(0xff0000 & ((R) << 16)) + (0xff00 & ((G) << 8)) + (0xff & (B)) + ((A) << 24) ); \
-				up = u; \
-				*curline = p; \
-				curline ++; \
-				prevline ++; \
-				POST_INCREMENT \
-			} while (--w);
+            { \
+                u32 u = *prevline; \
+                p = avg(p, u, up, \
+                    (0xff0000 & ((R) << 16)) + (0xff00 & ((G) << 8)) + (0xff & (B)) + ((A) << 24) ); \
+                up = u; \
+                *curline = p; \
+                curline ++; \
+                prevline ++; \
+                POST_INCREMENT \
+            } while (--w);
 
 #define TVP_TLG6_DO_CHROMA_DECODE(N, R, G, B) case (N << 1): \
-	TVP_TLG6_DO_CHROMA_DECODE_PROTO(R, G, B, IA, {in += step;}) break; \
-	case (N << 1) + 1: \
-	TVP_TLG6_DO_CHROMA_DECODE_PROTO2(R, G, B, IA, {in += step;}) break;
+    TVP_TLG6_DO_CHROMA_DECODE_PROTO(R, G, B, IA, {in += step;}) break; \
+    case (N << 1) + 1: \
+    TVP_TLG6_DO_CHROMA_DECODE_PROTO2(R, G, B, IA, {in += step;}) break;
 
 void
 TVPTLG6DecodeLineGeneric(
@@ -414,64 +414,64 @@ TVPTLG6DecodeLineGeneric(
     int dir
 )
 {
-	/*
-		chroma/luminosity decoding
-		(this does reordering, color correlation filter, MED/AVG  at a time)
-	*/
-	u32 p, up;
-	int step, i;
+    /*
+        chroma/luminosity decoding
+        (this does reordering, color correlation filter, MED/AVG  at a time)
+    */
+    u32 p, up;
+    int step, i;
 
-	if (start_block) {
-		prevline += start_block * TVP_TLG6_W_BLOCK_SIZE;
-		curline  += start_block * TVP_TLG6_W_BLOCK_SIZE;
-		p  = curline[-1];
-		up = prevline[-1];
-	} else {
-		p = up = initialp;
-	}
+    if (start_block) {
+        prevline += start_block * TVP_TLG6_W_BLOCK_SIZE;
+        curline  += start_block * TVP_TLG6_W_BLOCK_SIZE;
+        p  = curline[-1];
+        up = prevline[-1];
+    } else {
+        p = up = initialp;
+    }
 
-	in += skipblockbytes * start_block;
-	step = (dir & 1) ? 1 : -1;
+    in += skipblockbytes * start_block;
+    step = (dir & 1) ? 1 : -1;
 
-	for (i = start_block; i < block_limit; i++) {
-		int w = width - i * TVP_TLG6_W_BLOCK_SIZE, ww;
-		if (w > TVP_TLG6_W_BLOCK_SIZE) w = TVP_TLG6_W_BLOCK_SIZE;
-		ww = w;
-		if (step == -1) in += ww-1;
-		if (i & 1) in += oddskip * ww;
-		switch (filtertypes[i])	{
-#define IA	(char)((*in >> 24) & 0xff)
-#define IR	(char)((*in >> 16) & 0xff)
+    for (i = start_block; i < block_limit; i++) {
+        int w = width - i * TVP_TLG6_W_BLOCK_SIZE, ww;
+        if (w > TVP_TLG6_W_BLOCK_SIZE) w = TVP_TLG6_W_BLOCK_SIZE;
+        ww = w;
+        if (step == -1) in += ww-1;
+        if (i & 1) in += oddskip * ww;
+        switch (filtertypes[i])    {
+#define IA    (char)((*in >> 24) & 0xff)
+#define IR    (char)((*in >> 16) & 0xff)
 #define IG  (char)((*in >> 8 ) & 0xff)
 #define IB  (char)((*in      ) & 0xff)
-			TVP_TLG6_DO_CHROMA_DECODE( 0, IB, IG, IR);
-			TVP_TLG6_DO_CHROMA_DECODE( 1, IB+IG, IG, IR+IG);
-			TVP_TLG6_DO_CHROMA_DECODE( 2, IB, IG+IB, IR+IB+IG);
-			TVP_TLG6_DO_CHROMA_DECODE( 3, IB+IR+IG, IG+IR, IR);
-			TVP_TLG6_DO_CHROMA_DECODE( 4, IB+IR, IG+IB+IR, IR+IB+IR+IG);
-			TVP_TLG6_DO_CHROMA_DECODE( 5, IB+IR, IG+IB+IR, IR);
-			TVP_TLG6_DO_CHROMA_DECODE( 6, IB+IG, IG, IR);
-			TVP_TLG6_DO_CHROMA_DECODE( 7, IB, IG+IB, IR);
-			TVP_TLG6_DO_CHROMA_DECODE( 8, IB, IG, IR+IG);
-			TVP_TLG6_DO_CHROMA_DECODE( 9, IB+IG+IR+IB, IG+IR+IB, IR+IB);
-			TVP_TLG6_DO_CHROMA_DECODE(10, IB+IR, IG+IR, IR);
-			TVP_TLG6_DO_CHROMA_DECODE(11, IB, IG+IB, IR+IB);
-			TVP_TLG6_DO_CHROMA_DECODE(12, IB, IG+IR+IB, IR+IB);
-			TVP_TLG6_DO_CHROMA_DECODE(13, IB+IG, IG+IR+IB+IG, IR+IB+IG);
-			TVP_TLG6_DO_CHROMA_DECODE(14, IB+IG+IR, IG+IR, IR+IB+IG+IR);
-			TVP_TLG6_DO_CHROMA_DECODE(15, IB, IG+(IB<<1), IR+(IB<<1));
-		default:
-			return;
-		}
-		if (step == 1)
-			in += skipblockbytes - ww;
-		else
-			in += skipblockbytes + 1;
-		if (i & 1) in -= oddskip * ww;
+            TVP_TLG6_DO_CHROMA_DECODE( 0, IB, IG, IR);
+            TVP_TLG6_DO_CHROMA_DECODE( 1, IB+IG, IG, IR+IG);
+            TVP_TLG6_DO_CHROMA_DECODE( 2, IB, IG+IB, IR+IB+IG);
+            TVP_TLG6_DO_CHROMA_DECODE( 3, IB+IR+IG, IG+IR, IR);
+            TVP_TLG6_DO_CHROMA_DECODE( 4, IB+IR, IG+IB+IR, IR+IB+IR+IG);
+            TVP_TLG6_DO_CHROMA_DECODE( 5, IB+IR, IG+IB+IR, IR);
+            TVP_TLG6_DO_CHROMA_DECODE( 6, IB+IG, IG, IR);
+            TVP_TLG6_DO_CHROMA_DECODE( 7, IB, IG+IB, IR);
+            TVP_TLG6_DO_CHROMA_DECODE( 8, IB, IG, IR+IG);
+            TVP_TLG6_DO_CHROMA_DECODE( 9, IB+IG+IR+IB, IG+IR+IB, IR+IB);
+            TVP_TLG6_DO_CHROMA_DECODE(10, IB+IR, IG+IR, IR);
+            TVP_TLG6_DO_CHROMA_DECODE(11, IB, IG+IB, IR+IB);
+            TVP_TLG6_DO_CHROMA_DECODE(12, IB, IG+IR+IB, IR+IB);
+            TVP_TLG6_DO_CHROMA_DECODE(13, IB+IG, IG+IR+IB+IG, IR+IB+IG);
+            TVP_TLG6_DO_CHROMA_DECODE(14, IB+IG+IR, IG+IR, IR+IB+IG+IR);
+            TVP_TLG6_DO_CHROMA_DECODE(15, IB, IG+(IB<<1), IR+(IB<<1));
+        default:
+            return;
+        }
+        if (step == 1)
+            in += skipblockbytes - ww;
+        else
+            in += skipblockbytes + 1;
+        if (i & 1) in -= oddskip * ww;
 #undef IR
 #undef IG
 #undef IB
-	}
+    }
 }
 
 void
@@ -513,132 +513,132 @@ MyBuildBMPFile(
     void *(*alloc)(DWORD)
 )
 {
-	BITMAPFILEHEADER *bmfh;
-	BITMAPINFOHEADER *bmiHeader;
-	DWORD act_height, aligned_line_length, raw_line_length;
-	DWORD act_dib_length, act_palette_length, output_length;
-	BYTE *pdib, *pal, *output;
-	unsigned int colors, pixel_bytes;
+    BITMAPFILEHEADER *bmfh;
+    BITMAPINFOHEADER *bmiHeader;
+    DWORD act_height, aligned_line_length, raw_line_length;
+    DWORD act_dib_length, act_palette_length, output_length;
+    BYTE *pdib, *pal, *output;
+    unsigned int colors, pixel_bytes;
 /*
-	if (alloc == (void *(*)(DWORD))malloc)
-		return -1;
+    if (alloc == (void *(*)(DWORD))malloc)
+        return -1;
 */
-	raw_line_length = width * bits_count / 8;
-	aligned_line_length = (width * bits_count / 8 + 3) & ~3;
-	if (raw_line_length != aligned_line_length)
+    raw_line_length = width * bits_count / 8;
+    aligned_line_length = (width * bits_count / 8 + 3) & ~3;
+    if (raw_line_length != aligned_line_length)
     {
         return -1;
-	}
+    }
 
-	if (bits_count <= 8) {
-		if (palette_length) {
-			if (!palette || palette_length == 1024)
-				colors = 256;
-			else
-				colors = palette_length / 3;
-		} else
-			colors = 1 << bits_count;
-	} else
-		colors = 0;
-	act_palette_length = colors * 4;
+    if (bits_count <= 8) {
+        if (palette_length) {
+            if (!palette || palette_length == 1024)
+                colors = 256;
+            else
+                colors = palette_length / 3;
+        } else
+            colors = 1 << bits_count;
+    } else
+        colors = 0;
+    act_palette_length = colors * 4;
 
-	pixel_bytes = bits_count / 8;
+    pixel_bytes = bits_count / 8;
 
-	if (!(height & 0x80000000))
-		act_height = height;
-	else
-		act_height = 0 - height;
-	act_dib_length = aligned_line_length * act_height;
+    if (!(height & 0x80000000))
+        act_height = height;
+    else
+        act_height = 0 - height;
+    act_dib_length = aligned_line_length * act_height;
 
-	output_length = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + act_palette_length + act_dib_length;
+    output_length = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + act_palette_length + act_dib_length;
 
-	output = (BYTE *)alloc(output_length);
-	if (!output)
-		return -1;
+    output = (BYTE *)alloc(output_length);
+    if (!output)
+        return -1;
 
-	bmfh = (BITMAPFILEHEADER *)output;
-	bmfh->bfType = 0x4D42;
-	bmfh->bfSize = output_length;
-	bmfh->bfReserved1 = 0;
-	bmfh->bfReserved2 = 0;
-	bmfh->bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + act_palette_length;
-	bmiHeader = (BITMAPINFOHEADER *)(bmfh + 1);
-	bmiHeader->biSize = sizeof(BITMAPINFOHEADER);
-	bmiHeader->biWidth = width;
-	bmiHeader->biHeight = act_height;
-	bmiHeader->biPlanes = 1;
-	bmiHeader->biBitCount = (WORD)bits_count;
-	bmiHeader->biCompression = BI_RGB;
-	bmiHeader->biSizeImage = act_dib_length;
-	bmiHeader->biXPelsPerMeter = 0;
-	bmiHeader->biYPelsPerMeter = 0;
-	bmiHeader->biClrUsed = bits_count <= 8 ? colors : 0;
-	bmiHeader->biClrImportant = 0;
+    bmfh = (BITMAPFILEHEADER *)output;
+    bmfh->bfType = 0x4D42;
+    bmfh->bfSize = output_length;
+    bmfh->bfReserved1 = 0;
+    bmfh->bfReserved2 = 0;
+    bmfh->bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + act_palette_length;
+    bmiHeader = (BITMAPINFOHEADER *)(bmfh + 1);
+    bmiHeader->biSize = sizeof(BITMAPINFOHEADER);
+    bmiHeader->biWidth = width;
+    bmiHeader->biHeight = act_height;
+    bmiHeader->biPlanes = 1;
+    bmiHeader->biBitCount = (WORD)bits_count;
+    bmiHeader->biCompression = BI_RGB;
+    bmiHeader->biSizeImage = act_dib_length;
+    bmiHeader->biXPelsPerMeter = 0;
+    bmiHeader->biYPelsPerMeter = 0;
+    bmiHeader->biClrUsed = bits_count <= 8 ? colors : 0;
+    bmiHeader->biClrImportant = 0;
 
-	pal = (BYTE *)(bmiHeader + 1);
-	if (bits_count <= 8) {
-		unsigned int p;
+    pal = (BYTE *)(bmiHeader + 1);
+    if (bits_count <= 8) {
+        unsigned int p;
 
-		if (!palette || !palette_length) {
-			for (p = 0; p < colors; p++) {
-				pal[p * 4 + 0] = p;
-				pal[p * 4 + 1] = p;
-				pal[p * 4 + 2] = p;
-				pal[p * 4 + 3] = 0;
-			}
-		} else if (palette_length != act_palette_length) {
-			for (p = 0; p < colors; p++) {
-				pal[p * 4 + 0] = palette[p * 3 + 0];
-				pal[p * 4 + 1] = palette[p * 3 + 1];
-				pal[p * 4 + 2] = palette[p * 3 + 2];
-				pal[p * 4 + 3] = 0;
-			}
-		} else
-			CopyMemory(pal, palette, palette_length);
-	}
+        if (!palette || !palette_length) {
+            for (p = 0; p < colors; p++) {
+                pal[p * 4 + 0] = p;
+                pal[p * 4 + 1] = p;
+                pal[p * 4 + 2] = p;
+                pal[p * 4 + 3] = 0;
+            }
+        } else if (palette_length != act_palette_length) {
+            for (p = 0; p < colors; p++) {
+                pal[p * 4 + 0] = palette[p * 3 + 0];
+                pal[p * 4 + 1] = palette[p * 3 + 1];
+                pal[p * 4 + 2] = palette[p * 3 + 2];
+                pal[p * 4 + 3] = 0;
+            }
+        } else
+            CopyMemory(pal, palette, palette_length);
+    }
 
-	pdib = pal + act_palette_length;
-	/* 有些系统的bmp结尾会多出2字节 */
-	if (dib_length > act_dib_length)
-		dib_length = act_dib_length;
+    pdib = pal + act_palette_length;
+    /* 有些系统的bmp结尾会多出2字节 */
+    if (dib_length > act_dib_length)
+        dib_length = act_dib_length;
 
-	if (dib_length == act_dib_length)
-		raw_line_length = aligned_line_length;
+    if (dib_length == act_dib_length)
+        raw_line_length = aligned_line_length;
 
-	if (act_height == height) {
-		for (unsigned int y = 0; y < act_height; ++y) {
-			for (unsigned int x = 0; x < width; ++x) {
-				for (unsigned int p = 0; p < pixel_bytes; ++p)
-					pdib[y * aligned_line_length + x * pixel_bytes + p] = dib[y * raw_line_length + x * pixel_bytes + p];
-			}
-		}
-	} else {
-		for (unsigned int y = 0; y < act_height; ++y) {
-			for (unsigned int x = 0; x < width; ++x) {
-				for (unsigned int p = 0; p < pixel_bytes; ++p)
-					pdib[y * aligned_line_length + x * pixel_bytes + p] = dib[(act_height - y - 1) * raw_line_length + x * pixel_bytes + p];
-			}
-		}
-	}
+    if (act_height == height) {
+        for (unsigned int y = 0; y < act_height; ++y) {
+            for (unsigned int x = 0; x < width; ++x) {
+                for (unsigned int p = 0; p < pixel_bytes; ++p)
+                    pdib[y * aligned_line_length + x * pixel_bytes + p] = dib[y * raw_line_length + x * pixel_bytes + p];
+            }
+        }
+    } else {
+        for (unsigned int y = 0; y < act_height; ++y) {
+            for (unsigned int x = 0; x < width; ++x) {
+                for (unsigned int p = 0; p < pixel_bytes; ++p)
+                    pdib[y * aligned_line_length + x * pixel_bytes + p] = dib[(act_height - y - 1) * raw_line_length + x * pixel_bytes + p];
+            }
+        }
+    }
 
 #if 0
-	if (pixel_bytes == 4) {
-		BYTE *rgba = pdib;
-		for (unsigned int y = 0; y < act_height; y++) {
-			for (unsigned int x = 0; x < width; x++) {
-				BYTE alpha = rgba[3];
+    if (pixel_bytes == 4) {
+        BYTE *rgba = pdib;
+        for (unsigned int y = 0; y < act_height; y++) {
+            for (unsigned int x = 0; x < width; x++) {
+                BYTE alpha = rgba[3];
 
-				rgba[0] = (rgba[0] * alpha + 0xff * ~alpha) / 255;
-				rgba[1] = (rgba[1] * alpha + 0xff * ~alpha) / 255;
-				rgba[2] = (rgba[2] * alpha + 0xff * ~alpha) / 255;
-				rgba += 4;
-			}
-		}
-	}
+                rgba[0] = (rgba[0] * alpha + 0xff * ~alpha) / 255;
+                rgba[1] = (rgba[1] * alpha + 0xff * ~alpha) / 255;
+                rgba[2] = (rgba[2] * alpha + 0xff * ~alpha) / 255;
+                rgba += 4;
+            }
+        }
+    }
 #endif
-	*ret = output;
-	*ret_length = output_length;
-	return 0;
+    *ret = output;
+    *ret_length = output_length;
+    return 0;
 }
 
 int
@@ -649,180 +649,180 @@ tlg6_process(
     DWORD *ret_actual_data_length
 )
 {
-	tlg6_header_t *tlg6_header = (tlg6_header_t *)tlg_raw_data;
-	int outsize;
-	BYTE *out;
+    tlg6_header_t *tlg6_header = (tlg6_header_t *)tlg_raw_data;
+    int outsize;
+    BYTE *out;
 //    CMem mem;
 
     UNREFERENCED_PARAMETER(tlg_size);
 
-	outsize = tlg6_header->width * 4 * tlg6_header->height;
-	out = (BYTE *)malloc(outsize);
-	if (!out)
-		return -1;
+    outsize = tlg6_header->width * 4 * tlg6_header->height;
+    out = (BYTE *)malloc(outsize);
+    if (!out)
+        return -1;
 
-	int x_block_count = (int)((tlg6_header->width - 1) / TVP_TLG6_W_BLOCK_SIZE) + 1;
-	int y_block_count = (int)((tlg6_header->height - 1) / TVP_TLG6_H_BLOCK_SIZE) + 1;
-	int main_count = tlg6_header->width / TVP_TLG6_W_BLOCK_SIZE;
-	int fraction = tlg6_header->width -  main_count * TVP_TLG6_W_BLOCK_SIZE;
+    int x_block_count = (int)((tlg6_header->width - 1) / TVP_TLG6_W_BLOCK_SIZE) + 1;
+    int y_block_count = (int)((tlg6_header->height - 1) / TVP_TLG6_H_BLOCK_SIZE) + 1;
+    int main_count = tlg6_header->width / TVP_TLG6_W_BLOCK_SIZE;
+    int fraction = tlg6_header->width -  main_count * TVP_TLG6_W_BLOCK_SIZE;
 
-	BYTE *bit_pool = (BYTE *)malloc((tlg6_header->max_bit_length / 8 + 5 + 3) & ~3);
-	u32 *pixelbuf = (u32 *)malloc((4 * tlg6_header->width * TVP_TLG6_H_BLOCK_SIZE + 1 + 3) & ~3);
-	BYTE *filter_types = (BYTE *)malloc((x_block_count * y_block_count + 3) & ~3);
-	u32 *zeroline = (u32 *)malloc(tlg6_header->width * 4);
-	if (!bit_pool || !pixelbuf || !filter_types || !zeroline) {
-		free(out);
-		return -1;
-	}
+    BYTE *bit_pool = (BYTE *)malloc((tlg6_header->max_bit_length / 8 + 5 + 3) & ~3);
+    u32 *pixelbuf = (u32 *)malloc((4 * tlg6_header->width * TVP_TLG6_H_BLOCK_SIZE + 1 + 3) & ~3);
+    BYTE *filter_types = (BYTE *)malloc((x_block_count * y_block_count + 3) & ~3);
+    u32 *zeroline = (u32 *)malloc(tlg6_header->width * 4);
+    if (!bit_pool || !pixelbuf || !filter_types || !zeroline) {
+        free(out);
+        return -1;
+    }
 
-	BYTE LZSS_text[4096];
+    BYTE LZSS_text[4096];
 
-	// initialize zero line (virtual y=-1 line)
-	TVPFillARGB(zeroline, tlg6_header->width,
-		tlg6_header->colors == 3 ? 0xff000000 : 0x00000000);
-	// 0xff000000 for colors=3 makes alpha value opaque
+    // initialize zero line (virtual y=-1 line)
+    TVPFillARGB(zeroline, tlg6_header->width,
+        tlg6_header->colors == 3 ? 0xff000000 : 0x00000000);
+    // 0xff000000 for colors=3 makes alpha value opaque
 
-	// initialize LZSS text (used by chroma filter type codes)
-	u32 *p = (u32 *)LZSS_text;
-	for (u32 i = 0; i < 32 * 0x01010101; i += 0x01010101) {
-		for (u32 j = 0; j < 16 * 0x01010101; j += 0x01010101) {
-			p[0] = i, p[1] = j, p += 2;
-		}
-	}
+    // initialize LZSS text (used by chroma filter type codes)
+    u32 *p = (u32 *)LZSS_text;
+    for (u32 i = 0; i < 32 * 0x01010101; i += 0x01010101) {
+        for (u32 j = 0; j < 16 * 0x01010101; j += 0x01010101) {
+            p[0] = i, p[1] = j, p += 2;
+        }
+    }
 
-	// read chroma filter types.
-	// chroma filter types are compressed via LZSS as used by TLG5.
-	int inbuf_size = tlg6_header->filter_length;
-	BYTE *inbuf = (BYTE *)(tlg6_header + 1);
-	TVPTLG5DecompressSlide(filter_types, inbuf, inbuf_size,	LZSS_text, 0);
+    // read chroma filter types.
+    // chroma filter types are compressed via LZSS as used by TLG5.
+    int inbuf_size = tlg6_header->filter_length;
+    BYTE *inbuf = (BYTE *)(tlg6_header + 1);
+    TVPTLG5DecompressSlide(filter_types, inbuf, inbuf_size,    LZSS_text, 0);
 
-	BYTE *in_p = inbuf + inbuf_size;
-	// for each horizontal block group ...
-	u32 *prevline = zeroline;
-	for (int y = 0; y < (int)tlg6_header->height; y += TVP_TLG6_H_BLOCK_SIZE) {
-		int ylim = y + TVP_TLG6_H_BLOCK_SIZE;
-		if (ylim >= (int)tlg6_header->height)
-			ylim = tlg6_header->height;
+    BYTE *in_p = inbuf + inbuf_size;
+    // for each horizontal block group ...
+    u32 *prevline = zeroline;
+    for (int y = 0; y < (int)tlg6_header->height; y += TVP_TLG6_H_BLOCK_SIZE) {
+        int ylim = y + TVP_TLG6_H_BLOCK_SIZE;
+        if (ylim >= (int)tlg6_header->height)
+            ylim = tlg6_header->height;
 
-		int pixel_count = (ylim - y) * tlg6_header->width;
+        int pixel_count = (ylim - y) * tlg6_header->width;
 
-		// decode values
-		for (int c = 0; c < tlg6_header->colors; c++) {
-			// read bit length
-			int bit_length = *(u32 *)in_p;
-			in_p += 4;
+        // decode values
+        for (int c = 0; c < tlg6_header->colors; c++) {
+            // read bit length
+            int bit_length = *(u32 *)in_p;
+            in_p += 4;
 
-			// get compress method
-			int method = (bit_length >> 30) & 3;
-			bit_length &= 0x3fffffff;
+            // get compress method
+            int method = (bit_length >> 30) & 3;
+            bit_length &= 0x3fffffff;
 
-			// compute byte length
-			int byte_length = bit_length / 8;
-			if (bit_length % 8)
-				byte_length++;
+            // compute byte length
+            int byte_length = bit_length / 8;
+            if (bit_length % 8)
+                byte_length++;
 
-			// read source from input
-			CopyMemory(bit_pool, in_p, byte_length);
-			in_p += byte_length;
+            // read source from input
+            CopyMemory(bit_pool, in_p, byte_length);
+            in_p += byte_length;
 
-			// decode values
-			// two most significant bits of bitlength are
-			// entropy coding method;
-			// 00 means Golomb method,
-			// 01 means Gamma method (not yet suppoted),
-			// 10 means modified LZSS method (not yet supported),
-			// 11 means raw (uncompressed) data (not yet supported).
+            // decode values
+            // two most significant bits of bitlength are
+            // entropy coding method;
+            // 00 means Golomb method,
+            // 01 means Gamma method (not yet suppoted),
+            // 10 means modified LZSS method (not yet supported),
+            // 11 means raw (uncompressed) data (not yet supported).
 
-			switch (method) {
-			case 0:
-				if (c == 0 && tlg6_header->colors != 1)
-					TVPTLG6DecodeGolombValuesForFirst((char *)pixelbuf,
-						pixel_count, bit_pool);
-				else
-					TVPTLG6DecodeGolombValues((char *)pixelbuf + c,
-						pixel_count, bit_pool);
-				break;
-			default:
-				if (byte_length & 3)
-					free(bit_pool);
-				free(zeroline);
-				free(filter_types);
-				free(pixelbuf);
-				free(bit_pool);
-				free(out);
-				return -2;
-			}
-		}
+            switch (method) {
+            case 0:
+                if (c == 0 && tlg6_header->colors != 1)
+                    TVPTLG6DecodeGolombValuesForFirst((char *)pixelbuf,
+                        pixel_count, bit_pool);
+                else
+                    TVPTLG6DecodeGolombValues((char *)pixelbuf + c,
+                        pixel_count, bit_pool);
+                break;
+            default:
+                if (byte_length & 3)
+                    free(bit_pool);
+                free(zeroline);
+                free(filter_types);
+                free(pixelbuf);
+                free(bit_pool);
+                free(out);
+                return -2;
+            }
+        }
 
-		// for each line
-		unsigned char *ft =
-			filter_types + (y / TVP_TLG6_H_BLOCK_SIZE) * x_block_count;
-		int skipbytes = (ylim - y) * TVP_TLG6_W_BLOCK_SIZE;
+        // for each line
+        unsigned char *ft =
+            filter_types + (y / TVP_TLG6_H_BLOCK_SIZE) * x_block_count;
+        int skipbytes = (ylim - y) * TVP_TLG6_W_BLOCK_SIZE;
 
-		for (int yy = y; yy < ylim; yy++) {
-			u32 *curline = (u32 *)&out[yy * tlg6_header->width * 4];
+        for (int yy = y; yy < ylim; yy++) {
+            u32 *curline = (u32 *)&out[yy * tlg6_header->width * 4];
 
-			int dir = (yy & 1) ^ 1;
-			int oddskip = ((ylim - yy - 1) - (yy - y));
-			if (main_count) {
-				int start =
-					((tlg6_header->width < TVP_TLG6_W_BLOCK_SIZE) ? tlg6_header->width :
-						TVP_TLG6_W_BLOCK_SIZE) * (yy - y);
-				TVPTLG6DecodeLine(
-					prevline,
-					curline,
-					tlg6_header->width,
-					main_count,
-					ft,
-					skipbytes,
-					pixelbuf + start, tlg6_header->colors == 3 ? 0xff000000 : 0,
-					oddskip, dir);
-			}
+            int dir = (yy & 1) ^ 1;
+            int oddskip = ((ylim - yy - 1) - (yy - y));
+            if (main_count) {
+                int start =
+                    ((tlg6_header->width < TVP_TLG6_W_BLOCK_SIZE) ? tlg6_header->width :
+                        TVP_TLG6_W_BLOCK_SIZE) * (yy - y);
+                TVPTLG6DecodeLine(
+                    prevline,
+                    curline,
+                    tlg6_header->width,
+                    main_count,
+                    ft,
+                    skipbytes,
+                    pixelbuf + start, tlg6_header->colors == 3 ? 0xff000000 : 0,
+                    oddskip, dir);
+            }
 
-			if (main_count != x_block_count) {
-				int ww = fraction;
-				if (ww > TVP_TLG6_W_BLOCK_SIZE)
-					ww = TVP_TLG6_W_BLOCK_SIZE;
-				int start = ww * (yy - y);
-				TVPTLG6DecodeLineGeneric(
-					prevline,
-					curline,
-					tlg6_header->width,
-					main_count,
-					x_block_count,
-					ft,
-					skipbytes,
-					pixelbuf + start,
-					tlg6_header->colors == 3 ? 0xff000000 : 0,
-					oddskip, dir);
-			}
-			prevline = curline;
-		}
-	}
-	free(zeroline);
-	free(filter_types);
-	free(pixelbuf);
-	free(bit_pool);
+            if (main_count != x_block_count) {
+                int ww = fraction;
+                if (ww > TVP_TLG6_W_BLOCK_SIZE)
+                    ww = TVP_TLG6_W_BLOCK_SIZE;
+                int start = ww * (yy - y);
+                TVPTLG6DecodeLineGeneric(
+                    prevline,
+                    curline,
+                    tlg6_header->width,
+                    main_count,
+                    x_block_count,
+                    ft,
+                    skipbytes,
+                    pixelbuf + start,
+                    tlg6_header->colors == 3 ? 0xff000000 : 0,
+                    oddskip, dir);
+            }
+            prevline = curline;
+        }
+    }
+    free(zeroline);
+    free(filter_types);
+    free(pixelbuf);
+    free(bit_pool);
 
-	BYTE *b = out;
-	DWORD pixels = tlg6_header->width * tlg6_header->height;
-	for (UInt i = 0; i < pixels; ++i) {
-		b[0] = b[0] * b[3] / 255 + (255 - b[3]);
-		b[1] = b[1] * b[3] / 255 + (255 - b[3]);
-		b[2] = b[2] * b[3] / 255 + (255 - b[3]);
-		b += 4;
-	}
+    BYTE *b = out;
+    DWORD pixels = tlg6_header->width * tlg6_header->height;
+    for (UInt i = 0; i < pixels; ++i) {
+        b[0] = b[0] * b[3] / 255 + (255 - b[3]);
+        b[1] = b[1] * b[3] / 255 + (255 - b[3]);
+        b[2] = b[2] * b[3] / 255 + (255 - b[3]);
+        b += 4;
+    }
 
-	if (MyBuildBMPFile(out, outsize, NULL, 0, tlg6_header->width,
-			0 - tlg6_header->height, 32, ret_actual_data,
-				ret_actual_data_length, my_malloc)) {
-		free(out);
-		return -1;
-	}
+    if (MyBuildBMPFile(out, outsize, NULL, 0, tlg6_header->width,
+            0 - tlg6_header->height, 32, ret_actual_data,
+                ret_actual_data_length, my_malloc)) {
+        free(out);
+        return -1;
+    }
 
     free(out);
 
-	return 0;
+    return 0;
 }
 
 void TVPTLG6InitLeadingZeroTable()
@@ -871,7 +871,7 @@ BOOL DecodeTLG6(PVOID lpInBuffer, ULONG uInSize, PVOID *ppOutBuffer, PULONG pOut
     {
         bInit = TRUE;
         TVPTLG6InitLeadingZeroTable();
-	    TVPTLG6InitGolombTable();
+        TVPTLG6InitGolombTable();
     }
 
     return !tlg6_process((PBYTE)lpInBuffer, uInSize, (PBYTE *)ppOutBuffer, (LPDWORD)pOutSize);
@@ -957,7 +957,7 @@ LONG TVPTLG5DecompressSlide(UInt8 *out, const UInt8 *in, LONG insize, UInt8 *tex
             unsigned char c = 0[in++];
             0[out++] = c;
             text[r++] = c;
-            /*			0[out++] = text[r++] = 0[in++];*/
+            /*            0[out++] = text[r++] = 0[in++];*/
             r &= (4096 - 1);
         }
     }
@@ -973,20 +973,20 @@ BOOL DecodeTLG5(PVOID lpInBuffer, ULONG uInSize, PVOID *ppOutBuffer, PULONG pOut
 
     pbInBuffer = (PBYTE)lpInBuffer;
 
-	// load TLG v5.0 lossless compressed graphic
+    // load TLG v5.0 lossless compressed graphic
 
-	UChar mark[12];
+    UChar mark[12];
     KRKR2_TLG5_HEADER *pTLGHeader;
     SBitMapHeader BitmpHeader;
-	Int width, height, colors, blockheight, stride;
+    Int width, height, colors, blockheight, stride;
 
     pTLGHeader = (KRKR2_TLG5_HEADER *)pbInBuffer;
     colors = pTLGHeader->Colors;
     if (colors != 3 && colors != 4)
         return FALSE;
 
-	width  = pTLGHeader->Width;
-	height = pTLGHeader->Height;
+    width  = pTLGHeader->Width;
+    height = pTLGHeader->Height;
     blockheight = pTLGHeader->BlockHeight;
 
     InitBitmapHeader(&BitmpHeader, width, height, 32, &stride);
@@ -999,18 +999,18 @@ BOOL DecodeTLG5(PVOID lpInBuffer, ULONG uInSize, PVOID *ppOutBuffer, PULONG pOut
     *(SBitMapHeader *)pbOutBuffer = BitmpHeader;
     pbOutBuffer += sizeof(BitmpHeader) + (height - 1) * stride;
 
-	Int blockcount = (int)((height - 1) / blockheight) + 1;
+    Int blockcount = (int)((height - 1) / blockheight) + 1;
 
-	// skip block size section
+    // skip block size section
     pbInBuffer = (PBYTE)&pTLGHeader->BlockOffset[blockcount];
 
-	// decomperss
-	UInt8 *inbuf = NULL;
-	UInt8 *outbuf[4];
-	UInt8 *text = NULL;
-	Int r = 0;
+    // decomperss
+    UInt8 *inbuf = NULL;
+    UInt8 *outbuf[4];
+    UInt8 *text = NULL;
+    Int r = 0;
 
-	for(int i = 0; i < colors; i++)
+    for(int i = 0; i < colors; i++)
         outbuf[i] = NULL;
 
     text = (UInt8*)malloc(4096);
@@ -1122,10 +1122,10 @@ BOOL DecodeTLG5(PVOID lpInBuffer, ULONG uInSize, PVOID *ppOutBuffer, PULONG pOut
         }
     }
 
-	if(inbuf) free(inbuf);
-	if(text) free(text);
-	for(Int i = 0; i < colors; i++)
-		if(outbuf[i]) free(outbuf[i]);
+    if(inbuf) free(inbuf);
+    if(text) free(text);
+    for(Int i = 0; i < colors; i++)
+        if(outbuf[i]) free(outbuf[i]);
 
     return TRUE;
 }
