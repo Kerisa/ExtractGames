@@ -44,7 +44,9 @@ int XP3ArcPraseEntryStage1 (
         if (*(PDWORD)(p+0xc) == Entry[i].checksum)
         {
             walk = i + 1;
-            wcscpy_s(Entry[i].file_name, file_entry::StrCapacity, (wchar_t*)(p + 0x12));
+            wchar_t temp[128] = { 0 };
+            wcscpy_s(temp, _countof(temp), (wchar_t*)(p + 0x12));
+            Entry[i].file_name = temp;
             p += 0x12 + wcslen((wchar_t*)(p + 0x12));
         }
 
@@ -54,7 +56,9 @@ int XP3ArcPraseEntryStage1 (
     {
         if (*(PDWORD)p == chunk)
         {
-            wcscpy_s(Entry[walk++].file_name, file_entry::StrCapacity, (wchar_t*)(p + 0x12));
+            wchar_t temp[128] = { 0 };
+            wcscpy_s(temp, _countof(temp), (wchar_t*)(p + 0x12));
+            Entry[walk++].file_name = temp;
             p += 0x12 + wcslen((wchar_t*)(p + 0x12));
         }
         else
@@ -65,108 +69,16 @@ int XP3ArcPraseEntryStage1 (
 }
 
 
-void XP3Entrance(const wchar_t *packName, const wchar_t *curDirectory, const std::wstring& choosedGame)
+UNCOMPRESS EncryptedXP3::unCom;
+
+EncryptedXP3::EncryptedXP3()
 {
-    DWORD idx_size = 0;
-    wchar_t szBuffer[MAX_PATH];
-
-    auto fucker = CreateXP3Handler(choosedGame);
-    if (!fucker)
+    if (!unCom)
     {
-        StringCchPrintf(szBuffer, MAX_PATH, L"无法处理的游戏[%s]\r\n", choosedGame.c_str());
-        AppendMsg(szBuffer);
-        return;
+        HMODULE hZlib = LoadLibrary(__T("zlib.dll"));
+        assert(hZlib);
+        unCom = (UNCOMPRESS)GetProcAddress(hZlib, "uncompress");
     }
-
-    bool success = fucker->Open(packName);
-    assert(success);
-    if (!success)
-    {
-        delete fucker;
-        return;
-    }
-
-    wstring txt(packName);
-    txt += L"_entries.txt";
-    auto rawBytes = fucker->GetPlainIndexBytes();
-    ofstream idx(txt + L".0.txt");
-    assert(idx.is_open());
-    idx.write(rawBytes.data(), rawBytes.size());
-    idx.close();
-
-    auto entries = fucker->ExtractEntries(rawBytes);
-    fucker->DumpEntriesToFile(entries, txt.c_str());
-    int saveFileCount = fucker->ExtractData(entries, curDirectory);
-    fucker->Close();
-    delete fucker;
-
-    if (entries.size() == saveFileCount)
-    {
-        StringCchPrintf(szBuffer, MAX_PATH,
-            L"[提取完成(%d/%d)]%s\r\n", saveFileCount, saveFileCount, packName);
-        AppendMsg(szBuffer);
-    }
-    else
-    {
-        StringCchPrintf(szBuffer, MAX_PATH, L"提取%d个文件，共%d个，有%d个发生错误\r\n%s\r\n",
-            saveFileCount, entries.size(), entries.size() - saveFileCount, packName);
-        MessageBox(0, szBuffer, L"提示", MB_ICONWARNING);
-    }
-}
-
-std::map<std::wstring, GameInfomation> GameNameMap = {
-    { L"<默认：直接提取>", { "Unencrypted", []() { return new EncryptedXP3; }} },
-    { L"さくら、咲きました。", { "sakurasaki", []() { return nullptr; } } },
-    { L"倉野くんちのふたご事情", { "kuranokunchi", []() { return new kuranokunchi; }} },
-    { L"あま恋シロップス ～恥じらう恋心でシたくなる甘神様の恋祭り～", { "amakoi", []() { return new amakoi; } } },
-    { L"カミツレ ～7の二乗不思議～", { "Unencrypted", []() { return new EncryptedXP3; } } },
-    { L"すたーらいと★アイドル -COLORFUL TOP STAGE！-", { "Unencrypted", []() { return new EncryptedXP3; } } },
-    { L"あまたらすリドルスター",{ "Unencrypted", []() { return new EncryptedXP3; } } },
-    { L"カラフル☆きゅあ～ 缤纷少女", { "colorfulcure", []() { return new colorfulcure; }} },
-    { L"ＰＲＥＴＴＹ×Ｃ∧ＴＩＯＮ", { "prettycation", []() { return new prettycation; }} },
-    { L"your diary ＋H",{ "kuranokunchi", []() { return new kuranokunchi; } } },
-    { L"迷える2人とセカイのすべて",{ "Unencrypted", []() { return new EncryptedXP3; } } },
-    { L"迷える2人とセカイのすべて LOVEHEAVEN300％",{ "Unencrypted", []() { return new EncryptedXP3; } } },
-    { L"ヤリまん娘 ～俺の妹はビチビチビッチ～",{ "Unencrypted", []() { return new EncryptedXP3; } } },
-    { L"公園いたずらシミュレータ ver.MAKO",{ "Unencrypted", []() { return new EncryptedXP3; } } },
-    { L"PRETTY×CATION2", { "prettycation", []() { return new prettycation; } } },
-    { L"エロ本を捨ててから兄の様子がおかしい", { "anioka", []() { return nullptr; } } },
-    { L"SWANSONG", { "swansong", []() { return new swansong; }} },
-    { L"恋がさくころ桜どき", { "koisakura", []() { return nullptr; } } },
-    { L"ずっとすきして たくさんすきして", { "sukisuki", []() { return nullptr; } } },
-    { L"俺と5人の嫁さんがラブラブなのは、未来からきた赤ちゃんのおかげに違いない！？", { "oreaka", []() { return nullptr; } } },
-    { L"妹のセイイキ(未完成)", { "seiiki", []() { return nullptr; } } },
-    { L"オトメ＊ドメイン", { "Otomedomain", []() { return nullptr; } } },
-    { L"LOVELY×CATION2", { "lovelycation", []() { return new lovelycation; }} },
-    { L"出会って5分は俺のもの！ 時間停止と不可避な運命", { "deai5bu", []() { return new deai5bu; }} },
-    { L"神頼みしすぎて俺の未来がヤバい。", { "kamiyabai", []() { return new kamiyabai; }} },
-    { L"9-nine-ここのつここのかここのいろ", { "palette 9-nine", []() { return new palette_9_nine; } } },
-};
-
-EncryptedXP3 * CreateXP3Handler(const std::wstring & gameName)
-{
-    //static map<string, std::function<EncryptedXP3*()>> list{
-    //    { "kuranokunchi",   []() { return new kuranokunchi; } },
-    //    { "amakoi",         []() { return new amakoi;       } },
-    //    { "prettycation",   []() { return new prettycation; } },
-    //    { "lovelycation",   []() { return new lovelycation; } },
-    //    { "swansong",       []() { return new swansong;     } },
-    //    { "deai5bu",        []() { return new deai5bu;      } },
-    //    { "kamiyabai",      []() { return new kamiyabai;    } },
-
-    //    // cxdec
-    //    { "colorfulcure",   []() { return new colorfulcure; } },
-    //};
-
-    //auto it = list.find(gameName);
-    //if (it != list.end())
-    //    return it->second();
-    //else
-    //    return new EncryptedXP3;
-
-    auto it = GameNameMap.find(gameName);
-    assert(it != GameNameMap.end());
-    return it->second.Handler();
 }
 
 EncryptedXP3::~EncryptedXP3()
@@ -336,9 +248,8 @@ std::vector<file_entry> EncryptedXP3::XP3ArcPraseEntryStage0(const std::vector<c
                     }
                 }
                 else
-                {   // 不应该进来
-                    assert(0);
-                    AppendMsg(L"错误的文件索引记录\r\n");
+                {
+                    assert(L"错误的文件索引记录" && 0);
                     while (*(PDWORD)p != _file) ++p;    // 跳过这个索引
                 }
 
@@ -354,14 +265,8 @@ std::vector<file_entry> EncryptedXP3::XP3ArcPraseEntryStage0(const std::vector<c
 
                             // 剩下的是文件名长度和文件名
                 int buf_size = (int)*((PWORD)p);
-                if (buf_size >= _countof(fe.file_name))
-                {
-                    MessageBox(0, L"文件名超出缓冲区长度\r\n", L"提示", MB_ICONWARNING | MB_OK);
-                    buf_size = _countof(fe.file_name) - 1;
-                }
                 p += 0x2;
-                memset(fe.file_name, 0, _countof(fe.file_name));
-                memcpy(fe.file_name, (wchar_t*)p, buf_size * sizeof(wchar_t));
+                fe.file_name.assign((wchar_t*)p, (wchar_t*)p + buf_size);
 
                 p = info_sec_end;
 
@@ -392,9 +297,9 @@ void EncryptedXP3::DumpEntriesToFile(const std::vector<file_entry>& entries, con
         string str;
         str += "file name: ";
 
-        int n = WideCharToMultiByte(CP_UTF8, NULL, entries[i].file_name, -1, NULL, NULL, NULL, NULL);
+        int n = WideCharToMultiByte(CP_UTF8, NULL, entries[i].file_name.c_str(), -1, NULL, NULL, NULL, NULL);
         vector<char> mcb(n + 1);
-        WideCharToMultiByte(CP_UTF8, NULL, entries[i].file_name, -1, mcb.data(), n, NULL, NULL);
+        WideCharToMultiByte(CP_UTF8, NULL, entries[i].file_name.c_str(), -1, mcb.data(), n, NULL, NULL);
         str += mcb.data();
 
         stringstream s0;
@@ -424,47 +329,48 @@ std::vector<file_entry> EncryptedXP3::ExtractEntries(const std::vector<char>& pl
     return XP3ArcPraseEntryStage0(plainBytes);
 }
 
-int EncryptedXP3::ExtractData(const std::vector<file_entry>& Entry, const std::wstring& saveDir)
+bool EncryptedXP3::ReadEntryDataOfAllParts(const file_entry & fe, vector<char>& packedData, uint32_t* pOriginalLength)
+{
+    fe.ReadFileData(mStream, packedData);
+    *pOriginalLength = fe.GetTotleOriginalSize();
+    return true;
+}
+
+int EncryptedXP3::ExtractData(const std::vector<file_entry>& Entry, const std::wstring& saveDir, wostream& output)
 {
     uint32_t cnt_savefile = 0;
 
     for (const file_entry& fe : Entry)
     {
-        uint32_t file_pkg_len = 0;
+        vector<char> cipher;
         uint32_t file_org_len = 0;
-        for (int i = 0; i<fe.part; ++i)
-        {
-            file_pkg_len += (uint32_t)fe.info[i].pkg_length;
-            file_org_len += (uint32_t)fe.info[i].orig_length;
-        }
-
-        uint32_t file_read = 0;
-        vector<char> cipher(file_pkg_len);
-
-        for (int i = 0; i<fe.part; ++i)
-        {
-            mStream.seekg(fe.info[i].offset, ios::beg);
-            mStream.read(cipher.data() + file_read, (uint32_t)fe.info[i].pkg_length);
-            file_read += (uint32_t)fe.info[i].pkg_length;
-        }
+        ReadEntryDataOfAllParts(fe, cipher, &file_org_len);
 
         vector<char> unpack(file_org_len);
         if (fe.info[0].compress_flag)
         {
             uint32_t unpack_len = (uint32_t)file_org_len;
-            unCom(unpack.data(), &unpack_len, cipher.data(), file_pkg_len);
+            unCom(unpack.data(), &unpack_len, cipher.data(), cipher.size());
         }
         else
         {
-            assert(file_pkg_len == file_org_len);
+            assert(cipher.size() == file_org_len);
             unpack = cipher;
         }
 
 
         if (DoExtractData(fe, unpack))
+        {
             if (!SplitFileNameAndSave(saveDir.c_str(), fe.file_name, unpack))
+            {
                 ++cnt_savefile;
-
+                output << wstring(wstring(L"[已保存]") + fe.file_name + L"\r\n");
+            }
+            else
+            {
+                output << wstring(wstring(L"[无法保存]") + fe.file_name + L"\r\n");
+            }
+        }
     }
 
     return cnt_savefile;
@@ -506,36 +412,25 @@ int EncryptedXP3::SplitFileNameAndSave(const wstring& cur_dir, const wstring& fi
     HANDLE hFile;
     int ret = 0;
     do {
-        hFile = CreateFile(buf.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+        hFile = CreateFileW(buf.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
         if (hFile == INVALID_HANDLE_VALUE)
         {
-            buf2 = L"[文件创建错误]" + file_name + L"\r\n";
-            ret = ERR_FILE_CREATE;
+            ret = GetLastError();
             break;
         }
 
-        WriteFile(hFile, unpackData.data(), unpackData.size(), &ByteWrite, NULL);
+        BOOL success = WriteFile(hFile, unpackData.data(), unpackData.size(), &ByteWrite, NULL);
 
-        if (ByteWrite != unpackData.size())
+        if (success && ByteWrite == unpackData.size())
         {
-            buf2 = L"[文件写入错误]" + file_name + L"\r\n";
-            ret = ERR_FILE_ERITE;
-            break;
-        }
-
-        int t = GetLastError();
-        if (!t || t == ERROR_ALREADY_EXISTS)
-        {
-            buf2 = L"[已保存]" + file_name + L"\r\n";
+            ret = ERROR_SUCCESS;
         }
         else
         {
-            buf2 = L"[无法保存]" + file_name + L"\r\n";
-            ret = ERR_FILE_OTHERS;
+            ret = GetLastError();
         }
     } while (0);
 
-    AppendMsg(buf2.c_str());
     CloseHandle(hFile);
     return ret;
 }
@@ -543,100 +438,6 @@ int EncryptedXP3::SplitFileNameAndSave(const wstring& cur_dir, const wstring& fi
 
 
 
-bool kuranokunchi::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
-{
-    for (size_t i = 0; i<unpackData.size(); ++i)
-        unpackData[i] ^= (uint8_t)fe.checksum ^ 0xcd;
-    return true;
-}
-
-bool amakoi::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
-{
-    for (size_t i = 0; i<unpackData.size(); ++i)
-        unpackData[i] ^= (uint8_t)fe.checksum;
-    return true;
-}
-
-bool prettycation::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
-{
-    for (size_t i = 5; i<unpackData.size(); ++i)
-        unpackData[i] ^= (uint8_t)(fe.checksum >> 0xc);
-    return true;
-}
-
-bool lovelycation::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
-{
-    char* buf = unpackData.data();
-
-    uint8_t key[5];
-    key[0] = (uint8_t)(fe.checksum >> 8) & 0xff;
-    key[1] = (uint8_t)(fe.checksum >> 8) & 0xff;
-    key[2] = (uint8_t)(fe.checksum >> 1) & 0xff;
-    key[3] = (uint8_t)(fe.checksum >> 7) & 0xff;
-    key[4] = (uint8_t)(fe.checksum >> 5) & 0xff;
-
-    for (size_t i = 0; i <= 0x64; ++i)
-    {
-        *buf++ ^= key[4];
-    }
-    for (size_t i = 0x65; i<unpackData.size(); ++i)
-    {
-        *buf++ ^= key[i & 4];
-    }
-    return true;
-}
-
-bool swansong::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
-{
-    uint8_t ror = (uint8_t)fe.checksum & 7;
-    uint8_t key = (uint8_t)(fe.checksum >> 8);
-    for (size_t i = 0; i<unpackData.size(); ++i)
-    {
-        unpackData[i] ^= key;
-        unpackData[i] = unpackData[i] >> ror | unpackData[i] << (8 - ror);
-    }
-    return true;
-}
-
-bool deai5bu::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
-{
-    uint32_t key = 0x35353535;
-
-    size_t dwordLen = unpackData.size() >> 2;
-    uint32_t* ptr = (uint32_t*)unpackData.data();
-    for (size_t i = 0; i<dwordLen; ++i)
-        *ptr++ ^= key;
-
-    size_t remain = unpackData.size() - (dwordLen << 2);
-    for (; remain != 0; --remain)
-    {
-        unpackData[(dwordLen << 2) + remain - 1] ^= (uint8_t)(key >> (remain - 1));
-    }
-    return true;
-}
-
-bool colorfulcure::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
-{
-    xp3filter_decode("colorfulcure", fe.file_name, (uint8_t*)unpackData.data(), unpackData.size(), 0, unpackData.size(), fe.checksum);
-    return true;
-}
-
-bool kamiyabai::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
-{
-    uint32_t key = 0xcdcdcdcd;
-
-    size_t dwordLen = unpackData.size() >> 2;
-    uint32_t* ptr = (uint32_t*)unpackData.data();
-    for (size_t i = 0; i<dwordLen; ++i)
-        *ptr++ ^= key;
-
-    size_t remain = unpackData.size() - (dwordLen << 2);
-    for (; remain != 0; --remain)
-    {
-        unpackData[(dwordLen << 2) + remain - 1] ^= (uint8_t)(key >> (remain - 1));
-    }
-    return true;
-}
 
 std::vector<file_entry> palette_9_nine::XP3ArcPraseEntryStage0(const std::vector<char>& plainBytes)
 {
@@ -666,7 +467,7 @@ std::vector<file_entry> palette_9_nine::XP3ArcPraseEntryStage0(const std::vector
 
         file_entry fe;
         fe.checksum = checksum;
-        wcscpy_s(fe.file_name, _countof(fe.file_name), name.c_str());
+        fe.file_name = name;
         nameList.push_back(fe);
     }
 
@@ -723,9 +524,8 @@ std::vector<file_entry> palette_9_nine::XP3ArcPraseEntryStage0(const std::vector
                     }
                 }
                 else
-                {   // 不应该进来
-                    assert(0);
-                    AppendMsg(L"错误的文件索引记录\r\n");
+                {
+                    assert(L"错误的文件索引记录" && 0);
                     while (*(PDWORD)p != _file) ++p;    // 跳过这个索引
                 }
 
@@ -741,14 +541,8 @@ std::vector<file_entry> palette_9_nine::XP3ArcPraseEntryStage0(const std::vector
 
                             // 剩下的是文件名长度和文件名
                 int buf_size = (int)*((PWORD)p);
-                if (buf_size >= _countof(fe.file_name))
-                {
-                    MessageBox(0, L"文件名超出缓冲区长度\r\n", L"提示", MB_ICONWARNING | MB_OK);
-                    buf_size = _countof(fe.file_name) - 1;
-                }
                 p += 0x2;
-                memset(fe.file_name, 0, _countof(fe.file_name));
-                memcpy(fe.file_name, (wchar_t*)p, buf_size * sizeof(wchar_t));
+                fe.file_name.assign((wchar_t*)p, (wchar_t*)p + buf_size);
 
                 p = info_sec_end;
 
@@ -768,11 +562,57 @@ std::vector<file_entry> palette_9_nine::XP3ArcPraseEntryStage0(const std::vector
     {
         if (Entry[i].checksum != nameList[n].checksum)
             continue;
-
-        wcscpy_s(Entry[i].file_name, _countof(Entry[i].file_name), nameList[n].file_name);
+        Entry[i].file_name = nameList[n].file_name;
         ++n;
     }
 
     assert(n == nameList.size());
     return Entry;
+}
+
+uint32_t file_entry::GetTotlePackedSize() const
+{
+    uint32_t file_pkg_len = 0;
+    for (int i = 0; i < part; ++i)
+    {
+        file_pkg_len += (uint32_t)info[i].pkg_length;
+    }
+    return file_pkg_len;
+}
+
+uint32_t file_entry::GetTotleOriginalSize() const
+{
+    uint32_t file_org_len = 0;
+    for (int i = 0; i < part; ++i)
+    {
+        file_org_len += (uint32_t)info[i].orig_length;
+    }
+    return file_org_len;
+}
+
+bool file_entry::IsCompressed() const
+{
+    assert(part > 0);
+    return info[0].compress_flag;
+}
+
+bool file_entry::IsEncrypted() const
+{
+    return encryption_flag;
+}
+
+bool file_entry::ReadFileData(std::ifstream & file, std::vector<char>& packedData) const
+{
+    uint32_t file_pkg_len = GetTotlePackedSize();
+    uint32_t file_read = 0;
+    packedData.resize(file_pkg_len);
+
+    for (int i = 0; i < part; ++i)
+    {
+        file.seekg(info[i].offset, ios::beg);
+        file.read(packedData.data() + file_read, (uint32_t)info[i].pkg_length);
+        file_read += (uint32_t)info[i].pkg_length;
+    }
+
+    return true;
 }

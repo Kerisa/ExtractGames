@@ -2,9 +2,8 @@
 #include <string>
 #include <map>
 #include <vector>
-#include "error.h"
 #include "resource.h"
-#include "xp3.h"
+#include "xp3ext.h"
 #include <strsafe.h>
 
 
