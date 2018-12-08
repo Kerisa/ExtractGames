@@ -1,6 +1,5 @@
 #include "..\xp3filter_decode.h"
 #include "cxdec.h"
-#include "..\error.h"
 
 DWORD xcode_rand(struct cxdec_xcode_status *xcode)
 {
@@ -166,7 +165,7 @@ static int cxdec_init(void)
 {
     cxdec.xcode = (BYTE *)VirtualAlloc(NULL, 128 * 100, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
     if (!cxdec.xcode)
-        return ERR_MEM;
+        return -1;  // ERR_MEM
 
     memset(cxdec.address_list, 0, sizeof(cxdec.address_list));
     cxdec.current_count = 0;

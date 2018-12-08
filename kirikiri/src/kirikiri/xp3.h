@@ -2,7 +2,7 @@
 
 #pragma once
 
-
+#include <array>
 #include <cassert>
 #include <fstream>
 #include <functional>
@@ -11,7 +11,6 @@
 #include <vector>
 #include <strsafe.h>
 #include <Windows.h>
-#include "error.h"
 #include "cxdec\cxdec.h"
 #include "xp3filter_decode.h"
 
@@ -34,23 +33,28 @@ struct xp3_file_header
 struct file_entry
 {
     enum {
-        StrCapacity = 128,
         Section = 16
     };
-    DWORD checksum;
-    DWORD encryption_flag;    // info
-    int part;
+    DWORD checksum{ 0 };
+    DWORD encryption_flag{ 0 };    // info
+    int part{ 0 };
     struct {
-        DWORD compress_flag;        // segm
-        uint64_t offset;
-        uint64_t orig_length;
-        uint64_t pkg_length;
+        DWORD compress_flag{ 0 };        // segm
+        uint64_t offset{ 0 };
+        uint64_t orig_length{ 0 };
+        uint64_t pkg_length{ 0 };
     } info[Section];
-    wchar_t file_name[StrCapacity];
+    std::wstring file_name;
+
+    uint32_t GetTotlePackedSize() const;
+    uint32_t GetTotleOriginalSize() const;
+    bool     IsCompressed() const;
+    bool     IsEncrypted() const;
+    bool     ReadFileData(std::ifstream& file, std::vector<char>& packedData) const;
+
 };
 
 
-extern void AppendMsg(const wchar_t *szBuffer);
 
 
 DWORD   HaveExtraEntryChunk(const char *game);
@@ -73,8 +77,11 @@ XP3EntryExtraChunk[] = {
 
 class EncryptedXP3
 {
+    static UNCOMPRESS unCom;
+
 public:
-    ~EncryptedXP3();
+    EncryptedXP3();
+    virtual ~EncryptedXP3();
 
     bool Open(const std::wstring& path);
     void Close();
@@ -83,9 +90,10 @@ public:
     std::vector<char> GetPlainIndexBytes();
     void DumpEntriesToFile(const std::vector<file_entry>& entries, const std::wstring& path);
     std::vector<file_entry> ExtractEntries(const std::vector<char>& plainBytes);
-    int ExtractData(const std::vector<file_entry>& entries, const std::wstring& saveDir);
+    int ExtractData(const std::vector<file_entry>& entries, const std::wstring& saveDir, std::wostream& output);
 
     int SplitFileNameAndSave(const std::wstring& cur_dir, const std::wstring& file_name, const std::vector<char>& unpackData);
+    bool ReadEntryDataOfAllParts(const file_entry& fe, std::vector<char>& packedData, uint32_t* pOriginalLength);
 
 protected:
     virtual bool DoExtractData(const file_entry& fe, std::vector<char>& unpackData);
@@ -95,55 +103,6 @@ private:
     xp3_file_header mHeader;
     std::wstring mPath;
     std::ifstream mStream;
-};
-
-class kuranokunchi : public EncryptedXP3
-{
-public:
-    bool DoExtractData(const file_entry& fe, std::vector<char>& unpackData) override;
-};
-
-class amakoi : public EncryptedXP3
-{
-public:
-    bool DoExtractData(const file_entry& fe, std::vector<char>& unpackData) override;
-};
-
-class prettycation : public EncryptedXP3
-{
-public:
-    bool DoExtractData(const file_entry& fe, std::vector<char>& unpackData) override;
-};
-
-class lovelycation : public EncryptedXP3
-{
-public:
-    bool DoExtractData(const file_entry& fe, std::vector<char>& unpackData) override;
-};
-
-class swansong : public EncryptedXP3
-{
-public:
-    bool DoExtractData(const file_entry& fe, std::vector<char>& unpackData) override;
-};
-
-class deai5bu : public EncryptedXP3
-{
-public:
-    bool DoExtractData(const file_entry& fe, std::vector<char>& unpackData) override;
-};
-
-class kamiyabai : public EncryptedXP3
-{
-public:
-    bool DoExtractData(const file_entry& fe, std::vector<char>& unpackData) override;
-};
-
-
-class colorfulcure : public EncryptedXP3
-{
-public:
-    bool DoExtractData(const file_entry& fe, std::vector<char>& unpackData) override;
 };
 
 class palette_9_nine : public EncryptedXP3
@@ -156,13 +115,3 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 
 
-struct GameInfomation
-{
-    std::string GameID;
-    std::function<EncryptedXP3*()> Handler;
-};
-
-extern std::map<std::wstring, GameInfomation> GameNameMap;
-
-
-EncryptedXP3* CreateXP3Handler(const std::wstring& gameName);

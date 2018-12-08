@@ -9,24 +9,40 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kirikiri", "src\kirikiri\ki
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CsvMerge", "src\CsvMerge\CsvMerge.vcxproj", "{A360F249-A365-45B7-A8DE-63C412330D29}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AutoFucker", "src\AutoFucker\AutoFucker.vcxproj", "{D1BAEC19-B3FD-4983-B876-2C81C3065B7B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0554BA40-7CFE-43CD-AE04-F1AA8B1CB1CD}.Debug|x64.ActiveCfg = Debug|Win32
 		{0554BA40-7CFE-43CD-AE04-F1AA8B1CB1CD}.Debug|x86.ActiveCfg = Debug|Win32
 		{0554BA40-7CFE-43CD-AE04-F1AA8B1CB1CD}.Debug|x86.Build.0 = Debug|Win32
+		{0554BA40-7CFE-43CD-AE04-F1AA8B1CB1CD}.Release|x64.ActiveCfg = Release|Win32
 		{0554BA40-7CFE-43CD-AE04-F1AA8B1CB1CD}.Release|x86.ActiveCfg = Release|Win32
 		{0554BA40-7CFE-43CD-AE04-F1AA8B1CB1CD}.Release|x86.Build.0 = Release|Win32
+		{10DA06DC-943E-4003-819D-51928F59C7DD}.Debug|x64.ActiveCfg = Debug|Win32
 		{10DA06DC-943E-4003-819D-51928F59C7DD}.Debug|x86.ActiveCfg = Debug|Win32
 		{10DA06DC-943E-4003-819D-51928F59C7DD}.Debug|x86.Build.0 = Debug|Win32
+		{10DA06DC-943E-4003-819D-51928F59C7DD}.Release|x64.ActiveCfg = Release|Win32
 		{10DA06DC-943E-4003-819D-51928F59C7DD}.Release|x86.ActiveCfg = Release|Win32
 		{10DA06DC-943E-4003-819D-51928F59C7DD}.Release|x86.Build.0 = Release|Win32
+		{A360F249-A365-45B7-A8DE-63C412330D29}.Debug|x64.ActiveCfg = Debug|Win32
 		{A360F249-A365-45B7-A8DE-63C412330D29}.Debug|x86.ActiveCfg = Debug|Win32
 		{A360F249-A365-45B7-A8DE-63C412330D29}.Debug|x86.Build.0 = Debug|Win32
+		{A360F249-A365-45B7-A8DE-63C412330D29}.Release|x64.ActiveCfg = Release|Win32
 		{A360F249-A365-45B7-A8DE-63C412330D29}.Release|x86.ActiveCfg = Release|Win32
 		{A360F249-A365-45B7-A8DE-63C412330D29}.Release|x86.Build.0 = Release|Win32
+		{D1BAEC19-B3FD-4983-B876-2C81C3065B7B}.Debug|x64.ActiveCfg = Debug|Win32
+		{D1BAEC19-B3FD-4983-B876-2C81C3065B7B}.Debug|x86.ActiveCfg = Debug|Win32
+		{D1BAEC19-B3FD-4983-B876-2C81C3065B7B}.Debug|x86.Build.0 = Debug|Win32
+		{D1BAEC19-B3FD-4983-B876-2C81C3065B7B}.Release|x64.ActiveCfg = Release|Win32
+		{D1BAEC19-B3FD-4983-B876-2C81C3065B7B}.Release|x86.ActiveCfg = Release|Win32
+		{D1BAEC19-B3FD-4983-B876-2C81C3065B7B}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
