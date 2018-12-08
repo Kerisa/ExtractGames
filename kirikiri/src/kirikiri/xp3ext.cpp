@@ -107,6 +107,37 @@ bool sakurasaki::DoExtractData(const file_entry & fe, std::vector<char>& unpackD
     return true;
 }
 
+bool oreaka::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
+{
+    xp3filter_decode("oreaka", fe.file_name.c_str(), (uint8_t*)unpackData.data(), unpackData.size(), 0, unpackData.size(), fe.checksum);
+    return true;
+}
+
+bool Otomedomain::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
+{
+    xp3filter_decode("Otomedomain", fe.file_name.c_str(), (uint8_t*)unpackData.data(), unpackData.size(), 0, unpackData.size(), fe.checksum);
+    return true;
+}
+
+bool sukisuki::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
+{
+    xp3filter_decode("sukisuki", fe.file_name.c_str(), (uint8_t*)unpackData.data(), unpackData.size(), 0, unpackData.size(), fe.checksum);
+    return true;
+}
+
+bool koisakura::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
+{
+    xp3filter_decode("koisakura", fe.file_name.c_str(), (uint8_t*)unpackData.data(), unpackData.size(), 0, unpackData.size(), fe.checksum);
+    return true;
+}
+
+bool anioka::DoExtractData(const file_entry & fe, std::vector<char>& unpackData)
+{
+    xp3filter_decode("anioka", fe.file_name.c_str(), (uint8_t*)unpackData.data(), unpackData.size(), 0, unpackData.size(), fe.checksum);
+    return true;
+}
+
+
 
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -181,13 +212,13 @@ std::map<std::wstring, GameInfomation> GameNameMap = {
     { L"ヤリまん娘 ～俺の妹はビチビチビッチ～",{ "Unencrypted", []() { return new EncryptedXP3; } } },
     { L"公園いたずらシミュレータ ver.MAKO",{ "Unencrypted", []() { return new EncryptedXP3; } } },
     { L"PRETTY×CATION2",{ "prettycation", []() { return new prettycation; } } },
-    { L"エロ本を捨ててから兄の様子がおかしい",{ "anioka", []() { return nullptr; } } },
+    { L"エロ本を捨ててから兄の様子がおかしい",{ "anioka", []() { return new anioka; } } },
     { L"SWANSONG",{ "swansong", []() { return new swansong; } } },
-    { L"恋がさくころ桜どき",{ "koisakura", []() { return nullptr; } } },
-    { L"ずっとすきして たくさんすきして",{ "sukisuki", []() { return nullptr; } } },
-    { L"俺と5人の嫁さんがラブラブなのは、未来からきた赤ちゃんのおかげに違いない！？",{ "oreaka", []() { return nullptr; } } },
+    { L"恋がさくころ桜どき",{ "koisakura", []() { return new koisakura; } } },
+    { L"ずっとすきして たくさんすきして",{ "sukisuki", []() { return new sukisuki; } } },
+    { L"俺と5人の嫁さんがラブラブなのは、未来からきた赤ちゃんのおかげに違いない！？",{ "oreaka", []() { return new oreaka; } } },
     { L"妹のセイイキ(未完成)",{ "seiiki", []() { return nullptr; } } },
-    { L"オトメ＊ドメイン",{ "Otomedomain", []() { return nullptr; } } },
+    { L"オトメ＊ドメイン",{ "Otomedomain", []() { return new Otomedomain; } } },
     { L"LOVELY×CATION2",{ "lovelycation", []() { return new lovelycation; } } },
     { L"出会って5分は俺のもの！ 時間停止と不可避な運命",{ "deai5bu", []() { return new deai5bu; } } },
     { L"神頼みしすぎて俺の未来がヤバい。",{ "kamiyabai", []() { return new kamiyabai; } } },

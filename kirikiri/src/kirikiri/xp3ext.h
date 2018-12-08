@@ -72,3 +72,35 @@ class sakurasaki : public EncryptedXP3
 public:
     bool DoExtractData(const file_entry& fe, std::vector<char>& unpackData) override;
 };
+
+
+
+class anioka : public EncryptedXP3
+{
+public:
+    bool DoExtractData(const file_entry& fe, std::vector<char>& unpackData) override;
+};
+
+class koisakura : public EncryptedXP3
+{
+public:
+    bool DoExtractData(const file_entry& fe, std::vector<char>& unpackData) override;
+};
+
+class sukisuki : public EncryptedXP3
+{
+public:
+    bool DoExtractData(const file_entry& fe, std::vector<char>& unpackData) override;
+};
+
+class Otomedomain : public EncryptedXP3
+{
+public:
+    bool DoExtractData(const file_entry& fe, std::vector<char>& unpackData) override;
+};
+
+class oreaka : public EncryptedXP3
+{
+public:
+    bool DoExtractData(const file_entry& fe, std::vector<char>& unpackData) override;
+};
