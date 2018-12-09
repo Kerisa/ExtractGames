@@ -45,6 +45,7 @@ struct file_entry
         uint64_t pkg_length{ 0 };
     } info[Section];
     std::wstring file_name;
+    std::wstring internal_name;
 
     uint32_t GetTotlePackedSize() const;
     uint32_t GetTotleOriginalSize() const;

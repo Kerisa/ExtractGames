@@ -302,6 +302,13 @@ void EncryptedXP3::DumpEntriesToFile(const std::vector<file_entry>& entries, con
         WideCharToMultiByte(CP_UTF8, NULL, entries[i].file_name.c_str(), -1, mcb.data(), n, NULL, NULL);
         str += mcb.data();
 
+        str += "\ninternal name: ";
+        n = WideCharToMultiByte(CP_UTF8, NULL, entries[i].internal_name.c_str(), -1, NULL, NULL, NULL, NULL);
+        mcb.resize(n + 1);
+        WideCharToMultiByte(CP_UTF8, NULL, entries[i].internal_name.c_str(), -1, mcb.data(), n, NULL, NULL);
+        str += mcb.data();
+
+
         stringstream s0;
         s0 << "\nchecksum: " << std::hex << entries[i].checksum << "\nencryption_flag: " << std::hex << entries[i].encryption_flag << "\n";
         str += s0.str();
@@ -542,7 +549,7 @@ std::vector<file_entry> palette_9_nine::XP3ArcPraseEntryStage0(const std::vector
                             // 剩下的是文件名长度和文件名
                 int buf_size = (int)*((PWORD)p);
                 p += 0x2;
-                fe.file_name.assign((wchar_t*)p, (wchar_t*)p + buf_size);
+                fe.internal_name.assign((wchar_t*)p, (wchar_t*)p + buf_size);
 
                 p = info_sec_end;
 
