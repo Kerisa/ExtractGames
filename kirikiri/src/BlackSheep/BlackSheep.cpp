@@ -3,23 +3,24 @@
 
 #include "stdafx.h"
 #include <cassert>
-#include <windows.h>
-#include "tp_stub.h"
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <sstream>
+#include <windows.h>
+#include "tp_stub.h"
 #include <tlhelp32.h>
 #include "utility/utility.h"
+#include "../kirikiri/xp3.h"
 
 using namespace std;
 
 struct MapObj
 {
 	BOOL Access;
-	char Path[MAX_PATH];
+	wchar_t Path[MAX_PATH];
 };
 MapObj *g_Map;
-wchar_t strBuffer[512] = L"archive://fgimage.xp3/emotion.txt";
 
 char dataBuffer[8192];
 HANDLE hFileMapping;
@@ -34,32 +35,51 @@ DWORD WINAPI Worker(LPVOID)
 {
     MessageBox(NULL, "seems OK", NULL, 0);
 
-    ttstr name(strBuffer);
+    wstring drv, dir, file, ext;
+    Utility::SplitPath(g_Map->Path, drv, dir, file, ext);
+    wstring outDir = drv + dir + L"[extract] " + file + ext;
+    CreateDirectoryW(outDir.c_str(), 0);
 
-    const char target[] = "IStream * ::TVPCreateIStream(const ttstr &,tjs_uint32)";
-    void* CallIStreamStub = TVPGetImportFuncPtr(target);
+	EncryptedXP3 *xp3 = new EncryptedXP3();
+	bool b = xp3->Open(g_Map->Path);
+	assert("xp3 open failed." && b);
+	vector<file_entry> entries = xp3->ExtractEntries(xp3->GetPlainIndexBytes());
+    int count = 0, streamErr = 0;
+	for (size_t i = 0; i < entries.size(); ++i)
+	{
+        const file_entry& fe = entries[i];
+        ttstr name(xp3->FormatFileNameForIStream(fe).c_str());
 
-    IStream* stream = TVPCreateIStream(name, 0);
-    STATSTG state;
-    DWORD flag = 1;
-    stream->Stat(&state, flag);
-    size_t fileSize = state.cbSize.QuadPart;
-    LPVOID buf = VirtualAlloc(NULL, fileSize, MEM_COMMIT, PAGE_READWRITE);
-    ULONG R;
-    stream->Read(buf, fileSize, &R);
-    assert(R == fileSize);
-    ofstream out("emotion.txt", ios::binary);
-    assert(out.is_open());
-    out.write((char*)buf, fileSize);
-    out.close();
-    VirtualFree(buf, 0, MEM_RELEASE);
+        IStream* stream = TVPCreateIStream(name, 0);
+        if (stream)
+        {
+            STATSTG state;
+            DWORD flag = 1;
+            stream->Stat(&state, flag);
+            size_t fileSize = state.cbSize.QuadPart;
+            LPVOID buf = VirtualAlloc(NULL, fileSize, MEM_COMMIT, PAGE_READWRITE);
+            ULONG R;
+            stream->Read(buf, fileSize, &R);
+            assert(R == fileSize);
+            int ret = EncryptedXP3::SplitFileNameAndSave(outDir, fe.file_name, vector<char>((char*)buf, (char*)buf + fileSize));
+            if (ret == 0)
+                ++count;
+            VirtualFree(buf, 0, MEM_RELEASE);
+        }
+        else
+        {
+            ++streamErr;
+        }
+	}
+
+    stringstream ss;
+    ss << "finish(" << count << "/" << entries.size() << ", " << streamErr << " for stream error)";
+    MessageBox(NULL, ss.str().c_str(), 0, 0);
 
 	while (1)
 	{
 		Sleep(1);
 	}
-
-
     return 0;
 }
 

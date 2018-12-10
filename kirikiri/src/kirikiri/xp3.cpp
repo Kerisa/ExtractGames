@@ -3,6 +3,8 @@
 #include <iterator>
 #include <iostream>
 #include <sstream>
+#include "utility/utility.h"
+
 
 using namespace std;
 
@@ -442,6 +444,14 @@ int EncryptedXP3::SplitFileNameAndSave(const wstring& cur_dir, const wstring& fi
     return ret;
 }
 
+std::wstring EncryptedXP3::FormatFileNameForIStream(const file_entry & fe) const
+{
+    wstring file, ext;
+    Utility::SplitPath(mPath, wstring(), wstring(), file, ext);
+    //return L"archive://" + file + ext + L"/" + fe.file_name;
+    return mPath + L">" + fe.file_name; // [ok]
+}
+
 
 
 
@@ -560,6 +570,8 @@ std::vector<file_entry> palette_9_nine::XP3ArcPraseEntryStage0(const std::vector
         }   // end while (p < pEnd && flag != flag_all)
 
         assert(flag == flag_all);
+        if (fe.file_name.empty())
+            fe.file_name = fe.internal_name;
         Entry.push_back(fe);
     }
 
