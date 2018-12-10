@@ -41,5 +41,8 @@
     <ClCompile Include="..\kirikiri\xp3.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\include\utility\utility.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

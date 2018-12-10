@@ -81,6 +81,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>../../include</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -93,12 +94,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\utility\utility.h" />
+    <ClInclude Include="..\kirikiri\xp3.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="tp_stub.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\include\utility\utility.cpp" />
+    <ClCompile Include="..\kirikiri\xp3.cpp" />
     <ClCompile Include="BlackSheep.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="tp_stub.cpp" />

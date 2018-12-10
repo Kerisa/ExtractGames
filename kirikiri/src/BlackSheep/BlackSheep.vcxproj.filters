@@ -27,6 +27,9 @@
     <ClInclude Include="..\..\include\utility\utility.h">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\kirikiri\xp3.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -39,6 +42,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\include\utility\utility.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\kirikiri\xp3.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

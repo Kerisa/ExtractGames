@@ -93,7 +93,8 @@ public:
     std::vector<file_entry> ExtractEntries(const std::vector<char>& plainBytes);
     int ExtractData(const std::vector<file_entry>& entries, const std::wstring& saveDir, std::wostream& output);
 
-    int SplitFileNameAndSave(const std::wstring& cur_dir, const std::wstring& file_name, const std::vector<char>& unpackData);
+    static int SplitFileNameAndSave(const std::wstring& cur_dir, const std::wstring& file_name, const std::vector<char>& unpackData);
+    std::wstring FormatFileNameForIStream(const file_entry& fe) const;
     bool ReadEntryDataOfAllParts(const file_entry& fe, std::vector<char>& packedData, uint32_t* pOriginalLength);
 
 protected:
