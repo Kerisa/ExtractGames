@@ -13,11 +13,16 @@
 
 using namespace std;
 
+struct MapObj
+{
+	BOOL Access;
+	char Path[MAX_PATH];
+};
+MapObj *g_Map;
 wchar_t strBuffer[512] = L"archive://fgimage.xp3/emotion.txt";
 
-
 char dataBuffer[8192];
-
+HANDLE hFileMapping;
 uint32_t Finish = 0;
 uint32_t OldV2Link = 0;
 iTVPFunctionExporter *exporter;
@@ -48,6 +53,11 @@ DWORD WINAPI Worker(LPVOID)
     out.write((char*)buf, fileSize);
     out.close();
     VirtualFree(buf, 0, MEM_RELEASE);
+
+	while (1)
+	{
+		Sleep(1);
+	}
 
 
     return 0;
@@ -106,31 +116,50 @@ extern "C" __declspec(dllexport) HRESULT _stdcall V2Unlink()
     return S_OK;
 }
 
+uint32_t old;
+uint32_t addr;
+char * func;
+
 extern "C" __declspec(naked) void ProcAddressHook()
 {
-    uint32_t old;
-    char * func;
+
     __asm {
-        pushad
+		push ebp
+        mov ebp, esp
         mov old, eax
-        mov eax, dword ptr [ebp+0xc]
+        mov eax, dword ptr [ebp+0x18]
+		mov eax, [eax]
+		mov addr, eax
         mov func, eax
+		mov eax, DWORD ptr [ebp+0x10]
+		cmp eax, 0
+		je SKIP
+		lea eax, [eax+4]
+		mov eax, [eax]
+		mov func, eax
+SKIP:
     }
 
     if (!Finish)
     {
         if (!memcmp(func, "V2Link", 7))
         {
-            OldV2Link = old;
-            old = (uint32_t)V2Link;
+            OldV2Link = addr;
+			__asm {
+				mov eax, dword ptr[ebp+0x18]
+				mov ecx, V2Link
+				mov [eax], ecx
+			}
+            //old = (uint32_t)V2Link;
         }
     }
 
     __asm {
-        popad
+        mov esp, ebp
+		pop ebp
         mov eax, old
         pop ebp
-        retn 0x8
+        retn 0x10
     }
 }
 
@@ -138,8 +167,8 @@ DWORD WINAPI ThreadRoutine(LPVOID)
 {
     MessageBox(NULL, "start sub thread", NULL, 0);
 
-    HMODULE hKer32 = LoadLibrary("kernel32.dll");
-    uint32_t OldAddress = (uint32_t)GetProcAddress(hKer32, "GetProcAddress");
+    HMODULE hNtdll = LoadLibrary("ntdll.dll");
+    uint32_t OldAddress = (uint32_t)GetProcAddress(hNtdll, "LdrGetProcedureAddress");
     SIZE_T R;
     char temp[64];
     ReadProcessMemory(GetCurrentProcess(), (LPVOID)OldAddress, temp, sizeof(temp), &R);
@@ -147,8 +176,8 @@ DWORD WINAPI ThreadRoutine(LPVOID)
     for (int i = 0; i < sizeof(temp) - 4; ++i)
     {
         // pop ebp
-        // retn 0x8
-        if (!memcmp(&temp[i], "\x5d\xc2\x08\x00", 4))
+        // retn 0x10
+        if (!memcmp(&temp[i], "\x5d\xc2\x10\x00", 4))
         {
             OldAddress += i;
             break;
@@ -165,7 +194,6 @@ DWORD WINAPI ThreadRoutine(LPVOID)
     assert(W == sizeof(NewBytes));
 
 
-
     HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
     THREADENTRY32 te;
     te.dwSize = sizeof(te);
@@ -175,9 +203,10 @@ DWORD WINAPI ThreadRoutine(LPVOID)
         {
             if (te.th32OwnerProcessID == GetCurrentProcessId() && te.th32ThreadID != GetCurrentThreadId())
             {
-                HANDLE t = OpenThread(THREAD_RESUME, FALSE, te.th32ThreadID);
+                HANDLE t = OpenThread(THREAD_SUSPEND_RESUME, FALSE, te.th32ThreadID);
                 assert(t);
-                ResumeThread(t);
+                BOOL b = ResumeThread(t);
+				assert(b != -1);
                 CloseHandle(t);
             }
         } while (Thread32Next(hSnap, &te));
@@ -245,6 +274,11 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD Reason, LPVOID lpReserved)
 {
     if (Reason == DLL_PROCESS_ATTACH)
     {
+		hFileMapping = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE | SEC_COMMIT, 0, 4096, "BlackSheep{13E025E2-B7AA-4141-9B4E-402CCB3C4F33}");
+		assert(hFileMapping != NULL);
+		g_Map = (MapObj*)MapViewOfFile(hFileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 4096);
+		assert(g_Map);
+		g_Map->Access = TRUE;
         CreateThread(NULL, 0, ThreadRoutine, 0, 0, NULL);
     }
     return 1;
