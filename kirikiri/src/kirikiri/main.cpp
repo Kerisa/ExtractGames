@@ -1,7 +1,8 @@
 #include <Windows.h>
-#include <string>
+#include <algorithm>
 #include <map>
 #include <vector>
+#include <string>
 #include "resource.h"
 #include "xp3ext.h"
 #include <strsafe.h>
@@ -80,55 +81,70 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
     static HMODULE        hZlib;
     static bool            thread_paused;
 
-    switch (msg)
-    {
-    case WM_INITDIALOG:
-        hZlib = LoadLibrary(L"zlib.dll");
-        if (!hZlib)
-        {
-            MESSAGE(L"缺少zlib.dll文件！");
-            EndDialog(hDlg, 0);
-        }
+	switch (msg)
+	{
+	case WM_INITDIALOG: {
+		hZlib = LoadLibrary(L"zlib.dll");
+		if (!hZlib)
+		{
+			MESSAGE(L"缺少zlib.dll文件！");
+			EndDialog(hDlg, 0);
+		}
 
-        if (!(unCom = (UNCOMPRESS)GetProcAddress(hZlib, "uncompress")))
-        {
-            MESSAGE(L"解码函数获取失败！");
-            EndDialog(hDlg, 0);
-        }
+		if (!(unCom = (UNCOMPRESS)GetProcAddress(hZlib, "uncompress")))
+		{
+			MESSAGE(L"解码函数获取失败！");
+			EndDialog(hDlg, 0);
+		}
 
-        //----------------------------------------------------------
+		//----------------------------------------------------------
 
-        hEdit = GetDlgItem(hDlg, IDC_EDIT);
-        SendMessage(hEdit, EM_LIMITTEXT, -1, 0);
-        AppendMsg(L"选择对应游戏后拖放xp3文件到此处...\r\n");
+		hEdit = GetDlgItem(hDlg, IDC_EDIT);
+		SendMessage(hEdit, EM_LIMITTEXT, -1, 0);
+		AppendMsg(L"选择对应游戏后拖放xp3文件到此处...\r\n");
 
-        //----------------------------------------------------------
+		//----------------------------------------------------------
 
-        hCombo = GetDlgItem(hDlg, IDC_COMBO);
-        for (auto pair : GameNameMap)
-        {
-            SendMessage(hCombo, CB_ADDSTRING, 0, (LPARAM)pair.first.c_str());
-        }
+		hCombo = GetDlgItem(hDlg, IDC_COMBO);
+		vector<std::wstring> list;
+		transform(GameNameMap.begin(), GameNameMap.end(), back_inserter(list), [](std::pair<const wstring, GameInfomation>& pp) {
+			return pp.first;
+		});
+		for (size_t i = 0; i < list.size(); ++i)
+		{
+			if (list[i] == L"<默认：直接提取>")
+			{
+				swap(list[0], list[i]);
+				break;
+			}
+		}
 
-        //----------------------------------------------------------
+		for (auto str : list)
+		{
+			SendMessage(hCombo, CB_ADDSTRING, 0, (LPARAM)str.c_str());
+		}
+		SendMessage(hCombo, CB_SETCURSEL, 0, 0);
 
-        for (int i = 0; i < THREAD_NUM; ++i)
-        {
-            if (!(tp[i].hEvent = CreateEvent(NULL, TRUE, FALSE, NULL)))
-            {
-                MESSAGE(L"事件初始化错误！\r\n");
-                EndDialog(hDlg, 0);
-            }
-            if (!(tp[i].hThread = CreateThread(NULL, 0, Thread, &tp[i], 0, NULL)))
-            {
-                MESSAGE(L"线程创建失败！\r\n");
-                EndDialog(hDlg, 0);
-            }
+		//----------------------------------------------------------
 
-            tp[i].thread_exit = false;
-        }
-        InitializeCriticalSection(&cs);
-        return TRUE;
+		for (int i = 0; i < THREAD_NUM; ++i)
+		{
+			if (!(tp[i].hEvent = CreateEvent(NULL, TRUE, FALSE, NULL)))
+			{
+				MESSAGE(L"事件初始化错误！\r\n");
+				EndDialog(hDlg, 0);
+			}
+			if (!(tp[i].hThread = CreateThread(NULL, 0, Thread, &tp[i], 0, NULL)))
+			{
+				MESSAGE(L"线程创建失败！\r\n");
+				EndDialog(hDlg, 0);
+			}
+
+			tp[i].thread_exit = false;
+		}
+		InitializeCriticalSection(&cs);
+		return TRUE;
+	}
 
     case WM_COMMAND:
         if (LOWORD(wParam) == IDC_PAUSE)
