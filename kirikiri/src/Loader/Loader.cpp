@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 #ifdef _DEBUG
 	wstring dllPath(Utility::GetExeDirW() + L"BlackSheep_d.dll");
 #else
-	wstring dllPath(GetExeDirW() + L"BlackSheep.dll");
+	wstring dllPath(Utility::GetExeDirW() + L"BlackSheep.dll");
 #endif
 	wstring xp3Path(Utility::MakeFullPath(Utility::GBKToUnicode(argv[2])));
 	if (xp3Path.size() >= sizeof(MapObj::Path))

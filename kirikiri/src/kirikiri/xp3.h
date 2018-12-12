@@ -30,20 +30,68 @@ struct xp3_file_header
 #pragma pack()
 
 
+#pragma pack (push,1)
+struct FileSection
+{
+    static constexpr uint32_t MAGIC = 'eliF';
+    uint32_t Magic;
+    uint64_t SizeOfData;
+};
+
+struct TimeSection
+{
+    static constexpr uint32_t MAGIC = 'emiT';
+    uint32_t Magic;
+    uint64_t SizeOfData;
+    uint64_t Time;
+};
+
+struct AdlrSection
+{
+    static constexpr uint32_t MAGIC = 'rlda';
+    uint32_t Magic;
+    uint64_t SizeOfData;
+    uint32_t Checksum;
+};
+
+struct SegmSection
+{
+    static constexpr uint32_t MAGIC = 'mges';
+    uint32_t Magic;
+    uint64_t SizeOfData;
+    uint32_t IsCompressed;      // 0x1
+    uint64_t Offset;
+    uint64_t OriginalSize;
+    uint64_t PackedSize;
+};
+
+struct InfoSection
+{
+    static constexpr uint32_t MAGIC = 'ofni';
+    uint32_t Magic;
+    uint64_t SizeOfData;
+    uint32_t EncryptFlag;       // 0x80000000
+    uint64_t OriginalSize;
+    uint64_t PackedSize;
+    uint16_t NameInWords;
+    wchar_t* NamePtr;
+    std::wstring Name;
+};
+
+#pragma pack(pop)
+
 struct file_entry
 {
-    enum {
-        Section = 16
-    };
+
     DWORD checksum{ 0 };
     DWORD encryption_flag{ 0 };    // info
-    int part{ 0 };
     struct {
         DWORD compress_flag{ 0 };        // segm
         uint64_t offset{ 0 };
         uint64_t orig_length{ 0 };
         uint64_t pkg_length{ 0 };
-    } info[Section];
+    };
+    std::vector<SegmSection> mInfo;
     std::wstring file_name;
     std::wstring internal_name;
 
