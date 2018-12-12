@@ -179,110 +179,346 @@ std::vector<char> EncryptedXP3::GetPlainIndexBytes()
     return idx_raw;
 }
 
-std::vector<file_entry> EncryptedXP3::XP3ArcPraseEntryStage0(const std::vector<char>& plainBytes)
+std::vector<file_entry> EncryptedXP3::XP3ArcPraseEntryStage0(uint32_t extraMagic, const std::vector<char>& plainBytes)
 {
-    std::vector<file_entry> Entry;
+	static const uint32_t
+		flag_file  = 0x1,
+		flag_adlr  = 0x2,
+		flag_segm  = 0x4,
+		flag_info  = 0x8,
+		flag_extra = 0x10,
+		flag_all   = 0x1f,
+		flag_time  = 0x80;
 
+	std::vector<file_entry> Entry;
 
-    static const DWORD _file = 0x656C6946, _adlr = 0x726c6461,
-        _segm = 0x6d676573, _info = 0x6f666e69,
-        flag_file = 0x1, flag_adlr = 0x2,
-        flag_segm = 0x4, flag_info = 0x8,
-        flag_all = 0xf;
+    uint8_t* p = (uint8_t*)plainBytes.data();
+    uint8_t* pEnd = p + plainBytes.size();
 
-    PBYTE p = (PBYTE)plainBytes.data();
-    PBYTE pEnd = p + plainBytes.size();
-
-    assert(*(PDWORD)p == _file);
-
-    p += *(PDWORD)(p + 4) + 0xc;  // skip protection warning
+    assert(*(uint32_t*)p == FileSection::MAGIC);
+	uint32_t size;
+	if (ParseProtectWarning(p, &size))
+		p += size;
+	else
+		assert("not a protect warning" && 1);
 
     while (p < pEnd)
     {
         //////////////////////////////////////
-        // 31<-------3----2----1--->0
-        //          info segm adlr file
+        // 31<--4----3----2----1--->0
+        //    time  info segm adlr file
         //////////////////////////////////////
         int flag = 0;
         file_entry fe;
-        memset(&fe, 0, sizeof(fe));
-        PBYTE SingleEnd = pEnd;
+		assert(*(uint32_t*)p == FileSection::MAGIC || *(uint32_t*)p == extraMagic);
+		uint32_t dummy, entrySize;
+        uint8_t* SingleEnd = ParseFileSection(p, &dummy, &entrySize) ? p + entrySize : pEnd;
 
         while (p < SingleEnd && flag != flag_all)
         {
-            switch (*(PDWORD)p)
+            switch (*(uint32_t*)p)
             {
             default:
-                ++p;
+				if (*(uint32_t*)p == extraMagic)
+				{
+					assert(!(flag & flag_extra));
+					uint32_t size;
+					if (!ParseExtraSection(p, extraMagic, fe, &size))
+					{
+						assert("parse extra error" && 0);
+					}
+					p += size;
+					flag |= flag_extra;
+				}
+				else
+				{
+					assert("error parse entry" && 0);
+				}
                 break;
+				
+			case TimeSection::MAGIC: {
+				assert(!(flag & flag_time));
+				uint32_t size;
+				if (!ParseTimeSection(p, fe, &size))
+				{
+					assert("parse file error" && 0);
+				}
+				p += size;
+				flag |= flag_time;
+				break;
+			}
+			case FileSection::MAGIC: {
+				assert(!(flag & flag_file));
+				uint32_t size, entrySize;
+				if (!ParseFileSection(p, &size, &entrySize))
+				{
+					assert("parse file error" && 0);
+				}
+				SingleEnd = p + entrySize;
+				p += size;
+				flag |= flag_file;
+				break;
+			}
 
-            case _file:
-                assert(!(flag & flag_file));
-                SingleEnd = p + *(PDWORD)(p + 4) + 0xc;
-                p += 0xc;
-                flag |= flag_file;
-                break;
+			case AdlrSection::MAGIC: {
+				assert(!(flag & flag_adlr));
+				uint32_t size;
+				if (!ParseAdlrSection(p, fe, &size))
+				{
+					assert("parse adlr error" && 0);
+				}
+				p += size;
+				flag |= flag_adlr;
+				break;
+			}
 
-            case _adlr:
-                assert(!(flag & flag_adlr));
-                p += 0xc;
-                fe.checksum = *((PDWORD)p);
-                p += 4;
-                flag |= flag_adlr;
-                break;
-
-            case _segm: {
-                SegmSection* segm = (SegmSection*)p;
-                assert(!(flag & flag_segm));                
-                assert(segm->SizeOfData % 0x1c == 0);
-                int part = segm->SizeOfData / 0x1c;
-                fe.mInfo.push_back(*segm);
-                p += sizeof(SegmSection);
-                if (part > 1)
-                {
-                    SegmSection ss;
-                    ss.Magic = SegmSection::MAGIC;
-                    ss.SizeOfData = 0x1c;
-                    ss.IsCompressed = *(uint32_t*)p;
-                    p += 4;
-                    ss.Offset = *(uint64_t*)p;
-                    p += 8;
-                    ss.OriginalSize = *(uint64_t*)p;
-                    p += 8;
-                    ss.PackedSize = *(uint64_t*)p;
-                    p += 8;
-                    fe.mInfo.push_back(ss);
-                }
-
+            case SegmSection::MAGIC: {
+				assert(!(flag & flag_segm));
+				uint32_t size;
+				if (!ParseSegmSection(p, fe, &size))
+				{
+					assert("parse segm error" && 0);
+				}
+				p += size;
                 flag |= flag_segm;
                 break;
             }
 
-            case _info: {
+            case InfoSection::MAGIC: {
                 assert(!(flag & flag_info));
-                PBYTE info_sec_end = p + 0xc + *((PDWORD)(p + 0x4));
-                p += 0xc;
-                fe.encryption_flag = *((PDWORD)p);    // 好像这个标志也没啥用
-                p += 0x14;  // 跳过info中的长度信息
-
-                            // 剩下的是文件名长度和文件名
-                int buf_size = (int)*((PWORD)p);
-                p += 0x2;
-                fe.file_name.assign((wchar_t*)p, (wchar_t*)p + buf_size);
-
-                p = info_sec_end;
-
+				uint32_t size;
+				if (!ParseInfoSection(p, fe, &size))
+				{
+					assert("parse info error" && 0);
+				}
+				p += size;
                 flag |= flag_info;
                 break;
             }
             }
         }   // end while (p < pEnd && flag != flag_all)
 
-        assert(flag == flag_all);
-        Entry.push_back(fe);
+		if (extraMagic != 0)
+		{
+			if (fe.internal_name != L"startup.tjs")
+			{
+				assert(fe.mExtra.Checksum == fe.checksum);
+				assert((flag & flag_all) == flag_all);
+			}
+			else
+			{
+				assert((flag & flag_all) == (flag_all & ~flag_extra));
+			}
+		}
+		else
+		{
+			assert((flag & flag_all) == (flag_all & ~flag_extra));
+		}
+
+		if (fe.file_name.empty())
+			fe.file_name = fe.internal_name;
+		Entry.push_back(fe);
     }
 
     return Entry;
+}
+
+bool EncryptedXP3::ParseFileSection(const uint8_t * ptr, uint32_t * secSize, uint32_t* entrySize)
+{
+	FileSection* file = (FileSection*)ptr;
+	if (file->Magic != FileSection::MAGIC)
+		return false;
+
+	*secSize = sizeof(FileSection);
+	*entrySize = sizeof(FileSection) + file->SizeOfData;
+	return true;
+}
+
+bool EncryptedXP3::ParseSegmSection(const uint8_t * ptr, file_entry& fe, uint32_t * secSize)
+{
+	const uint8_t* old = ptr;
+	const SegmSection* segm = (const SegmSection*)ptr;
+	if (segm->Magic != SegmSection::MAGIC)
+		return false;
+
+	assert(segm->SizeOfData % 0x1c == 0);
+	int part = segm->SizeOfData / 0x1c;
+	fe.mInfo.push_back(*segm);
+	ptr += sizeof(SegmSection);
+	if (part > 1)
+	{
+		SegmSection ss;
+		ss.Magic = SegmSection::MAGIC;
+		ss.SizeOfData = 0x1c;
+		ss.IsCompressed = *(uint32_t*)ptr;
+		ptr += 4;
+		ss.Offset = *(uint64_t*)ptr;
+		ptr += 8;
+		ss.OriginalSize = *(uint64_t*)ptr;
+		ptr += 8;
+		ss.PackedSize = *(uint64_t*)ptr;
+		ptr += 8;
+		fe.mInfo.push_back(ss);
+	}
+	*secSize = ptr - old;
+	return true;
+}
+
+bool EncryptedXP3::ParseInfoSection(const uint8_t * ptr, file_entry& fe, uint32_t * secSize)
+{
+	const InfoSection* info = (const InfoSection*)ptr;
+	if (info->Magic != InfoSection::MAGIC)
+		return false;
+
+	fe.encryption_flag = info->EncryptFlag;
+	fe.internal_name.assign(info->NamePtr, info->NamePtr + info->NameInWords);
+	*secSize = info->SizeOfData + 0xc;
+	return true;
+}
+
+bool EncryptedXP3::ParseAdlrSection(const uint8_t * ptr, file_entry& fe, uint32_t * secSize)
+{
+	const AdlrSection* adlr = (const AdlrSection*)ptr;
+	if (adlr->Magic != AdlrSection::MAGIC)
+		return false;
+
+	fe.checksum = adlr->Checksum;
+	*secSize = sizeof(AdlrSection);
+	return true;
+}
+
+bool EncryptedXP3::ParseTimeSection(const uint8_t * ptr, file_entry & fe, uint32_t * secSize)
+{
+	const TimeSection* time = (const TimeSection*)ptr;
+	if (time->Magic != TimeSection::MAGIC)
+		return false;
+
+	fe.mFileTime = time->Time;
+	*secSize = sizeof(TimeSection);
+	return true;
+}
+
+bool EncryptedXP3::ParseExtraSection(const uint8_t * ptr, uint32_t extraMagic, file_entry & fe, uint32_t * secSize)
+{
+	const ExtraSection* ex = (const ExtraSection*)ptr;
+	if (ex->Magic != extraMagic)
+		return false;
+
+	*secSize = ex->SizeOfData + 0xc;
+	fe.mExtra = *ex;
+	fe.file_name = ex->NamePtr;
+	assert(fe.file_name.size() == ex->NameInWords);
+	return true;
+}
+
+bool EncryptedXP3::ParseProtectWarning(const uint8_t * ptr, uint32_t * secSize)
+{
+	if (*(uint32_t*)ptr == FileSection::MAGIC && *(uint64_t*)(ptr + 4) == 0x324)
+	{
+		*secSize = 0x324 + 0xc;
+		return true;
+	}
+
+	return false;
+}
+
+bool EncryptedXP3::HasExtraSection(const std::vector<char>& plainBytes, uint32_t * magic)
+{
+	uint32_t size;
+	const uint8_t* ptr = (const uint8_t*)plainBytes.data();
+
+	if (ParseProtectWarning(ptr, &size))
+		ptr += size;
+
+	if (*(uint32_t*)ptr == FileSection::MAGIC)
+	{
+		bool succcess = true;
+		int skipCount = 4;		// 类似 startup.tjs 没有额外节，随便跳过几个
+		uint32_t entrySize;
+		while (skipCount--)
+		{
+			uint32_t dummy;
+			if (ParseFileSection(ptr, &dummy, &entrySize))
+			{
+				ptr += entrySize;
+				continue;
+			}
+			else
+			{
+				const uint8_t* pEnd = (const uint8_t*)plainBytes.data() + plainBytes.size();
+				while (ptr < pEnd)
+				{
+					switch (*(uint32_t*)ptr)
+					{
+					case AdlrSection::MAGIC: ParseAdlrSection(ptr, file_entry(), &size); ptr += size; break;
+					case TimeSection::MAGIC: ParseTimeSection(ptr, file_entry(), &size); ptr += size; break;
+					case SegmSection::MAGIC: ParseSegmSection(ptr, file_entry(), &size); ptr += size; break;
+					case InfoSection::MAGIC: ParseInfoSection(ptr, file_entry(), &size); ptr += size; break;
+					case FileSection::MAGIC: ParseFileSection(ptr, &size, &entrySize);   pEnd = ptr + entrySize; ptr += size; break;
+					default: {
+						const ExtraSection* ex = (const ExtraSection*)ptr;
+						if (wcslen(ex->NamePtr) != ex->NameInWords)
+						{
+							assert("???" && 0);
+						}
+						*magic = ex->Magic;
+						return true;
+					}
+					}
+				}
+			}
+		}
+		return false;
+	}
+	else
+	{
+		const ExtraSection* ex = (const ExtraSection*)ptr;
+		if (wcslen(ex->NamePtr) != ex->NameInWords)
+		{
+			assert("???" && 0);
+		}
+		*magic = ex->Magic;
+		return true;
+	}
+}
+
+std::vector<file_entry> EncryptedXP3::ParsePalette_9nine(const std::vector<char>& plainBytes)
+{
+	std::vector<file_entry> nameList;
+
+	uint8_t* p = (uint8_t*)plainBytes.data();
+	uint8_t* pEnd = p + plainBytes.size();
+
+	assert(*(uint32_t*)p == MagicHnfn);
+	p += *(uint32_t*)(p + 4) + 0xc;  // skip protection warning
+
+	while (*(uint32_t*)p == MagicHnfn)
+	{
+		uint64_t length = *(uint64_t*)(p + 4);
+		uint32_t checksum = *(uint32_t*)(p + 12);
+		uint32_t nameLen = *(uint16_t*)(p + 16);
+		std::wstring name = (wchar_t*)(p + 18);
+		p += length + 12;
+
+		file_entry fe;
+		fe.checksum = checksum;
+		fe.file_name = name;
+		nameList.push_back(fe);
+	}
+
+	std::vector<file_entry> Entry = XP3ArcPraseEntryStage0(0, std::vector<char>((char*)p, (char*)pEnd));
+	assert(Entry.size() >= nameList.size());
+	size_t n = 0;
+	for (size_t i = 0; i < Entry.size(); ++i)
+	{
+		if (Entry[i].checksum != nameList[n].checksum)
+			continue;
+		Entry[i].file_name = nameList[n].file_name;
+		++n;
+	}
+
+	assert(n == nameList.size());
+	return Entry;
 }
 
 void EncryptedXP3::DumpEntriesToFile(const std::vector<file_entry>& entries, const std::wstring & path)
@@ -335,7 +571,20 @@ void EncryptedXP3::DumpEntriesToFile(const std::vector<file_entry>& entries, con
 
 std::vector<file_entry> EncryptedXP3::ExtractEntries(const std::vector<char>& plainBytes)
 {
-    return XP3ArcPraseEntryStage0(plainBytes);
+	uint32_t magic;
+	if (HasExtraSection(plainBytes, &magic))
+		mExtraSectionMagic = magic;
+
+	switch (*(uint32_t*)plainBytes.data())
+	{
+	case FileSection::MAGIC:
+		return XP3ArcPraseEntryStage0(mExtraSectionMagic, plainBytes);
+	case MagicHnfn:
+		return ParsePalette_9nine(plainBytes);
+	default:
+		assert("unknown format" && 0);
+		return std::vector<file_entry>();
+	}
 }
 
 bool EncryptedXP3::ReadEntryDataOfAllParts(const file_entry & fe, vector<char>& packedData, uint32_t* pOriginalLength)
@@ -471,7 +720,7 @@ std::vector<file_entry> palette_9_nine::XP3ArcPraseEntryStage0(const std::vector
         flag_file = 0x1, flag_adlr = 0x2,
         flag_segm = 0x4, flag_info = 0x8,
         flag_all = 0xf;
-
+	assert(0);
     PBYTE p = (PBYTE)plainBytes.data();
     PBYTE pEnd = p + plainBytes.size();
 
