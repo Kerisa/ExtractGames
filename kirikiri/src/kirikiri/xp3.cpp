@@ -231,32 +231,32 @@ std::vector<file_entry> EncryptedXP3::XP3ArcPraseEntryStage0(const std::vector<c
                 flag |= flag_adlr;
                 break;
 
-            case _segm:
-                assert(!(flag & flag_segm));
-                if (*(PDWORD)(p + 4) % 0x1c == 0)
+            case _segm: {
+                SegmSection* segm = (SegmSection*)p;
+                assert(!(flag & flag_segm));                
+                assert(segm->SizeOfData % 0x1c == 0);
+                int part = segm->SizeOfData / 0x1c;
+                fe.mInfo.push_back(*segm);
+                p += sizeof(SegmSection);
+                if (part > 1)
                 {
-                    fe.part = *(PDWORD)(p + 4) / 0x1c;
-                    p += 0xC;
-                    for (int i = 0; i < fe.part; ++i)
-                    {
-                        fe.info[i].compress_flag = *(PDWORD)p;
-                        p += 4;    // 1 compressed
-                        fe.info[i].offset = *(PULONG64)p;
-                        p += 8;
-                        fe.info[i].orig_length = *(PULONG64)p;
-                        p += 8;
-                        fe.info[i].pkg_length = *(PULONG64)p;
-                        p += 8;
-                    }
-                }
-                else
-                {
-                    assert(L"错误的文件索引记录" && 0);
-                    while (*(PDWORD)p != _file) ++p;    // 跳过这个索引
+                    SegmSection ss;
+                    ss.Magic = SegmSection::MAGIC;
+                    ss.SizeOfData = 0x1c;
+                    ss.IsCompressed = *(uint32_t*)p;
+                    p += 4;
+                    ss.Offset = *(uint64_t*)p;
+                    p += 8;
+                    ss.OriginalSize = *(uint64_t*)p;
+                    p += 8;
+                    ss.PackedSize = *(uint64_t*)p;
+                    p += 8;
+                    fe.mInfo.push_back(ss);
                 }
 
                 flag |= flag_segm;
                 break;
+            }
 
             case _info: {
                 assert(!(flag & flag_info));
@@ -315,14 +315,14 @@ void EncryptedXP3::DumpEntriesToFile(const std::vector<file_entry>& entries, con
         s0 << "\nchecksum: " << std::hex << entries[i].checksum << "\nencryption_flag: " << std::hex << entries[i].encryption_flag << "\n";
         str += s0.str();
 
-        for (int k = 0; k < entries[i].part; ++k)
+        for (size_t k = 0; k < entries[i].mInfo.size(); ++k)
         {
             stringstream ss;
             ss << "parts " << k + 1 << ":\n    ";
-            ss << "offset: " << std::hex << entries[i].info[k].offset << "\n    ";
-            ss << "orignal: " << std::hex << entries[i].info[k].orig_length << "\n    ";
-            ss << "packet: " << std::hex << entries[i].info[k].pkg_length << "\n    ";
-            ss << "compress_flag: " << std::hex << entries[i].info[k].compress_flag << "\n";
+            ss << "offset: " << std::hex << entries[i].mInfo[k].Offset << "\n    ";
+            ss << "orignal: " << std::hex << entries[i].mInfo[k].OriginalSize << "\n    ";
+            ss << "packet: " << std::hex << entries[i].mInfo[k].PackedSize << "\n    ";
+            ss << "compress_flag: " << std::hex << entries[i].mInfo[k].IsCompressed << "\n";
             str += ss.str();
         }
 
@@ -356,7 +356,7 @@ int EncryptedXP3::ExtractData(const std::vector<file_entry>& Entry, const std::w
         ReadEntryDataOfAllParts(fe, cipher, &file_org_len);
 
         vector<char> unpack(file_org_len);
-        if (fe.info[0].compress_flag)
+        if (fe.mInfo[0].IsCompressed)
         {
             uint32_t unpack_len = (uint32_t)file_org_len;
             unCom(unpack.data(), &unpack_len, cipher.data(), cipher.size());
@@ -449,6 +449,10 @@ std::wstring EncryptedXP3::FormatFileNameForIStream(const file_entry & fe) const
     wstring file, ext;
     Utility::SplitPath(mPath, wstring(), wstring(), file, ext);
     //return L"archive://" + file + ext + L"/" + fe.file_name;
+    ////wstring temp = L"file://./" + mPath + L">" + fe.file_name;
+    ////for (size_t i = 0; i < temp.size(); ++i) if (temp[i] == L'\\') temp[i] = L'/';
+    ////return temp;
+    //return L"" + file + ext + L">" + fe.file_name;  // [part]
     return mPath + L">" + fe.file_name; // [ok]
 }
 
@@ -522,33 +526,32 @@ std::vector<file_entry> palette_9_nine::XP3ArcPraseEntryStage0(const std::vector
                 flag |= flag_adlr;
                 break;
 
-            case _segm:
+            case _segm: {
+                SegmSection* segm = (SegmSection*)p;
                 assert(!(flag & flag_segm));
-                if (*(PDWORD)(p + 4) % 0x1c == 0)
+                assert(segm->SizeOfData % 0x1c == 0);
+                int part = segm->SizeOfData / 0x1c;
+                fe.mInfo.push_back(*segm);
+                p += sizeof(SegmSection);
+                if (part > 1)
                 {
-                    fe.part = *(PDWORD)(p + 4) / 0x1c;
-                    p += 0xC;
-                    for (int i = 0; i < fe.part; ++i)
-                    {
-                        fe.info[i].compress_flag = *(PDWORD)p;
-                        p += 4;    // 1 compressed
-                        fe.info[i].offset = *(PULONG64)p;
-                        p += 8;
-                        fe.info[i].orig_length = *(PULONG64)p;
-                        p += 8;
-                        fe.info[i].pkg_length = *(PULONG64)p;
-                        p += 8;
-                    }
-                }
-                else
-                {
-                    assert(L"错误的文件索引记录" && 0);
-                    while (*(PDWORD)p != _file) ++p;    // 跳过这个索引
+                    SegmSection ss;
+                    ss.Magic = SegmSection::MAGIC;
+                    ss.SizeOfData = 0x1c;
+                    ss.IsCompressed = *(uint32_t*)p;
+                    p += 4;
+                    ss.Offset = *(uint64_t*)p;
+                    p += 8;
+                    ss.OriginalSize = *(uint64_t*)p;
+                    p += 8;
+                    ss.PackedSize = *(uint64_t*)p;
+                    p += 8;
+                    fe.mInfo.push_back(ss);
                 }
 
                 flag |= flag_segm;
                 break;
-
+            }
             case _info: {
                 assert(!(flag & flag_info));
                 PBYTE info_sec_end = p + 0xc + *((PDWORD)(p + 0x4));
@@ -592,9 +595,9 @@ std::vector<file_entry> palette_9_nine::XP3ArcPraseEntryStage0(const std::vector
 uint32_t file_entry::GetTotlePackedSize() const
 {
     uint32_t file_pkg_len = 0;
-    for (int i = 0; i < part; ++i)
+    for (size_t i = 0; i < mInfo.size(); ++i)
     {
-        file_pkg_len += (uint32_t)info[i].pkg_length;
+        file_pkg_len += (uint32_t)mInfo[i].PackedSize;
     }
     return file_pkg_len;
 }
@@ -602,22 +605,22 @@ uint32_t file_entry::GetTotlePackedSize() const
 uint32_t file_entry::GetTotleOriginalSize() const
 {
     uint32_t file_org_len = 0;
-    for (int i = 0; i < part; ++i)
+    for (size_t i = 0; i < mInfo.size(); ++i)
     {
-        file_org_len += (uint32_t)info[i].orig_length;
+        file_org_len += (uint32_t)mInfo[i].OriginalSize;
     }
     return file_org_len;
 }
 
 bool file_entry::IsCompressed() const
 {
-    assert(part > 0);
-    return info[0].compress_flag;
+    assert(!mInfo.empty());
+    return !!mInfo[0].IsCompressed;
 }
 
 bool file_entry::IsEncrypted() const
 {
-    return encryption_flag;
+    return !!encryption_flag;
 }
 
 bool file_entry::ReadFileData(std::ifstream & file, std::vector<char>& packedData) const
@@ -626,11 +629,11 @@ bool file_entry::ReadFileData(std::ifstream & file, std::vector<char>& packedDat
     uint32_t file_read = 0;
     packedData.resize(file_pkg_len);
 
-    for (int i = 0; i < part; ++i)
+    for (size_t i = 0; i < mInfo.size(); ++i)
     {
-        file.seekg(info[i].offset, ios::beg);
-        file.read(packedData.data() + file_read, (uint32_t)info[i].pkg_length);
-        file_read += (uint32_t)info[i].pkg_length;
+        file.seekg(mInfo[i].Offset, ios::beg);
+        file.read(packedData.data() + file_read, (uint32_t)mInfo[i].PackedSize);
+        file_read += (uint32_t)mInfo[i].PackedSize;
     }
 
     return true;

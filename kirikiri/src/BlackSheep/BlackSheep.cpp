@@ -22,6 +22,7 @@ struct MapObj
 };
 MapObj *g_Map;
 
+
 char dataBuffer[8192];
 HANDLE hFileMapping;
 uint32_t Finish = 0;
@@ -55,16 +56,28 @@ DWORD WINAPI Worker(LPVOID)
         {
             STATSTG state;
             DWORD flag = 1;
-            stream->Stat(&state, flag);
-            size_t fileSize = state.cbSize.QuadPart;
-            LPVOID buf = VirtualAlloc(NULL, fileSize, MEM_COMMIT, PAGE_READWRITE);
-            ULONG R;
-            stream->Read(buf, fileSize, &R);
-            assert(R == fileSize);
-            int ret = EncryptedXP3::SplitFileNameAndSave(outDir, fe.file_name, vector<char>((char*)buf, (char*)buf + fileSize));
-            if (ret == 0)
-                ++count;
-            VirtualFree(buf, 0, MEM_RELEASE);
+            if (SUCCEEDED(stream->Stat(&state, flag)))
+            {
+                size_t fileSize = state.cbSize.QuadPart;
+                LPVOID buf = VirtualAlloc(NULL, fileSize, MEM_COMMIT, PAGE_READWRITE);
+                ULONG R;
+                if (SUCCEEDED(stream->Read(buf, fileSize, &R)))
+                {
+                    assert(R == fileSize);
+                    int ret = EncryptedXP3::SplitFileNameAndSave(outDir, fe.file_name, vector<char>((char*)buf, (char*)buf + fileSize));
+                    if (ret == 0)
+                        ++count;
+                    VirtualFree(buf, 0, MEM_RELEASE);
+                }
+                else
+                {
+                    ++streamErr;
+                }
+            }
+            else
+            {
+                ++streamErr;
+            }
         }
         else
         {
@@ -109,21 +122,9 @@ extern "C" __declspec(naked) HRESULT _stdcall V2Link(/*iTVPFunctionExporter *exp
 
         mov Finish, 0xaa55aa55
 
-        
         mov eax, temp
         jmp OldV2Link
     }
-
-    //MessageBox(NULL, "Loading V2Link", NULL, 0);
-    //assert(OldV2Link);
-
-    //MessageBox(NULL, "call old V2Link finish", NULL, 0);
-    
-    // ³õÊ¼»¯Stub(±ØÐë±àÐ´)
-    //TVPInitImportStub(exporter);
-
-    //Finish = true;
-    //return S_OK;
 }
 
 extern "C" __declspec(dllexport) HRESULT _stdcall V2Unlink()
@@ -233,60 +234,6 @@ DWORD WINAPI ThreadRoutine(LPVOID)
     }
 
     CloseHandle(hSnap);
-
-    //__asm {
-    //    push [ebp+0xc]
-    //    call ProcAddressHook
-    //    add esp, 4
-    //    jmp OldAddress
-    //}
-
-#if 0
-    ::Sleep(5000);
-    while (1)
-    {
-        __asm {
-            nop
-            nop
-            nop
-            nop
-            nop
-            nop
-            nop
-            nop
-            nop
-            nop
-            nop
-            nop
-            nop
-            nop
-            nop
-            nop
-            nop
-            nop
-            nop
-            nop
-            nop
-            nop
-            nop
-        }
-    }
-    IStream* stream = 0;
-    uint32_t fn_TVPCreateIStream = 0;
-    ttstr filename;
-
-    __asm {
-        lea eax, filename
-        mov edx, 0
-        call fn_TVPCreateIStream
-        mov stream, eax
-    }
-
-    STATSTG state;
-    ULONG R;
-    stream->Stat(&state, 1);
-    stream->Read(dataBuffer, state.cbSize.QuadPart, &R);
-#endif
     return 0;
 }
 
