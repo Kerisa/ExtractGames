@@ -79,3 +79,5 @@ Release
 /kirikiri/bin/BlackSheep.exp
 /kirikiri/bin/BlackSheep.lib
 /kirikiri/bin/Loader.exe
+/kirikiri/pdb/BlackSheep.pdb
+/kirikiri/pdb/Loader.pdb
