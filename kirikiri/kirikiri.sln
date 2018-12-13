@@ -9,8 +9,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kirikiri", "src\kirikiri\ki
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CsvMerge", "src\CsvMerge\CsvMerge.vcxproj", "{A360F249-A365-45B7-A8DE-63C412330D29}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "AutoFucker", "src\AutoFucker\AutoFucker.vcxproj", "{D1BAEC19-B3FD-4983-B876-2C81C3065B7B}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BlackSheep", "src\BlackSheep\BlackSheep.vcxproj", "{D4623861-6478-4751-A944-930FD4BB504F}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Loader", "src\Loader\Loader.vcxproj", "{62884560-2220-4553-B65B-219041CC1B18}"
@@ -41,12 +39,6 @@ Global
 		{A360F249-A365-45B7-A8DE-63C412330D29}.Release|x64.ActiveCfg = Release|Win32
 		{A360F249-A365-45B7-A8DE-63C412330D29}.Release|x86.ActiveCfg = Release|Win32
 		{A360F249-A365-45B7-A8DE-63C412330D29}.Release|x86.Build.0 = Release|Win32
-		{D1BAEC19-B3FD-4983-B876-2C81C3065B7B}.Debug|x64.ActiveCfg = Debug|Win32
-		{D1BAEC19-B3FD-4983-B876-2C81C3065B7B}.Debug|x86.ActiveCfg = Debug|Win32
-		{D1BAEC19-B3FD-4983-B876-2C81C3065B7B}.Debug|x86.Build.0 = Debug|Win32
-		{D1BAEC19-B3FD-4983-B876-2C81C3065B7B}.Release|x64.ActiveCfg = Release|Win32
-		{D1BAEC19-B3FD-4983-B876-2C81C3065B7B}.Release|x86.ActiveCfg = Release|Win32
-		{D1BAEC19-B3FD-4983-B876-2C81C3065B7B}.Release|x86.Build.0 = Release|Win32
 		{D4623861-6478-4751-A944-930FD4BB504F}.Debug|x64.ActiveCfg = Debug|Win32
 		{D4623861-6478-4751-A944-930FD4BB504F}.Debug|x86.ActiveCfg = Debug|Win32
 		{D4623861-6478-4751-A944-930FD4BB504F}.Debug|x86.Build.0 = Debug|Win32
