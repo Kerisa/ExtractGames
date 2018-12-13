@@ -70,6 +70,14 @@
       <ModuleDefinitionFile>BlackSheep.def</ModuleDefinitionFile>
       <AdditionalLibraryDirectories>../../lib</AdditionalLibraryDirectories>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>
+      </AdditionalManifestFiles>
+      <OutputManifestFile>$(IntDir)$(TargetName)$(TargetExt).embed.manifest</OutputManifestFile>
+    </Manifest>
+    <ManifestResourceCompile>
+      <ResourceOutputFileName>$(IntDir)$(TargetName)$(TargetExt).embed.manifest.res</ResourceOutputFileName>
+    </ManifestResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -93,6 +101,9 @@
       <ModuleDefinitionFile>BlackSheep.def</ModuleDefinitionFile>
       <AdditionalLibraryDirectories>../../lib</AdditionalLibraryDirectories>
     </Link>
+    <Manifest>
+      <InputResourceManifests>BlackSheep.dll.manifest</InputResourceManifests>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\utility\utility.h" />

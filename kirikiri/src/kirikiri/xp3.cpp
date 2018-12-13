@@ -195,13 +195,6 @@ std::vector<file_entry> EncryptedXP3::XP3ArcPraseEntryStage0(uint32_t extraMagic
     uint8_t* p = (uint8_t*)plainBytes.data();
     uint8_t* pEnd = p + plainBytes.size();
 
-    assert(*(uint32_t*)p == FileSection::MAGIC);
-	uint32_t size;
-	if (ParseProtectWarning(p, &size))
-		p += size;
-	else
-		assert("not a protect warning" && 1);
-
     while (p < pEnd)
     {
         //////////////////////////////////////
@@ -298,9 +291,12 @@ std::vector<file_entry> EncryptedXP3::XP3ArcPraseEntryStage0(uint32_t extraMagic
             }
         }   // end while (p < pEnd && flag != flag_all)
 
+		const wstring STARTUP{ L"startup.tjs" };
+		const wstring PROTECT{ L"$$$ This is a protected archive. $$$" };
+
 		if (extraMagic != 0)
 		{
-			if (fe.internal_name != L"startup.tjs")
+			if (fe.internal_name != STARTUP && fe.internal_name.find(PROTECT) == wstring::npos)
 			{
 				assert(fe.mExtra.Checksum == fe.checksum);
 				assert((flag & flag_all) == flag_all);
@@ -317,7 +313,9 @@ std::vector<file_entry> EncryptedXP3::XP3ArcPraseEntryStage0(uint32_t extraMagic
 
 		if (fe.file_name.empty())
 			fe.file_name = fe.internal_name;
-		Entry.push_back(fe);
+
+		if (fe.file_name.find(PROTECT) == wstring::npos)
+			Entry.push_back(fe);
     }
 
     return Entry;
@@ -577,13 +575,10 @@ std::vector<file_entry> EncryptedXP3::ExtractEntries(const std::vector<char>& pl
 
 	switch (*(uint32_t*)plainBytes.data())
 	{
-	case FileSection::MAGIC:
-		return XP3ArcPraseEntryStage0(mExtraSectionMagic, plainBytes);
 	case MagicHnfn:
 		return ParsePalette_9nine(plainBytes);
 	default:
-		assert("unknown format" && 0);
-		return std::vector<file_entry>();
+		return XP3ArcPraseEntryStage0(mExtraSectionMagic, plainBytes);
 	}
 }
 
@@ -697,12 +692,10 @@ std::wstring EncryptedXP3::FormatFileNameForIStream(const file_entry & fe) const
 {
     wstring file, ext;
     Utility::SplitPath(mPath, wstring(), wstring(), file, ext);
-    //return L"archive://" + file + ext + L"/" + fe.file_name;
-    ////wstring temp = L"file://./" + mPath + L">" + fe.file_name;
-    ////for (size_t i = 0; i < temp.size(); ++i) if (temp[i] == L'\\') temp[i] = L'/';
-    ////return temp;
-    //return L"" + file + ext + L">" + fe.file_name;  // [part]
-    return mPath + L">" + fe.file_name; // [ok]
+	if (mExtraSectionMagic != 0)
+		return L"archive://" + file + ext + L"/" + fe.file_name;
+
+    return mPath + L">" + fe.file_name;
 }
 
 
