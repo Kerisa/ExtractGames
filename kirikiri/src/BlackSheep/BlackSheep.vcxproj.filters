@@ -30,6 +30,9 @@
     <ClInclude Include="..\kirikiri\xp3.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="ShareMem.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

@@ -4,40 +4,47 @@
 #include "stdafx.h"
 #include <cassert>
 #include <iostream>
+#include <vector>
 #include <windows.h>
 #include "utility/utility.h"
+#include "../BlackSheep/ShareMem.h"
 
 using namespace std;
 
-struct MapObj
-{
-	BOOL Access;
-	wchar_t Path[MAX_PATH];
-};
 
 int main(int argc, char** argv)
 {
-	if (argc != 3)
-	{
-		string file;
+    if (argc < 3)
+    {
+        string file;
         Utility::SplitPath(argv[0], string(), string(), file);
-		cout << "usage: " << file << " <game exe> <xp3 file>\n";
-		return 1;
-	}
+        cout << "usage: " << file << " <game exe> <xp3 file1> <xp3 file2>...\n";
+        return 1;
+    }
+    else if (argc > _countof(MapObj::Path) + 2)
+    {
+        cout << "too many xp3 file.\n";
+        return 1;
+    }
 
-	wstring exePath(Utility::MakeFullPath(Utility::GBKToUnicode(argv[1])));
-	wstring exeDir(Utility::GetPathDir(exePath));
+    wstring exePath(Utility::MakeFullPath(Utility::GBKToUnicode(argv[1])));
+    wstring exeDir(Utility::GetPathDir(exePath));
 #ifdef _DEBUG
-	wstring dllPath(Utility::GetExeDirW() + L"BlackSheep_d.dll");
+    wstring dllPath(Utility::GetExeDirW() + L"BlackSheep_d.dll");
 #else
-	wstring dllPath(Utility::GetExeDirW() + L"BlackSheep.dll");
+    wstring dllPath(Utility::GetExeDirW() + L"BlackSheep.dll");
 #endif
-	wstring xp3Path(Utility::MakeFullPath(Utility::GBKToUnicode(argv[2])));
-	if (xp3Path.size() >= sizeof(MapObj::Path))
-	{
-		cout << "xp3 path too long.\n";
-		return 1;
-	}
+    vector<wstring> allXp3Path;
+    for (int i = 2; i < argc; ++i)
+    {
+        allXp3Path.push_back(Utility::MakeFullPath(Utility::GBKToUnicode(argv[i])));
+        if (allXp3Path.back().size() >= _countof(MapObj::Path[0]))
+        {
+            cout << "xp3 path too long.\n";
+            return 1;
+        }
+    }
+    assert(allXp3Path.size() <= _countof(MapObj::Path));
 
 
     STARTUPINFOW si = { 0 };
@@ -61,19 +68,21 @@ int main(int argc, char** argv)
 
     DWORD tid = 0;
     HANDLE rThread = CreateRemoteThread(pi.hProcess, NULL, 0, (LPTHREAD_START_ROUTINE)LoadLibraryW, remote, CREATE_SUSPENDED, &tid);
-	printf("pid: %#x, tid: %#x, dll_tid:%#x\n", pi.dwProcessId, pi.dwThreadId, tid);
+    printf("pid: %#x, tid: %#x, dll_tid:%#x\n", pi.dwProcessId, pi.dwThreadId, tid);
 
 
-	SIZE_T MapSize = 4096;
-	HANDLE hMap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE | SEC_COMMIT, 0, MapSize, "BlackSheep{13E025E2-B7AA-4141-9B4E-402CCB3C4F33}");
-	LPVOID Addr = MapViewOfFile(hMap, FILE_MAP_ALL_ACCESS, 0, 0, MapSize);
-	memset(Addr, 0, MapSize);
-	MapObj mo;
-	mo.Access = FALSE;
-	wcscpy_s(mo.Path, _countof(mo.Path), xp3Path.c_str());
-	
-	memcpy_s(Addr, MapSize, &mo, sizeof(mo));
-
+    SIZE_T MapSize = sizeof(MapObj);
+    HANDLE hMap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE | SEC_COMMIT, 0, MapSize, "BlackSheep{13E025E2-B7AA-4141-9B4E-402CCB3C4F33}");
+    LPVOID Addr = MapViewOfFile(hMap, FILE_MAP_ALL_ACCESS, 0, 0, MapSize);
+    memset(Addr, 0, MapSize);
+    MapObj* mo = (MapObj*)Addr;
+    mo->Access = false;
+    mo->Count = allXp3Path.size();
+    for (size_t i = 0; i < allXp3Path.size(); ++i)
+    {
+        wcscpy_s(mo->Path[i], _countof(mo->Path[i]), allXp3Path[i].c_str());
+    }
+    
 
     b = ResumeThread(rThread);
     assert(b != -1);
@@ -81,12 +90,12 @@ int main(int argc, char** argv)
     CloseHandle(pi.hThread);
     CloseHandle(rThread);
 
-	while (((MapObj*)Addr)->Access != TRUE)
-	{
-		Sleep(1);
-	}
-	UnmapViewOfFile(Addr);
-	CloseHandle(hMap);
+    while (((MapObj*)Addr)->Access != true)
+    {
+        Sleep(1);
+    }
+    UnmapViewOfFile(Addr);
+    CloseHandle(hMap);
     return 0;
 }
 
