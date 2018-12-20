@@ -79,11 +79,11 @@ struct InfoSection
 
 struct ExtraSection
 {
-	uint32_t Magic{ 0 };
-	uint64_t SizeOfData{ 0 };
-	uint32_t Checksum{ 0 };
-	uint16_t NameInWords;
-	wchar_t  NamePtr[1];
+    uint32_t Magic{ 0 };
+    uint64_t SizeOfData{ 0 };
+    uint32_t Checksum{ 0 };
+    uint16_t NameInWords;
+    wchar_t  NamePtr[1];
 };
 
 #pragma pack(pop)
@@ -95,8 +95,8 @@ struct file_entry
     std::vector<SegmSection> mInfo;
     std::wstring file_name;
     std::wstring internal_name;
-	ExtraSection mExtra;
-	uint64_t mFileTime{ 0 };
+    ExtraSection mExtra;
+    uint64_t mFileTime{ 0 };
 
     uint32_t GetTotlePackedSize() const;
     uint32_t GetTotleOriginalSize() const;
@@ -130,8 +130,8 @@ XP3EntryExtraChunk[] = {
 class EncryptedXP3
 {
     static UNCOMPRESS unCom;
-	static constexpr uint32_t MagicHnfn = 'nfnh';
-	static constexpr uint32_t MagicFeng = 'gnef';
+    static constexpr uint32_t MagicHnfn = 'nfnh';
+    static constexpr uint32_t MagicFeng = 'gnef';
 
 public:
     EncryptedXP3();
@@ -153,22 +153,22 @@ public:
 protected:
     virtual bool DoExtractData(const file_entry& fe, std::vector<char>& unpackData);
     virtual std::vector<file_entry> XP3ArcPraseEntryStage0(uint32_t extraMagic, const std::vector<char>& plainBytes);
-	std::vector<file_entry> ParsePalette_9nine(const std::vector<char>& plainBytes);
+    std::vector<file_entry> ParsePalette_9nine(const std::vector<char>& plainBytes);
 
-	bool ParseFileSection(const uint8_t* ptr, uint32_t* secSize, uint32_t* entrySize);
-	bool ParseSegmSection(const uint8_t* ptr, file_entry& fe, uint32_t* secSize);
-	bool ParseInfoSection(const uint8_t* ptr, file_entry& fe, uint32_t* secSize);
-	bool ParseAdlrSection(const uint8_t* ptr, file_entry& fe, uint32_t* secSize);
-	bool ParseTimeSection(const uint8_t* ptr, file_entry& fe, uint32_t* secSize);
-	bool ParseExtraSection(const uint8_t* ptr, uint32_t extraMagic, file_entry& fe, uint32_t* secSize);
-	bool ParseProtectWarning(const uint8_t* ptr, uint32_t* secSize);
-	bool HasExtraSection(const std::vector<char>& plainBytes, uint32_t* magic);
+    bool ParseFileSection(const uint8_t* ptr, uint32_t* secSize, uint32_t* entrySize);
+    bool ParseSegmSection(const uint8_t* ptr, file_entry& fe, uint32_t* secSize);
+    bool ParseInfoSection(const uint8_t* ptr, file_entry& fe, uint32_t* secSize);
+    bool ParseAdlrSection(const uint8_t* ptr, file_entry& fe, uint32_t* secSize);
+    bool ParseTimeSection(const uint8_t* ptr, file_entry& fe, uint32_t* secSize);
+    bool ParseExtraSection(const uint8_t* ptr, uint32_t extraMagic, file_entry& fe, uint32_t* secSize);
+    bool ParseProtectWarning(const uint8_t* ptr, uint32_t* secSize);
+    bool HasExtraSection(const std::vector<char>& plainBytes, uint32_t* magic);
 
 private:
     xp3_file_header mHeader;
     std::wstring mPath;
     std::ifstream mStream;
-	uint32_t mExtraSectionMagic{ 0 };
+    uint32_t mExtraSectionMagic{ 0 };
 };
 
 class palette_9_nine : public EncryptedXP3

@@ -13,17 +13,13 @@
 #include <VersionHelpers.h>
 #include "utility/utility.h"
 #include "../kirikiri/xp3.h"
+#include "ShareMem.h"
 
 using namespace std;
 
 const char szAppName[] = "BlackSheep";
 
-struct MapObj
-{
-	BOOL Access;
-	wchar_t Path[MAX_PATH];
-};
-MapObj *g_Map;
+MapObj* g_Map;
 
 
 
@@ -35,27 +31,31 @@ uint32_t retAddr;
 uint32_t temp;
 bool g_VerWin10;
 
-DWORD WINAPI Worker(LPVOID)
+void HandleXp3File(const wchar_t* xp3Path, vector<string>& report)
 {
-    MessageBox(NULL, "seems OK, begin extracting, wait a minute....", szAppName, MB_ICONINFORMATION);
 
     wstring drv, dir, file, ext;
-    Utility::SplitPath(g_Map->Path, drv, dir, file, ext);
+    Utility::SplitPath(xp3Path, drv, dir, file, ext);
     wstring outDir = drv + dir + L"[extract] " + file + ext;
     CreateDirectoryW(outDir.c_str(), 0);
 
-	EncryptedXP3 *xp3 = new EncryptedXP3();
-	bool b = xp3->Open(g_Map->Path);
-	if (!b)
-	{
-		MessageBox(NULL, "xp3 open failed, exit", szAppName, MB_ICONWARNING);
-		return 0;
-	}
-	vector<file_entry> entries = xp3->ExtractEntries(xp3->GetPlainIndexBytes());
+    report.push_back("process file [" + Utility::UnicodeToUTF8(xp3Path) + "]:");
+
+    EncryptedXP3 *xp3 = new EncryptedXP3();
+    bool b = xp3->Open(xp3Path);
+    if (!b)
+    {
+        stringstream ss;
+        ss << "xp3 [" << xp3Path << "] open failed.";
+        report.push_back(ss.str());
+        MessageBox(NULL, ss.str().c_str(), szAppName, MB_ICONWARNING);
+        return;
+    }
+
+    vector<file_entry> entries = xp3->ExtractEntries(xp3->GetPlainIndexBytes());
     int count = 0, streamErr = 0;
-	vector<string> report;
-	for (size_t i = 0; i < entries.size(); ++i)
-	{
+    for (size_t i = 0; i < entries.size(); ++i)
+    {
         const file_entry& fe = entries[i];
         ttstr name(xp3->FormatFileNameForIStream(fe).c_str());
 
@@ -73,57 +73,70 @@ DWORD WINAPI Worker(LPVOID)
                 {
                     assert(R == fileSize);
                     int ret = EncryptedXP3::SplitFileNameAndSave(outDir, fe.file_name, vector<char>((char*)buf, (char*)buf + fileSize));
-					if (ret == 0)
-					{
-						report.push_back(string("[success] saving [") + Utility::UnicodeToUTF8(fe.file_name) + "].");
-						++count;
-					}
-					else
-					{
-						report.push_back(string("[failed] saving [") + Utility::UnicodeToUTF8(fe.file_name) + "].");
-					}
+                    if (ret == 0)
+                    {
+                        report.push_back(string("[success] saving [") + Utility::UnicodeToUTF8(fe.file_name) + "].");
+                        ++count;
+                    }
+                    else
+                    {
+                        report.push_back(string("[failed] saving [") + Utility::UnicodeToUTF8(fe.file_name) + "].");
+                    }
                     VirtualFree(buf, 0, MEM_RELEASE);
                 }
                 else
                 {
-					report.push_back(string("[failed] reading [") + Utility::UnicodeToUTF8(fe.file_name) + "].");
+                    report.push_back(string("[failed] reading [") + Utility::UnicodeToUTF8(fe.file_name) + "].");
                     ++streamErr;
                 }
             }
             else
             {
-				report.push_back(string("[failed] error stream [") + Utility::UnicodeToUTF8(fe.file_name) + "].");
+                report.push_back(string("[failed] error stream [") + Utility::UnicodeToUTF8(fe.file_name) + "].");
                 ++streamErr;
             }
         }
         else
         {
-			report.push_back(string("[failed] create error [") + Utility::UnicodeToUTF8(fe.file_name) + "].");
+            report.push_back(string("[failed] create error [") + Utility::UnicodeToUTF8(fe.file_name) + "].");
             ++streamErr;
         }
-	}
+    }
 
-	stringstream ss;
-	ss << count << "/" << entries.size() << ", " << streamErr << " for stream error";
+    stringstream ss;
+    ss << count << "/" << entries.size() << ", " << streamErr << " for stream error";
+    report.push_back(ss.str());
+    report.push_back("-----------------------------------");
+    report.push_back("");
+}
 
-	ofstream reportTxt("blacksheepreport.txt", ios::binary);
-	if (reportTxt.is_open())
-	{
-		reportTxt.write(ss.str().c_str(), ss.str().size());
-		reportTxt.write("\n-----------------------------------\n", 1);
-		for (auto& r : report)
-		{
-			reportTxt.write(r.c_str(), r.size());
-			reportTxt.write("\n", 1);
-		}
-		reportTxt.close();
-	}
-	MessageBox(NULL, (string("finish(") + ss.str() + "), see blacksheepreport.txt for detail.").c_str(), szAppName, MB_ICONINFORMATION);
+DWORD WINAPI Worker(LPVOID)
+{
+    MessageBox(NULL, "seems OK, begin extracting, wait a minute....", szAppName, MB_ICONINFORMATION);
+    vector<string> report;
 
-	while (1)
-	{
-		Sleep(1);
-	}
+    assert(g_Map->Count <= _countof(MapObj::Path));
+    for (int i = 0; i < g_Map->Count; ++i)
+    {
+        HandleXp3File(g_Map->Path[i], report);
+    }
+
+    ofstream reportTxt("blacksheepreport.txt", ios::binary);
+    if (reportTxt.is_open())
+    {
+        for (auto& r : report)
+        {
+            reportTxt.write(r.c_str(), r.size());
+            reportTxt.write("\n", 1);
+        }
+        reportTxt.close();
+    }
+    MessageBox(NULL, "finish process, see blacksheepreport.txt for detail.", szAppName, MB_ICONINFORMATION);
+
+    while (1)
+    {
+        Sleep(1);
+    }
     return 0;
 }
 
@@ -176,19 +189,19 @@ extern "C" __declspec(naked) void ProcAddressHookWin7SP1()
 {
 
     __asm {
-		push ebp
+        push ebp
         mov ebp, esp
         mov old, eax
         mov eax, dword ptr [ebp+0x18]
-		mov eax, [eax]
-		mov addr, eax
+        mov eax, [eax]
+        mov addr, eax
         mov func, eax
-		mov eax, DWORD ptr [ebp+0x10]
-		cmp eax, 0
-		je SKIP
-		lea eax, [eax+4]
-		mov eax, [eax]
-		mov func, eax
+        mov eax, DWORD ptr [ebp+0x10]
+        cmp eax, 0
+        je SKIP
+        lea eax, [eax+4]
+        mov eax, [eax]
+        mov func, eax
 SKIP:
     }
 
@@ -197,18 +210,18 @@ SKIP:
         if (!memcmp(func, "V2Link", 7))
         {
             OldV2Link = addr;
-			__asm {
-				mov eax, dword ptr[ebp+0x18]
-				mov ecx, V2Link
-				mov [eax], ecx
-			}
+            __asm {
+                mov eax, dword ptr[ebp+0x18]
+                mov ecx, V2Link
+                mov [eax], ecx
+            }
             //old = (uint32_t)V2Link;
         }
     }
 
     __asm {
         mov esp, ebp
-		pop ebp
+        pop ebp
         mov eax, old
         pop ebp
         retn 0x10
@@ -374,11 +387,11 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD Reason, LPVOID lpReserved)
 {
     if (Reason == DLL_PROCESS_ATTACH)
     {
-		hFileMapping = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE | SEC_COMMIT, 0, 4096, "BlackSheep{13E025E2-B7AA-4141-9B4E-402CCB3C4F33}");
-		assert(hFileMapping != NULL);
-		g_Map = (MapObj*)MapViewOfFile(hFileMapping, FILE_MAP_ALL_ACCESS, 0, 0, 4096);
-		assert(g_Map);
-		g_Map->Access = TRUE;
+        hFileMapping = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE | SEC_COMMIT, 0, 4096, "BlackSheep{13E025E2-B7AA-4141-9B4E-402CCB3C4F33}");
+        assert(hFileMapping != NULL);
+        g_Map = (MapObj*)MapViewOfFile(hFileMapping, FILE_MAP_ALL_ACCESS, 0, 0, sizeof(MapObj));
+        assert(g_Map);
+        g_Map->Access = TRUE;
 
         if (!IsWindows7SP1OrGreater())
         {
