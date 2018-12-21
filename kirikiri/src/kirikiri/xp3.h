@@ -132,6 +132,7 @@ class EncryptedXP3
     static UNCOMPRESS unCom;
     static constexpr uint32_t MagicHnfn = 'nfnh';
     static constexpr uint32_t MagicFeng = 'gnef';
+    static constexpr uint32_t MagicNeko = 'oken';
 
 public:
     EncryptedXP3();
@@ -154,6 +155,7 @@ protected:
     virtual bool DoExtractData(const file_entry& fe, std::vector<char>& unpackData);
     virtual std::vector<file_entry> XP3ArcPraseEntryStage0(uint32_t extraMagic, const std::vector<char>& plainBytes);
     std::vector<file_entry> ParsePalette_9nine(const std::vector<char>& plainBytes);
+    std::vector<file_entry> ParsePalette_NekoparaEx(const std::vector<char>& plainBytes);
 
     bool ParseFileSection(const uint8_t* ptr, uint32_t* secSize, uint32_t* entrySize);
     bool ParseSegmSection(const uint8_t* ptr, file_entry& fe, uint32_t* secSize);
