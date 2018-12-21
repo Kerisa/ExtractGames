@@ -170,7 +170,7 @@ void XP3Entrance(const wchar_t *packName, const wchar_t *curDirectory, const std
     wstring txt(packName);
     txt += L"_entries.txt";
     auto rawBytes = fucker->GetPlainIndexBytes();
-    ofstream idx(txt + L".0.txt");
+    ofstream idx(txt + L".0.txt", ios::binary);
     assert(idx.is_open());
     idx.write(rawBytes.data(), rawBytes.size());
     idx.close();

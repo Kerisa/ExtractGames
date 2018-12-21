@@ -12,6 +12,9 @@ using namespace std;
 UNCOMPRESS unCom;
 
 
+const wstring STARTUP{ L"startup.tjs" };
+const wstring PROTECT{ L"$$$ This is a protected archive. $$$" };
+
 
 DWORD HaveExtraEntryChunk(const char *game)
 {
@@ -181,6 +184,7 @@ std::vector<char> EncryptedXP3::GetPlainIndexBytes()
 
 std::vector<file_entry> EncryptedXP3::XP3ArcPraseEntryStage0(uint32_t extraMagic, const std::vector<char>& plainBytes)
 {
+    static const uint32_t InvalidExtraMagic = 0;
     static const uint32_t
         flag_file  = 0x1,
         flag_adlr  = 0x2,
@@ -212,7 +216,7 @@ std::vector<file_entry> EncryptedXP3::XP3ArcPraseEntryStage0(uint32_t extraMagic
             switch (*(uint32_t*)p)
             {
             default:
-                if (*(uint32_t*)p == extraMagic)
+                if (*(uint32_t*)p == extraMagic && extraMagic != InvalidExtraMagic)
                 {
                     assert(!(flag & flag_extra));
                     uint32_t size;
@@ -226,6 +230,7 @@ std::vector<file_entry> EncryptedXP3::XP3ArcPraseEntryStage0(uint32_t extraMagic
                 else
                 {
                     assert("error parse entry" && 0);
+                    return Entry;
                 }
                 break;
                 
@@ -291,10 +296,8 @@ std::vector<file_entry> EncryptedXP3::XP3ArcPraseEntryStage0(uint32_t extraMagic
             }
         }   // end while (p < pEnd && flag != flag_all)
 
-        const wstring STARTUP{ L"startup.tjs" };
-        const wstring PROTECT{ L"$$$ This is a protected archive. $$$" };
 
-        if (extraMagic != 0)
+        if (extraMagic != InvalidExtraMagic)
         {
             if (fe.internal_name != STARTUP && fe.internal_name.find(PROTECT) == wstring::npos)
             {
@@ -343,7 +346,7 @@ bool EncryptedXP3::ParseSegmSection(const uint8_t * ptr, file_entry& fe, uint32_
     int part = segm->SizeOfData / 0x1c;
     fe.mInfo.push_back(*segm);
     ptr += sizeof(SegmSection);
-    if (part > 1)
+    for (int i = 0; i < part - 1; ++i)
     {
         SegmSection ss;
         ss.Magic = SegmSection::MAGIC;
@@ -487,21 +490,52 @@ std::vector<file_entry> EncryptedXP3::ParsePalette_9nine(const std::vector<char>
     uint8_t* p = (uint8_t*)plainBytes.data();
     uint8_t* pEnd = p + plainBytes.size();
 
-    assert(*(uint32_t*)p == MagicHnfn);
-    p += *(uint32_t*)(p + 4) + 0xc;  // skip protection warning
-
-    while (*(uint32_t*)p == MagicHnfn)
+    ExtraSection* es = (ExtraSection*)p;
+    assert(es->Magic == MagicHnfn);
+    while (es->Magic == MagicHnfn)
     {
-        uint64_t length = *(uint64_t*)(p + 4);
-        uint32_t checksum = *(uint32_t*)(p + 12);
-        uint32_t nameLen = *(uint16_t*)(p + 16);
-        std::wstring name = (wchar_t*)(p + 18);
-        p += length + 12;
-
         file_entry fe;
-        fe.checksum = checksum;
-        fe.file_name = name;
+        fe.checksum = es->Checksum;
+        fe.file_name.assign(es->NamePtr, es->NamePtr + es->NameInWords);
         nameList.push_back(fe);
+
+        p += es->SizeOfData + 0xc;
+        es = (ExtraSection*)p;
+    }
+
+    std::vector<file_entry> Entry = XP3ArcPraseEntryStage0(0, std::vector<char>((char*)p, (char*)pEnd));
+    assert(Entry.size() >= nameList.size());
+    size_t n = 0;
+    for (size_t i = 0; i < Entry.size(); ++i)
+    {
+        if (Entry[i].checksum != nameList[n].checksum)
+            continue;
+        Entry[i].file_name = nameList[n].file_name;
+        ++n;
+    }
+
+    assert(n == nameList.size());
+    return Entry;
+}
+
+std::vector<file_entry> EncryptedXP3::ParsePalette_NekoparaEx(const std::vector<char>& plainBytes)
+{
+    std::vector<file_entry> nameList;
+
+    uint8_t* p = (uint8_t*)plainBytes.data();
+    uint8_t* pEnd = p + plainBytes.size();
+
+    ExtraSection* es = (ExtraSection*)p;
+    assert(es->Magic == MagicNeko);
+    while (es->Magic == MagicNeko)
+    {
+        file_entry fe;
+        fe.checksum = es->Checksum;
+        fe.file_name.assign(es->NamePtr, es->NamePtr + es->NameInWords);        
+        nameList.push_back(fe);
+
+        p += es->SizeOfData + 0xc;
+        es = (ExtraSection*)p;
     }
 
     std::vector<file_entry> Entry = XP3ArcPraseEntryStage0(0, std::vector<char>((char*)p, (char*)pEnd));
@@ -577,6 +611,8 @@ std::vector<file_entry> EncryptedXP3::ExtractEntries(const std::vector<char>& pl
     {
     case MagicHnfn:
         return ParsePalette_9nine(plainBytes);
+    case MagicNeko:
+        return ParsePalette_NekoparaEx(plainBytes);
     default:
         return XP3ArcPraseEntryStage0(mExtraSectionMagic, plainBytes);
     }
