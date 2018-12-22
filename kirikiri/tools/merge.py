@@ -63,7 +63,7 @@ for item in j['layers']:
     right = left + item['width']
     bottom = top + item['height']
     merge.paste(diff, (left, top, right, bottom), diff)
-    merge.save(folder + '\\merge_' + str(item['layer_id']) + '.png', quality = 100)
+    merge.save(folder + '\\' + folder + '_merge_' + str(item['layer_id']) + '.png', quality = 100)
 
 
 
