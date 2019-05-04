@@ -1,3 +1,5 @@
+
+#include <cassert>
 #include <Windows.h>
 #include <vector>
 #include <strsafe.h>
@@ -89,6 +91,58 @@ DWORD GenerateKey(PVOID Buf, DWORD Len)
 	}
 
 	return (mm0[3] ^ mm0[1]) << 16 | mm0[0] ^ mm0[2];
+}
+
+
+DWORD GenerateKey2(PVOID Buf, DWORD Len)
+{
+	uint64_t mm0 = 0ul;
+	uint64_t mm2 = 0ul;
+	const uint64_t mm3 = 0xA35793A7A35793A7ul;
+
+	// paddw
+	uint64_t* buf = (uint64_t*)Buf;
+	for (int i = 0; i < Len / 8; ++i)
+	{
+		uint64_t mm1 = *buf++;
+		for (int k = 0; k < 4; ++k)
+			((uint16_t*)&mm2)[k] += ((uint16_t*)&mm3)[k];
+		mm1 ^= mm2;
+		for (int k = 0; k < 4; ++k)
+			((uint16_t*)&mm0)[k] += ((uint16_t*)&mm1)[k];
+		uint32_t u1 = mm0 >> 32;
+		uint32_t u2 = mm0 & 0xfffffffful;
+		mm0 = ((uint64_t)((u1 >> 29) | (u1 << 3)) << 32) | (uint64_t)((u2 >> 29) | (u2 << 3));
+	}
+
+	uint64_t mm1 = mm0 >> 32;
+	int32_t tmp1 = (int32_t)((int16_t*)&mm0)[1] * ((int16_t*)&mm1)[1] + ((int16_t*)&mm0)[0] * ((int16_t*)&mm1)[0];
+	int32_t tmp2 = (int32_t)((uint16_t*)&mm0)[3] * ((uint16_t*)&mm1)[3] + ((uint16_t*)&mm0)[2] * ((uint16_t*)&mm1)[2];
+	mm0 = ((uint64_t)tmp2 << 32) | (uint32_t)tmp1;
+	return mm0;
+/*
+004E259C  |.  0FEFC0        pxor    mm0, mm0
+004E259F  |.  0FEFD2        pxor    mm2, mm2
+004E25A2  |.  B8 A79357A3   mov     eax, A35793A7
+004E25A7  |.  0F6ED8        movd    mm3, eax
+004E25AA  |.  0F62DB        punpckldq mm3, mm3
+004E25AD  |>  0F6F0E        /movq    mm1, qword ptr [esi]
+004E25B0  |.  0FFDD3        |paddw   mm2, mm3
+004E25B3  |.  0FEFCA        |pxor    mm1, mm2
+004E25B6  |.  0FFDC1        |paddw   mm0, mm1                        ;  +
+004E25B9  |.  0F6FC8        |movq    mm1, mm0
+004E25BC  |.  0F72F0 03     |pslld   mm0, 3
+004E25C0  |.  0F72D1 1D     |psrld   mm1, 1D                         ;  循环左移3位
+004E25C4  |.  0FEBC1        |por     mm0, mm1                        ;  保存在 mm0
+004E25C7  |.  83C6 08       |add     esi, 8
+004E25CA  |.  49            |dec     ecx
+004E25CB  |.^ 75 E0         \jnz     short 004E25AD
+004E25CD  |.  0F6FC8        movq    mm1, mm0
+004E25D0  |.  0F73D1 20     psrlq   mm1, 20                          ;  q右移32位
+004E25D4  |.  0FF5C1        pmaddwd mm0, mm1
+004E25D7  |.  0F7E45 F4     movd    dword ptr [ebp-C], mm0           ;  mm0 = f17b4f4c
+004E25DB  |.  0F77          emms
+*/
 }
 
 
@@ -400,7 +454,7 @@ int GetPackageDirectory(const HANDLE hPack, const PACKHEADER *ph, vector<PACKIDX
 	SetFilePointer(hPack, -(int)sizeof(Buf), 0, FILE_END);
 	ReadFile(hPack, Buf, sizeof(Buf), &R, 0);
 
-	Key = 0xfffffff & GenerateKey(Buf + 0x24, 256);
+	Key = 0xfffffff & GenerateKey2(Buf + 0x24, 256);
 	Decode(Buf, 32, Key);
 
 
@@ -452,7 +506,8 @@ int GetPackageDirectory(const HANDLE hPack, const PACKHEADER *ph, vector<PACKIDX
 		PACKIDX pi;
 		
 		ReadFile(hPack, &NameLen, 2, &R, 0);
-		ReadFile(hPack, pi.Name, NameLen, &R, 0);
+		assert(NameLen * 2 < _countof(PACKIDX::Name));
+		ReadFile(hPack, pi.Name, NameLen * 2, &R, 0);
 
 		NameKey = (BYTE)(NameLen + (Key ^ 0x3e));
 		for (j=0; j<NameLen; ++j)
@@ -720,7 +775,7 @@ int Entrance(const wchar_t *CurDir, const wchar_t *PackName)
 
 	SetFilePointer(hPack, -(int)sizeof(PACKHEADER), 0, FILE_END);
 	ReadFile(hPack, &ph, sizeof(ph), &R, 0);
-	if (strcmp(ph.Maigc, "FilePackVer3.0"))
+	if (strcmp(ph.Maigc, "FilePackVer3.1"))
 	{
 		AppendMsg(L"封包类型不匹配\r\n");
 		return -3;
