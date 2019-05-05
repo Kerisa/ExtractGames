@@ -1,0 +1,5 @@
+adx - ogg
+      wav
+bip - png group(PNGFILE2) - merge png
+      lzss - png group(PNGFILE3)
+t2p - lzss - tim2 -> png
