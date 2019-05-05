@@ -56,7 +56,7 @@ bool swansong::DoExtractData(const file_entry & fe, std::vector<char>& unpackDat
     for (size_t i = 0; i<unpackData.size(); ++i)
     {
         unpackData[i] ^= key;
-        unpackData[i] = unpackData[i] >> ror | unpackData[i] << (8 - ror);
+        unpackData[i] = (uint8_t)unpackData[i] >> ror | (uint8_t)unpackData[i] << (8 - ror);
     }
     return true;
 }

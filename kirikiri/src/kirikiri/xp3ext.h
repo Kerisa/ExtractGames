@@ -16,6 +16,7 @@ EncryptedXP3* CreateXP3Handler(const std::wstring& gameName);
 
 
 extern void AppendMsg(const wchar_t *szBuffer);
+void        XP3Entrance(const wchar_t *packName, const wchar_t *curDirectory, const std::wstring& choosedGame);
 
 
 class kuranokunchi : public EncryptedXP3

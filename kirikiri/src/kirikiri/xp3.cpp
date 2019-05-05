@@ -16,63 +16,6 @@ const wstring STARTUP{ L"startup.tjs" };
 const wstring PROTECT{ L"$$$ This is a protected archive. $$$" };
 
 
-DWORD HaveExtraEntryChunk(const char *game)
-{
-    for (int i=_countof(XP3EntryExtraChunk)-1; i>=0; --i)
-        if (!strcmp(game, XP3EntryExtraChunk[i].name))
-        {
-            return XP3EntryExtraChunk[i].chunk;
-        }
-
-    return 0;
-}
-
-int XP3ArcPraseEntryStage1 (
-        PVOID _idx,
-        DWORD _len,
-        std::vector<file_entry>& Entry,
-        DWORD chunk
-        )
-{
-    /////////////////////////////////////////
-    // Format:
-    // <magic> <length>  <adlr>   <filename>
-    // 4Bytes + 8Bytes + 4Bytes + 2Bytes+wcharstring
-    /////////////////////////////////////////
-    if (!chunk)
-        return 1;
-
-    PBYTE pEnd = (PBYTE)_idx + _len, p = (PBYTE)_idx;
-    int walk = -1;
-    while (p < pEnd && *(PDWORD)p != chunk) ++p;
-    for (DWORD i=0; i<Entry.size(); ++i)
-        if (*(PDWORD)(p+0xc) == Entry[i].checksum)
-        {
-            walk = i + 1;
-            wchar_t temp[128] = { 0 };
-            wcscpy_s(temp, _countof(temp), (wchar_t*)(p + 0x12));
-            Entry[i].file_name = temp;
-            p += 0x12 + wcslen((wchar_t*)(p + 0x12));
-        }
-
-    assert(walk != -1);
-
-    while (p < pEnd)
-    {
-        if (*(PDWORD)p == chunk)
-        {
-            wchar_t temp[128] = { 0 };
-            wcscpy_s(temp, _countof(temp), (wchar_t*)(p + 0x12));
-            Entry[walk++].file_name = temp;
-            p += 0x12 + wcslen((wchar_t*)(p + 0x12));
-        }
-        else
-            ++p;
-    }
-
-    return 0;
-}
-
 
 UNCOMPRESS EncryptedXP3::unCom;
 

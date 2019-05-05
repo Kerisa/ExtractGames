@@ -82,13 +82,13 @@ void HandleXp3File(const wchar_t* xp3Path, vector<string>& report)
                     {
                         report.push_back(string("[failed] saving [") + Utility::UnicodeToUTF8(fe.file_name) + "].");
                     }
-                    VirtualFree(buf, 0, MEM_RELEASE);
                 }
                 else
                 {
                     report.push_back(string("[failed] reading [") + Utility::UnicodeToUTF8(fe.file_name) + "].");
                     ++streamErr;
                 }
+                VirtualFree(buf, 0, MEM_RELEASE);
             }
             else
             {
