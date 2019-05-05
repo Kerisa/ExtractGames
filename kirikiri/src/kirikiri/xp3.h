@@ -109,24 +109,6 @@ struct file_entry
 
 
 
-DWORD   HaveExtraEntryChunk(const char *game);
-int     XP3ArcPraseEntryStage1(PVOID _idx, DWORD _len, std::vector<file_entry>& Entry, DWORD chunk);
-void    XP3Entrance(const wchar_t *packName, const wchar_t *curDirectory, const std::wstring& choosedGame);
-
-
-
-
-static const struct _XP3ENTRYEXTRACHUNK {
-    char *name;
-    DWORD chunk;
-}
-XP3EntryExtraChunk[] = {
-    "seiiki",   0x676e6566,
-    "nekopara", 0x0,
-};
-
-
-
 class EncryptedXP3
 {
     static UNCOMPRESS unCom;
