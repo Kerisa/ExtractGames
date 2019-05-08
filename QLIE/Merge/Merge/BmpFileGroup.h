@@ -12,7 +12,7 @@ using std::vector;
 class BmpFileGroup
 {
 public:
-	static enum {
+	enum {
 		MAXPATH       = 260,
 		BMPHEADERLEN   = 54,
 		ERR_FILEOPEN   = -1,

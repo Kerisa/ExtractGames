@@ -94,14 +94,14 @@ DWORD GenerateKey(PVOID Buf, DWORD Len)
 }
 
 
-DWORD GenerateKey2(PVOID Buf, DWORD Len)
+DWORD GenerateKey2(const PVOID Buf, DWORD Len)
 {
 	uint64_t mm0 = 0ul;
 	uint64_t mm2 = 0ul;
 	const uint64_t mm3 = 0xA35793A7A35793A7ul;
 
 	// paddw
-	uint64_t* buf = (uint64_t*)Buf;
+    const uint64_t* buf = (const uint64_t*)Buf;
 	for (int i = 0; i < Len / 8; ++i)
 	{
 		uint64_t mm1 = *buf++;
@@ -146,6 +146,7 @@ DWORD GenerateKey2(PVOID Buf, DWORD Len)
 }
 
 
+// ver cl == 1
 void Decode(PVOID Buf, DWORD Len, DWORD Key)
 {
 	PDWORD dBuf = (PDWORD) Buf;
@@ -174,14 +175,16 @@ void Decode(PVOID Buf, DWORD Len, DWORD Key)
 
 int Decode_Sub1(DWORD dwSeed, PDWORD arrDecode, PDWORD pSubFlag)
 {
+    constexpr uint32_t magic = 0x8df21431;
 	// 类似于初始化
+    uint32_t val = dwSeed;
+    for (int i = 0; i < 0x40; ++i)
+    {
+        val ^= magic;
+        uint64_t mul = (uint64_t)val * magic;
+        val = arrDecode[i] = (mul & 0xffffffff) + (mul >> 32);
+    }
 
-	arrDecode[0] = dwSeed & 0xffffffff;
-
-	for (DWORD i=0; i<63; ++i)
-	{
-		arrDecode[i+1] = (DWORD)((arrDecode[i] ^ (arrDecode[i] >> 30)) * 0x6611bc19) + i + 1;
-	}
 
 	*pSubFlag = 1;
 
@@ -252,31 +255,236 @@ DWORD Decode_Sub3(PDWORD arrDecode, PDWORD pSubFlag)
 }
 
 
+int DecodeKeyFileData(PVOID PackData, const PACKIDX& Idx, PBYTE pExeKey, DWORD dwExeKeyLen, PBYTE pKeyFile, DWORD dwKeyFileLen)
+{
+    DWORD dwSum = 0x85f532;
+    DWORD dwSeed = 0x33f641;
+    DWORD SubFlag;
+    DWORD arrDecode[256];	// "8qH"
+
+
+    assert(Idx.IsEncrypted == 1);
+
+    const uint32_t dwFileNameLen = wcslen((const wchar_t*)Idx.Name);
+    for (DWORD i = 0; i < dwFileNameLen; ++i)
+    {
+        dwSum += ((uint32_t)((wchar_t*)Idx.Name)[i] << (i & 7));
+        dwSeed ^= dwSum;
+    }
+
+    dwSeed += ((Idx.CompressLen ^ 0x8f32dc ^ dwSum) + dwSum + Idx.CompressLen + 7 * (Idx.CompressLen & 0xffffff)) ^ Idx.Key;
+    dwSeed = (dwSeed & 0xffffff) * 9;
+    //dwSeed ^= 0x453a;
+
+
+    Decode_Sub1(dwSeed, arrDecode, &SubFlag);
+
+    typedef union {
+        ULONGLONG	Qword;
+        DWORD		Dword[2];
+        WORD		Word[4];
+        BYTE		Byte[8];
+    } UQWORD;
+    UQWORD Tmp;
+    Tmp.Dword[1] = arrDecode[7];
+    Tmp.Dword[0] = arrDecode[6];
+
+    ULONGLONG *p = (ULONGLONG*)PackData;
+    ULONGLONG *pEnd = (ULONGLONG*)PackData + Idx.CompressLen / 8;
+    uint8_t* parr1 = (uint8_t*)arrDecode;
+
+    DWORD arr1Idx = (arrDecode[0xd] & 0xf) * 8;
+    while (p < pEnd)
+    {
+        // pxor mm7, mm6
+        Tmp.Qword ^= *(uint64_t*)(parr1 + arr1Idx);
+
+        // paddd mm7, mm6
+        Tmp.Dword[0] += *(uint32_t*)(parr1 + arr1Idx);
+        Tmp.Dword[1] += *(uint32_t*)(parr1 + arr1Idx + 4);
+
+        // movq mm0, qword ptr[edi]
+        // pxor mm0, mm7
+        // movq mm1, mm0
+        // mov1 qword ptr [edi], mm0
+        *p ^= Tmp.Qword;
+
+        // paddb mm7, mm1   (*ppd)
+        for (DWORD i = 0; i < 8; ++i)
+            Tmp.Byte[i] += *((PBYTE)p + i);
+
+        // pxor mm7, mm1
+        Tmp.Qword ^= *p;
+
+        // pslld mm7, 1
+        Tmp.Dword[0] <<= 1;
+        Tmp.Dword[1] <<= 1;
+
+        // paddw mm7, mm1
+        for (DWORD i = 0; i < 4; ++i)
+            Tmp.Word[i] += *((PWORD)p + i);
+
+        ++p;
+        arr1Idx = (arr1Idx + 8) & 0x7f;
+    }
+    return 0;
+}
+
+
+int Decode_Sub12(DWORD dwSeed, PDWORD arrDecode, PDWORD pSubFlag)
+{
+    // 类似于初始化
+    constexpr uint32_t magic = 0x8a77f473;
+    uint32_t val = dwSeed;
+    for (int i = 0; i < 0x40; ++i)
+    {
+        val ^= magic;
+        uint64_t mul = (uint64_t)val * magic;
+        val = arrDecode[i] = (mul & 0xffffffff) + (mul >> 32);
+    }
+
+
+    *pSubFlag = 1;
+
+    return 0;
+}
+
+int DecodeKeyFileData2(PVOID PackData, const PACKIDX& Idx, PBYTE pExeKey, DWORD dwExeKeyLen, PBYTE pKeyFile, DWORD dwKeyFileLen)
+{
+    DWORD dwSum = 0x86f7e2;
+    DWORD dwSeed = 0x4437f1;
+    DWORD SubFlag;
+    DWORD arrDecode[256];	// "8qH"
+
+
+    assert(Idx.IsEncrypted >= 2);
+
+    const uint32_t dwFileNameLen = wcslen((const wchar_t*)Idx.Name);
+    for (DWORD i = 0; i < dwFileNameLen; ++i)
+    {
+        dwSum += ((uint32_t)((wchar_t*)Idx.Name)[i] << (i & 7));
+        dwSeed ^= dwSum;
+    }
+
+    dwSeed += ((Idx.CompressLen ^ 0x56e213 ^ dwSum) + dwSum + Idx.CompressLen + 0xd * (Idx.CompressLen & 0xffffff)) ^ Idx.Key;
+    dwSeed = (dwSeed & 0xffffff) * 0xd;
+    //dwSeed ^= 0x453a;
+
+
+    Decode_Sub12(dwSeed, arrDecode, &SubFlag);
+
+    DWORD anotherArrDecode[256] = {
+        0x20ECBA48, 0x96BB6008, 0x8E88126E, 0x352F5BD7, 0xD7DA5F02, 0xB79F9A11, 0xCA7D6C03, 0x073FFEE3, 0x6C46DE6C, 0x6F81DB03,
+0x2DED61E0, 0x9D6059E0, 0xB644A8D6, 0xE3C19CE1, 0x0D7125B6, 0xB4E439E7, 0x14ACDD13, 0x7769A599, 0xA79E759E, 0xA80DCD4D,
+0xB9CC47AE, 0x0CD89750, 0xE1F76F8A, 0xD9830589, 0xC65C722E, 0x4A76B0EF, 0xE3D336A1, 0x8A6F136F, 0x3990CFC8, 0x3E81AF73,
+0x3911747C, 0xC2A957E0, 0xECD27046, 0xEEF388F7, 0x2F12CC36, 0x7DE71CAB, 0xBB2003C9, 0x6E62F353, 0x03BE9CC2, 0x591FC763,
+0xA6FB34C4, 0xC95473DE, 0xF9E46924, 0x20A8B4F5, 0xB59C3202, 0xB74E2D65, 0x7E3ACF9B, 0xEF5FFC5D, 0xA7C247F6, 0xEE652C6F,
+0xEBBF63C6, 0x1CEDB2E0, 0x9969C9E8, 0xB159AC55, 0x4AEADD0E, 0x1C26C493, 0x14A39FAF, 0xAB24FEC3, 0xBABFC940, 0x1FB74051,
+0x0DBB7F4C, 0x7BB7798A, 0x12523F0E, 0xA4495F55, 0x1D21C0E6, 0x71A4DC47, 0xAE8ADDF5, 0x4BC48003, 0x212286B6, 0x314BFE2B,
+0xE213168E, 0x07F34E94, 0xD1B3BE70, 0x2B44E737, 0x65D2C6AA, 0x09387D95, 0x667AC551, 0x0467A31B, 0x3311BF1E, 0xE42647FB,
+0xF2192FBC, 0x20E3B49C, 0x8F635C64, 0xBA053EED, 0x90C21690, 0x691BCA2F, 0x20783A1B, 0xC6DA9BCD, 0x26B5A944, 0x90398AC1,
+0x0069D7B0, 0x8B90A904, 0xDF9ABE31, 0xC08E2C90, 0x0E84FAF5, 0x38AA9ED1, 0xAE42DAF1, 0x372D8AF8, 0xC71DC61C, 0x23E9B3DB,
+0xCE2FE84B, 0x83ABE724, 0x1A6E1793, 0x25E6C650, 0x3A07F3BE, 0x69E96486, 0x07CD5601, 0xCBD73CA6, 0x7C1D1311, 0xE6DE8FE8,
+0xD40F07CE, 0x50C2DAA8, 0xEB6F8282, 0xF74861CB, 0xCBEE1B52, 0x9A34CE4E, 0xDDC69006, 0x5AE8FEF6, 0x9F80A57C, 0xCCA4F043,
+0xF74CBED4, 0x2B83F6DB, 0x677ED7D2, 0xF6BDBCE8, 0xC2DD4038, 0xEE4AA452, 0x1C046092, 0xF3FC3B4F, 0xE385951B, 0x97384739,
+0x1A4BD617, 0x21D85406, 0x1492424A, 0x8BBDA984, 0xFE893FD7, 0xEB3174C4, 0x7FE0A3B8, 0xBD8314CD, 0x22EA3F5A, 0xE896A145,
+0x3C64BC8F, 0x0C933C42, 0xEF66BE9A, 0x4FABE80F, 0x4F4ECCED, 0xCEACB557, 0xE3D1947E, 0x186FB647, 0xD382D8CD, 0xD23FA3DC,
+0x43AE7EA9, 0xB507D6C7, 0xD187F7D6, 0x04A4A654, 0x92179493, 0x329C35AB, 0x187B7583, 0x13E1BF56, 0xA12DC1E5, 0x1F435CE4,
+0x0843F786, 0xDF5A9D56, 0xF89B0035, 0xC7A8D016, 0x5617AF0B, 0x8B3BF28D, 0xED009028, 0xEFF269AA, 0x30A30CA6, 0xA052F8AD,
+0x8661EC44, 0x5C968742, 0x91130287, 0xC1A2D86B, 0xF5FE5344, 0x1EE296F0, 0xCFEFC1AF, 0x742AEEC0, 0xAB2BE334, 0x5E5DED9E,
+0x376E8A9A, 0xE7783207, 0x3B8187B0, 0x40CABA61, 0xE8DF9010, 0x8CFF5D65, 0x7053E118, 0x4258C004, 0xD0860991, 0x0A360306,
+0xFAFBFEC5, 0x04F4E493, 0xD155E946, 0xA8A6AD1E, 0x6B9FADA5, 0x902CB8C9, 0x2ED84CE9, 0x35D41D05, 0x11DFE7C5, 0x954DFC1C,
+0xC7B5C928, 0x5315AA6E, 0x01BECC77, 0x657C7823, 0xAF2689CF, 0x28875C0B, 0x5A187B93, 0xA2117BD4, 0xE7820AB4, 0xFA359E0F,
+0x2710D1D3, 0xD62AA2D2, 0x61303AC1, 0xA2078E95, 0xA217A056, 0x1C1DC8B2, 0xCCE7B65E, 0x8084E97B, 0xD14AED20, 0x47DE3AC5,
+0x8753A653, 0x10689FFD, 0xA6CDE78E, 0x7460F50E, 0x1581C04D, 0xA420C41A, 0xF39ECE0A, 0x8F50E1FD, 0x31F37CB7, 0xE3BB023A,
+0xAFF7AF34, 0xB1F9200E, 0xA2FAEB1C, 0x0D7ECD3C, 0x8ABAC141, 0x7701EDB1, 0xCAE4C399, 0x3F3FB038, 0xE8569746, 0xCDFD8A4A,
+0xA8745604, 0x42C2DB14, 0x3EC84F17, 0xB98F5435, 0x5115FE06, 0xBA33CF0A, 0x3AF73C5F, 0x1C064AFE, 0xFA92F734, 0x7A3C7BF7,
+0x3FF51525, 0x5BBEEB51, 0x8410F480, 0x7D49ECC5, 0xD988E730, 0xD9F97518
+    };
+
+
+    typedef union {
+        ULONGLONG	Qword;
+        DWORD		Dword[2];
+        WORD		Word[4];
+        BYTE		Byte[8];
+    } UQWORD;
+    UQWORD Tmp;
+    Tmp.Dword[1] = arrDecode[7];
+    Tmp.Dword[0] = arrDecode[6];
+
+    ULONGLONG *p = (ULONGLONG*)PackData;
+    ULONGLONG *pEnd = (ULONGLONG*)PackData + Idx.CompressLen / 8;
+    uint8_t* parr1 = (uint8_t*)arrDecode;
+
+    DWORD arr1Idx = (arrDecode[0x8] & 0xd) * 8;
+    while (p < pEnd)
+    {
+        uint64_t mm6 = *(uint64_t*)(parr1 + (arr1Idx & 0xf) * 8);
+
+        uint64_t mm5 = *(uint64_t*)((uint8_t*)anotherArrDecode + (arr1Idx & 0x7f) * 8);
+
+        mm6 ^= mm5;
+
+        // pxor mm7, mm6
+        Tmp.Qword ^= mm6;
+
+        // paddd mm7, mm6
+        Tmp.Dword[0] += mm6 & 0xffffffff;
+        Tmp.Dword[1] += mm6 >> 32;
+
+        // movq mm0, qword ptr[edi]
+        // pxor mm0, mm7
+        // movq mm1, mm0
+        // mov1 qword ptr [edi], mm0
+        *p ^= Tmp.Qword;
+
+        // paddb mm7, mm1   (*ppd)
+        for (DWORD i = 0; i < 8; ++i)
+            Tmp.Byte[i] += *((PBYTE)p + i);
+
+        // pxor mm7, mm1
+        Tmp.Qword ^= *p;
+
+        // pslld mm7, 1
+        Tmp.Dword[0] <<= 1;
+        Tmp.Dword[1] <<= 1;
+
+        // paddw mm7, mm1
+        for (DWORD i = 0; i < 4; ++i)
+            Tmp.Word[i] += *((PWORD)p + i);
+
+        ++p;
+        arr1Idx = (arr1Idx + 1) & 0x7f;
+    }
+    return 0;
+}
+
 int DecodeFileData(PVOID PackData, const PACKIDX& Idx, PBYTE pExeKey, DWORD dwExeKeyLen, PBYTE pKeyFile, DWORD dwKeyFileLen)
 {
-	DWORD dwSum = 0x85f532, dwSeed = 0x33f641, dwFileNameLen;
+    DWORD dwSum = 0x85f532;
+    DWORD dwSeed = 0x33f641;    
 	DWORD arr1Idx, SubFlag;
 	DWORD arrDecode[256];	// "8qH"
 	
-	dwFileNameLen = strlen(Idx.Name);
+	const uint32_t dwFileNameLen = wcslen((const wchar_t*)Idx.Name);
 	for (DWORD i=0; i<dwFileNameLen; ++i)
 	{
-		dwSum  += (BYTE)Idx.Name[i] * (BYTE)i;		// Name要无符号啊！ 妈蛋
+        dwSum += ((uint32_t)((wchar_t*)Idx.Name)[i] << (i & 7));
 		dwSeed ^= dwSum;
 	}
 
 	dwSeed += ((Idx.CompressLen ^ 0x8f32dc ^ dwSum) + dwSum + Idx.CompressLen + 7 * (Idx.CompressLen & 0xffffff)) ^ Idx.Key;
 	dwSeed =  (dwSeed & 0xffffff) * 9;
-	dwSeed ^= 0x453a;
+	//dwSeed ^= 0x453a;
 
-	DWORD arrDecode_1[256];
-	memset(arrDecode_1, 0, 1024);
 
 	Decode_Sub1(dwSeed, arrDecode, &SubFlag);
 	
 	Decode_Sub2(pKeyFile, dwKeyFileLen, arrDecode);
 	Decode_Sub2(pExeKey, dwExeKeyLen, arrDecode);
 
+    DWORD arrDecode_1[256] = { 0 };
 	for (DWORD i=0; i<0x29; ++i)
 		arrDecode_1[i] = Decode_Sub3(arrDecode, &SubFlag);
 
@@ -458,6 +666,9 @@ int GetPackageDirectory(const HANDLE hPack, const PACKHEADER *ph, vector<PACKIDX
 	Decode(Buf, 32, Key);
 
 
+    // 验证前 32 个字符为 "8hr48uky,8ugi8ewra4g8d5vbf5hb5s6"
+
+
 	HashSize   = *(PDWORD)(Buf + 0x20);
 	HashData = new BYTE[HashSize];
 	if (!HashData)
@@ -509,10 +720,18 @@ int GetPackageDirectory(const HANDLE hPack, const PACKHEADER *ph, vector<PACKIDX
 		assert(NameLen * 2 < _countof(PACKIDX::Name));
 		ReadFile(hPack, pi.Name, NameLen * 2, &R, 0);
 
-		NameKey = (BYTE)(NameLen + (Key ^ 0x3e));
-		for (j=0; j<NameLen; ++j)
-			pi.Name[j] ^= ((j+1) ^ NameKey) + (j+1);
-		pi.Name[j] = 0;
+        DWORD tmpKey = (NameLen ^ 0x3e13 ^ (Key ^ ((Key >> 16) & 0xffff)) ^ (NameLen * NameLen)) & 0xffff;
+        DWORD tmpKey2 = tmpKey;
+        for (j = 0; j < NameLen; ++j)
+        {
+            tmpKey2 = ((tmpKey2 << 3) + j + tmpKey) & 0xffff;
+            *(PWORD)(pi.Name + j * 2) ^= tmpKey2;
+        }
+		//NameKey = (BYTE)(NameLen + (Key ^ 0x3e));
+		//for (j=0; j<NameLen; ++j)
+		//	pi.Name[j] ^= ((j+1) ^ NameKey) + (j+1);
+		pi.Name[NameLen * 2] = 0;
+        pi.Name[NameLen * 2 + 1] = 0;
 
 		ReadFile(hPack, &pi.Offset,        8, &R, 0);
 		ReadFile(hPack, &pi.CompressLen,   4, &R, 0);
@@ -686,7 +905,8 @@ int ExtractResource(const HANDLE hPack, const vector<PACKIDX>& Idx, const wchar_
 		}
 
 
-		MultiByteToWideChar(932, 0, Idx[i].Name, MAX_PATH, UniName, MAX_PATH);
+		//MultiByteToWideChar(932, 0, Idx[i].Name, MAX_PATH, UniName, MAX_PATH);
+        wcscpy_s(UniName, _countof(UniName), (wchar_t*)Idx[i].Name);
 
 
 		int err = 0;
@@ -709,15 +929,17 @@ int ExtractResource(const HANDLE hPack, const vector<PACKIDX>& Idx, const wchar_
 		}
 		
 
-		if (GenerateKey(PackData, Idx[i].CompressLen) != Idx[i].Hash)
+		if (GenerateKey2(PackData, Idx[i].CompressLen) != Idx[i].Hash)
 		{
 			StringCchPrintf(MagBuf, MAX_PATH, L"文件Hash不匹配, 跳过 %s\r\n", UniName);
 			AppendMsg(MagBuf);
 			goto CONTINUE;
 		}
 		
-		if (Idx[i].IsEncrypted)
-			ret = DecodeFileData(PackData, Idx[i], pExeKeyBuf, dwExeKeyLen, pKeyFile, dwKeyFileLen);
+		if (Idx[i].IsEncrypted == 1)
+			ret = DecodeKeyFileData(PackData, Idx[i], pExeKeyBuf, dwExeKeyLen, pKeyFile, dwKeyFileLen);
+        else if (Idx[i].IsEncrypted >= 2)
+            ret = DecodeKeyFileData2(PackData, Idx[i], pExeKeyBuf, dwExeKeyLen, pKeyFile, dwKeyFileLen);
 			
 		if (Idx[i].IsCompressed)
 		{
