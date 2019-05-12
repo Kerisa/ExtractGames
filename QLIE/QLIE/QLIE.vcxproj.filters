@@ -21,6 +21,9 @@
     <ClCompile Include="QLIE.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="QLIE_2.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="main.rc">
