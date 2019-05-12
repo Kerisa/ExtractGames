@@ -119,7 +119,7 @@ DWORD GenerateKey2(const PVOID Buf, DWORD Len)
 	int32_t tmp1 = (int32_t)((int16_t*)&mm0)[1] * ((int16_t*)&mm1)[1] + ((int16_t*)&mm0)[0] * ((int16_t*)&mm1)[0];
 	int32_t tmp2 = (int32_t)((uint16_t*)&mm0)[3] * ((uint16_t*)&mm1)[3] + ((uint16_t*)&mm0)[2] * ((uint16_t*)&mm1)[2];
 	mm0 = ((uint64_t)tmp2 << 32) | (uint32_t)tmp1;
-	return mm0;
+	return static_cast<DWORD>(mm0);
 /*
 004E259C  |.  0FEFC0        pxor    mm0, mm0
 004E259F  |.  0FEFD2        pxor    mm2, mm2
@@ -713,7 +713,6 @@ int GetPackageDirectory(const HANDLE hPack, const PACKHEADER *ph, vector<PACKIDX
 	for (DWORD i=0; i<ph->FileNum; ++i)
 	{
 		WORD NameLen, j;
-		BYTE NameKey;
 		PACKIDX pi;
 		
 		ReadFile(hPack, &NameLen, 2, &R, 0);

@@ -1,9 +1,9 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.572
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "QLIE", "QLIE\QLIE.vcxproj", "{18272253-B168-435A-A977-4E7E974750EE}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Merge", "Merge\Merge\Merge.vcxproj", "{C1A977EA-9C74-4902-8524-DD47803082A0}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "abmp12", "abmp12\abmp12.vcxproj", "{AEC9E6CD-45FF-4DC8-816A-C31BEB9CBB8E}"
 EndProject
@@ -17,10 +17,6 @@ Global
 		{18272253-B168-435A-A977-4E7E974750EE}.Debug|Win32.Build.0 = Debug|Win32
 		{18272253-B168-435A-A977-4E7E974750EE}.Release|Win32.ActiveCfg = Release|Win32
 		{18272253-B168-435A-A977-4E7E974750EE}.Release|Win32.Build.0 = Release|Win32
-		{C1A977EA-9C74-4902-8524-DD47803082A0}.Debug|Win32.ActiveCfg = Debug|Win32
-		{C1A977EA-9C74-4902-8524-DD47803082A0}.Debug|Win32.Build.0 = Debug|Win32
-		{C1A977EA-9C74-4902-8524-DD47803082A0}.Release|Win32.ActiveCfg = Release|Win32
-		{C1A977EA-9C74-4902-8524-DD47803082A0}.Release|Win32.Build.0 = Release|Win32
 		{AEC9E6CD-45FF-4DC8-816A-C31BEB9CBB8E}.Debug|Win32.ActiveCfg = Debug|Win32
 		{AEC9E6CD-45FF-4DC8-816A-C31BEB9CBB8E}.Debug|Win32.Build.0 = Debug|Win32
 		{AEC9E6CD-45FF-4DC8-816A-C31BEB9CBB8E}.Release|Win32.ActiveCfg = Release|Win32
@@ -28,5 +24,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EBB367E7-508E-444E-9B5A-8DD118CE4E34}
 	EndGlobalSection
 EndGlobal
