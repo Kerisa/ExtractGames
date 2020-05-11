@@ -90,10 +90,6 @@ def main():
         return 1
 
     input_folder = sys.argv[1]
-#    output_dir = os.path.join(input_folder, 'output_0')
-#    print('ouput: ', output_dir)
-#    if not os.path.exists(output_dir):
-#        os.mkdir(output_dir)
     all_files = os.walk(input_folder)
     for path, dir_list, file_list in all_files:
         if len(file_list) == 0:
