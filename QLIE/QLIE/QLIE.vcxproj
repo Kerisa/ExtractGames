@@ -65,7 +65,6 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="QLIE.cpp" />
-    <ClCompile Include="QLIE_2.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="main.rc" />

@@ -1,10 +1,11 @@
 #include <Windows.h>
 #include <strsafe.h>
 #include "resource.h"
+#include "QLIE.h"
 
 #define MAXPATH 350
 
-#define THREADNUM 1        // 多线程对它似乎有问题
+#define THREADNUM 1		// 多线程对它似乎有问题
 
 HWND hEdit;
 CRITICAL_SECTION cs;
@@ -26,7 +27,7 @@ wchar_t g_KeyPath[MAX_PATH];
 DWORD WINAPI Thread(PVOID pv);
 BOOL CALLBACK DlgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 extern int Entrance(const wchar_t *CurDir, const wchar_t *PackName);
-extern int Entrance2(const wchar_t *CurDir, const wchar_t *PackName);
+
 
 
 
@@ -60,9 +61,9 @@ int mycmp(const wchar_t* src, const wchar_t* dst)
 }
 //////////////////////////////////////////////////////////////////////////////////
 // 用于展开子目录
-// lpszPath         - 待展开目录
-// callback         - 回调函数
-// pcb             - 回调函数参数
+// lpszPath		 - 待展开目录
+// callback		 - 回调函数
+// pcb			 - 回调函数参数
 //////////////////////////////////////////////////////////////////////////////////
 typedef int (*CallBack)(struct CB* pcb, wchar_t* path);
 
@@ -79,31 +80,31 @@ int callback(struct CB* pcb, wchar_t* path)
     while(len>=0 && path[len-1] != '.') --len;
     if (!pcb->filter || !wcscmp(&path[len], pcb->filter))
     {
-        while (pcb->ptp[pcb->cnt].front == pcb->ptp[pcb->cnt].tail+1)        // 队列满，转下一个
+        while (pcb->ptp[pcb->cnt].front == pcb->ptp[pcb->cnt].tail+1)		// 队列满，转下一个
             pcb->cnt = (pcb->cnt+1) % THREADNUM;
 
         EnterCriticalSection(&cs);
         {
             StringCchCopy(*pcb->ptp[pcb->cnt].queue + pcb->ptp[pcb->cnt].tail*MAXPATH, MAXPATH, path);
-        
-            if (pcb->ptp[pcb->cnt].tail == pcb->ptp[pcb->cnt].front)        // 原先队列为空，置位
+
+            if (pcb->ptp[pcb->cnt].tail == pcb->ptp[pcb->cnt].front)		// 原先队列为空，置位
                 SetEvent(pcb->ptp[pcb->cnt].hEvent);
 
             pcb->ptp[pcb->cnt].tail = (pcb->ptp[pcb->cnt].tail + 1) % thread_param::QUEUE_SIZE;// 更新队列
         }
         LeaveCriticalSection(&cs);
 
-        pcb->cnt = (pcb->cnt+1) % THREADNUM;    // 转下一个线程
+        pcb->cnt = (pcb->cnt+1) % THREADNUM;	// 转下一个线程
     }
     return 0;
 }
 
 int ExpandDirectory(PTSTR lpszPath, CallBack callback, struct CB* pcb)
 {
-    wchar_t            lpFind[MAXPATH], lpSearch[MAXPATH], lpPath[MAXPATH];
-    HANDLE            hFindFile;
+    wchar_t			lpFind[MAXPATH], lpSearch[MAXPATH], lpPath[MAXPATH];
+    HANDLE			hFindFile;
     WIN32_FIND_DATA FindData;
-    int                cnt = 0;
+    int				cnt = 0;
 
     // Path\*.*
     StringCchCopy(lpPath, MAXPATH, lpszPath);
@@ -137,12 +138,12 @@ int ExpandDirectory(PTSTR lpszPath, CallBack callback, struct CB* pcb)
 
 //////////////////////////////////////////////////////////////////////////////////
 // 添加pInBuf(当它是文件)/pInBuf下的所有子文件(当它是目录)到队列
-// pInBuf         - 待添加文件(展开目录)
-// callback         - 回调函数
-// pcb             - 回调函数参数
+// pInBuf		 - 待添加文件(展开目录)
+// callback		 - 回调函数
+// pcb			 - 回调函数参数
 //////////////////////////////////////////////////////////////////////////////////
 DWORD AppendFileToQueue(PTSTR pInBuf, CallBack callback, struct CB *pcb)
-{    
+{
     if (FILE_ATTRIBUTE_DIRECTORY == GetFileAttributes(pInBuf))
     {
         ExpandDirectory(pInBuf, callback, pcb);
@@ -169,10 +170,10 @@ void OnDropFiles(HDROP hDrop, HWND hDlg, thread_param* ptp)
     GetDlgItemText(hDlg, IDC_EXEPATH, g_ExePath, MAX_PATH);
     GetDlgItemText(hDlg, IDC_KEYPATH, g_KeyPath, MAX_PATH);
 
-    if (!g_ExePath[0] || !g_KeyPath[0])
+    if (!g_ExePath[0] && !g_KeyPath[0])
     {
-        AppendMsg(L"exe 和 key 留空目前对应游戏《美少女万華鏡 -罪と罰の少女-》\r\n");
-        // return;
+        AppendMsg(L"路径不合法\r\n");
+        return;
     }
 
     FileNum  = DragQueryFile(hDrop, -1, NULL, 0);
@@ -253,7 +254,7 @@ DWORD WINAPI Thread(PVOID pv)
     wchar_t cur_dir[MAXPATH], *CurrentFile;
     DWORD dwNowProcess = 0;
     thread_param * ptp = (thread_param*) pv;
-    
+
     while (1)
     {
         WaitForSingleObject(ptp->hEvent, INFINITE);
@@ -271,16 +272,22 @@ DWORD WINAPI Thread(PVOID pv)
         StringCchCat(cur_dir, MAXPATH, L"[extract] ");
         StringCchCat(cur_dir, MAXPATH, &CurrentFile[l]);
         CreateDirectory(cur_dir, 0);
-        
-        if (!g_ExePath[0] || !g_KeyPath[0])
-            Entrance2(cur_dir, CurrentFile);
+
+        if (wcslen(g_KeyPath) != 0)
+        {
+            Mangekyoo_1_2_3 m;
+            m.Entrance(cur_dir, CurrentFile);
+        }
         else
-            Entrance(cur_dir, CurrentFile);
-        
+        {
+            Mangekyoo_4_5 m;
+            m.Entrance(cur_dir, CurrentFile);
+        }
+
         EnterCriticalSection(&cs);
         {
             ptp->front = (ptp->front + 1) % ptp->QUEUE_SIZE;
-        
+
             if (ptp->front == ptp->tail)
                 ResetEvent(ptp->hEvent);
         }
