@@ -1,5 +1,6 @@
 
 #include "xp3.h"
+#include <array>
 #include <iterator>
 #include <iostream>
 #include <sstream>
@@ -7,6 +8,297 @@
 
 
 using namespace std;
+
+namespace YuzuKeys
+{
+    struct Keys
+    {
+        uint32_t dword_0;
+        uint32_t dword_4;
+        std::array<uint8_t, 64> arr_8;
+        std::array<uint8_t, 32> arr_0;
+    };
+
+    constexpr uint32_t riddle_joker_dword_1001F5E0 = 0xbdd72518;
+    constexpr uint32_t riddle_joker_dword_1001F5E4 = 0xd541d24c;
+    constexpr std::array<uint8_t, 64> riddle_joker_arr_1001F5E8 = {
+        0xBE, 0xED, 0x7E, 0x41, 0x44, 0x4C, 0xE2, 0x6C, 0x2E, 0x97, 0x83, 0x0C, 0xCF, 0x01, 0xF4, 0x26,
+        0xE9, 0xCF, 0x1D, 0x66, 0x51, 0xE4, 0xE8, 0xDA, 0x4E, 0xA1, 0xEF, 0x0B, 0xBE, 0x0D, 0x70, 0xDB,
+        0xDF, 0xBB, 0xC4, 0x5B, 0x9F, 0xCB, 0xFE, 0xE2, 0xCE, 0xD6, 0xCC, 0xC6, 0xC0, 0x00, 0x45, 0x9B,
+        0x1A, 0x3E, 0x27, 0xCE, 0xC1, 0x94, 0x96, 0x51, 0xCD, 0x55, 0x08, 0x02, 0xE1, 0x01, 0xD5, 0xCC
+    };
+    constexpr std::array<uint8_t, 32> riddle_joker_arr_10018780 = {
+        0x9A, 0x87, 0x8F, 0x9E, 0x91, 0x9B, 0xDF, 0xCC, 0xCD, 0xD2, 0x9D, 0x86, 0x8B, 0x9A, 0xDF, 0x94,
+        0xC0, 0xFC, 0x00, 0x10, 0x30, 0x3A, 0x73, 0x0C, 0x1C, 0x2A, 0xCE, 0x11, 0xAD, 0xE5, 0x00, 0xAA
+    };
+
+
+    constexpr uint32_t stella_dword_1001F5E0 = 0x27b9123c;
+    constexpr uint32_t stella_dword_1001F5E4 = 0x80724e1c;
+    constexpr std::array<uint8_t, 64> stella_arr_1001F5E8 = {
+        0xFA, 0xF1, 0x6D, 0xF5, 0x4B, 0x96, 0x51, 0x2E, 0x67, 0x2E, 0xE2, 0xB3, 0xE4, 0x58, 0x18, 0x8C,
+        0xD6, 0x30, 0x54, 0x29, 0xF5, 0xDC, 0x9F, 0xA3, 0x45, 0xF1, 0xBD, 0xFA, 0x25, 0x6B, 0x7B, 0xB4,
+        0xD5, 0x9E, 0xDC, 0x97, 0x7A, 0x8F, 0xD9, 0xAE, 0x81, 0x6C, 0xC4, 0x90, 0xE8, 0xF3, 0x5D, 0xFA,
+        0x6E, 0xB6, 0xE5, 0x1C, 0xDE, 0xB2, 0xBC, 0x3C, 0x05, 0x4A, 0xD7, 0x73, 0xA2, 0x88, 0x2A, 0x8A
+    };
+    constexpr std::array<uint8_t, 32> stella_arr_10018780 = {
+        0x9A, 0x87, 0x8F, 0x9E, 0x91, 0x9B, 0xDF, 0xCC, 0xCD, 0xD2, 0x9D, 0x86, 0x8B, 0x9A, 0xDF, 0x94,
+        0xE0, 0xFC, 0x00, 0x10, 0x30, 0x3A, 0x73, 0x0C, 0x1C, 0x2A, 0xCE, 0x11, 0xAD, 0xE5, 0x00, 0xAA
+    };
+
+    std::array<Keys, 2> AllSupportKeys = {
+        Keys{ riddle_joker_dword_1001F5E0, riddle_joker_dword_1001F5E4, riddle_joker_arr_1001F5E8, riddle_joker_arr_10018780 },     // RIDDLE JOKER
+        Keys{ stella_dword_1001F5E0,       stella_dword_1001F5E4,       stella_arr_1001F5E8,       stella_arr_10018780       },     // †Ë²è¥¹¥Æ¥é¤ÈËÀÉñ¤Îµû
+    };
+
+    DWORD ROL(DWORD x, int n)
+    {
+        return (x << n) | (x >> (32 - n));
+    }
+
+    int sub_1000F8D0(int a1, int a2, int a3)
+    {
+        int v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27, v28, v29;
+        int v30, v31, v32, v33, v34, v35, v36, v37, v38, v39, v40, v41, v42, v43, v44, v45, v46, v47, v48, v50, v52, v54, v55, v56, v57;
+        char *v51, *v53;
+
+        int v58[0x50];
+        int* const v59 = &v58[0x3];
+        int* const v60 = &v58[0x4];
+        int* const v61 = &v58[0x5];
+        int* const v62 = &v58[0x6];
+        int* const v63 = &v58[0x7];
+        int* const v64 = &v58[0x8];
+        int* const v65 = &v58[0x9];
+        int* const v66 = &v58[0xa];
+        int* const v67 = &v58[0xb];
+        int* const v68 = &v58[0xc];
+        int* const v69 = &v58[0xd];
+        int* const v70 = &v58[0xe];
+        int* const v71 = &v58[0xf];
+        int* const v72 = &v58[0x10];
+        int* const v73 = &v58[0x11];
+        int* const v74 = &v58[0x12];
+        unsigned int v75;
+
+        v3 = a2;
+        v4 = 0;
+        do
+        {
+            *(v59 + v4) = ~*(int *)((char *)v59 + 4 * v4 + a2 - (DWORD)v59);
+            ++v4;
+        } while (v4 < 16);
+        if (a3 > 0)
+        {
+            v5 = *v71;
+            v6 = *v67;
+            v7 = *v63;
+            v8 = *v59;
+            v75 = ((unsigned int)(a3 - 1) >> 1) + 1;
+            do
+            {
+                v9 = v7 + v8;
+                v10 = ROL(v9 ^ v5, 16);
+                v11 = v10 + v6;
+                v12 = ROL(v7 ^ v11, 12);
+                v13 = v12 + v9;
+                v14 = ROL(v13 ^ v10, 8);
+                v15 = v14 + v11;
+                *v71 = v14;
+                *v63 = ROL(v12 ^ v15, 7);
+                v16 = ROL((*v64 + *v60) ^ *v72, 16);
+                v17 = v16 + *v68;
+                v18 = ROL(*v64 ^ (v16 + *v68), 12);
+                v19 = v18 + *v64 + *v60;
+                v20 = ROL(v19 ^ v16, 8);
+                *v72 = v20;
+                *v68 = v20 + v17;
+                *v64 = ROL(v18 ^ (v20 + v17), 7);
+                v21 = ROL((*v65 + *v61) ^ *v73, 16);
+                v22 = v21 + *v69;
+                *v69 = v22;
+                v23 = ROL(*v65 ^ v22, 12);
+                v24 = v23 + *v65 + *v61;
+                *v73 = ROL(v24 ^ v21, 8);
+                *v65 = ROL(v23 ^ (*v73 + *v69), 7);
+                *v69 += *v73;
+                v25 = (*v66 + *v62) ^ *v74;
+                *v62 += *v66;
+                v25 = ROL(v25, 16);
+                v26 = v25 + *v70;
+                *v70 = v26;
+                v27 = ROL(*v66 ^ v26, 12);
+                v28 = (v27 + *v62) ^ v25;
+                *v62 += v27;
+                v28 = ROL(v28, 8);
+                v29 = v28 + *v70;
+                *v70 = v29;
+                v30 = ROL(v27 ^ v29, 7);
+                v31 = *v64 + v13;
+                v32 = *v65 + v19;
+                v33 = ROL(v31 ^ v28, 16);
+                v34 = v33 + *v69;
+                *v69 = v34;
+                v35 = ROL(*v64 ^ v34, 12);
+                v8 = v35 + v31;
+                *v64 = v35;
+                v36 = ROL(v8 ^ v33, 8);
+                v37 = v36 + *v69;
+                *v74 = v36;
+                *v69 = v37;
+                v38 = v30 + v24;
+                *v71 = ROL(*v71 ^ v32, 16);
+                *v64 = ROL(*v64 ^ v37, 7);
+                v39 = *v65 ^ (*v71 + *v70);
+                *v70 += *v71;
+                v39 = ROL(v39, 12);
+                *v60 = v39 + v32;
+                v5 = ROL(*v71 ^ (v39 + v32), 8);
+                *v70 += v5;
+                *v65 = ROL(v39 ^ *v70, 7);
+                v40 = ROL(*v72 ^ v38, 16);
+                v41 = v40 + v15;
+                v42 = ROL(v41 ^ v30, 12);
+                v43 = v42 + v38;
+                *v61 = v43;
+                v6 = ROL(v40 ^ v43, 8) + v41;
+                *v72 = ROL(v40 ^ v43, 8);
+                v44 = ROL(*v73 ^ (*v63 + *v62), 16);
+                *v66 = ROL(v6 ^ v42, 7);
+                *v71 = v5;
+                v45 = ROL(*v63 ^ (v44 + *v68), 12);
+                v46 = v45 + *v63 + *v62;
+                *v62 = v46;
+                v47 = ROL(v44 ^ v46, 8);
+                v48 = v47 + v44 + *v68;
+                *v68 = v48;
+                v7 = ROL(v45 ^ v48, 7);
+                *v73 = v47;
+                *v63 = v7;
+                --v75;
+            } while (v75);
+            v3 = a2;
+            *v67 = v6;
+            *v59 = v8;
+        }
+        int result = a1;
+        v50 = 0;
+        v51 = (char *)v59 - v3;
+        v52 = v3 + 8;
+        v53 = (char *)v60 - v3;
+        do
+        {
+            v54 = *(v59 + v50) + ~*(uint32_t *)(v52 - 8);
+            v50 += 4;
+            *(uint16_t *)result = v54;
+            *(uint8_t *)(result + 2) = (uint8_t)(((uint32_t)v54) >> 16);// BYTE2(v54);
+            *(uint8_t *)(result + 3) = (uint8_t)(((uint32_t)v54) >> 24);// HIBYTE(v54);
+            v55 = v58[v50] + ~*(uint32_t *)(v52 - 4);
+            v52 += 16;
+            *(uint16_t *)(result + 4) = v55;
+            *(uint8_t *)(result + 6) = (uint8_t)(((uint32_t)v55) >> 16);// BYTE2(v55);
+            *(uint8_t *)(result + 7) = (uint8_t)(((uint32_t)v55) >> 24);// HIBYTE(v55);
+            v56 = *(uint32_t *)&v51[v52 - 16] + ~*(uint32_t *)(v52 - 16);
+            result += 16;
+            *(uint16_t *)(result - 8) = *(uint16_t *)&v51[v52 - 16] + ~*(uint16_t *)(v52 - 16);
+            *(uint8_t *)(result - 6) = (uint8_t)(((uint32_t)v56) >> 16);// BYTE2(v56);
+            *(uint8_t *)(result - 5) = (uint8_t)(((uint32_t)v56) >> 24);// HIBYTE(v56);
+            v57 = *(uint32_t *)&v53[v52 - 16] + ~*(uint32_t *)(v52 - 12);
+            *(uint16_t *)(result - 4) = *(uint16_t *)&v53[v52 - 16] + ~*(uint16_t *)(v52 - 12);
+            *(uint8_t *)(result - 2) = (uint8_t)(((uint32_t)v57) >> 16);// BYTE2(v57);
+            *(uint8_t *)(result - 1) = (uint8_t)(((uint32_t)v57) >> 24);// HIBYTE(v57);
+        } while (v50 < 16);
+        return result;
+    }
+
+    void sub_1000F6F0(int *a1, uint8_t *a2, uint8_t *a3, int a4, int a5, int a6, int a7)
+    {
+        a1[0]  = a3[0]    | ((a3[1]  | (*((uint16_t *)a3 +  1) << 8)) << 8);
+        a1[1]  = a3[4]    | ((a3[5]  | (*((uint16_t *)a3 +  3) << 8)) << 8);
+        a1[2]  = a3[8]    | ((a3[9]  | (*((uint16_t *)a3 +  5) << 8)) << 8);
+        a1[3]  = a3[12]   | ((a3[13] | (*((uint16_t *)a3 +  7) << 8)) << 8);
+
+        a1[4]  = ~(a2[0]  | ((a2[1]  | (*((uint16_t *)a2 +  1) << 8)) << 8));
+        a1[5]  = ~(a2[4]  | ((a2[5]  | (*((uint16_t *)a2 +  3) << 8)) << 8));
+        a1[6]  = ~(a2[8]  | ((a2[9]  | (*((uint16_t *)a2 +  5) << 8)) << 8));
+        a1[7]  = ~(a2[12] | ((a2[13] | (*((uint16_t *)a2 +  7) << 8)) << 8));
+        a1[8]  = ~(a2[16] | ((a2[17] | (*((uint16_t *)a2 +  9) << 8)) << 8));
+        a1[9]  = ~(a2[20] | ((a2[21] | (*((uint16_t *)a2 + 11) << 8)) << 8));
+        a1[10] = ~(a2[24] | ((a2[25] | (*((uint16_t *)a2 + 13) << 8)) << 8));
+        a1[11] = ~(a2[28] | ((a2[29] | (*((uint16_t *)a2 + 15) << 8)) << 8));
+
+        a1[12] = ~a6;
+        a1[13] = ~a7;
+        a1[14] = ~a4;
+        a1[15] = ~a5;
+    }
+
+    int Entrance(uint8_t *a1, uint8_t *a2, unsigned int a3, const Keys& key)
+    {
+        uint8_t *v3;
+        uint32_t v4;
+        uint8_t *v5;
+        int64_t v6;
+        uint32_t v7;
+        int64_t v15;
+        uint32_t v16;
+        char v17[0x40];
+        int64_t* const v18 = (int64_t*)&v17[0x30];
+        char v20[0x80];
+        char* const v21 = &v20[0x3d];
+        char* const v22 = &v20[0x3e];
+        char* const v23 = &v20[0x3f];
+        char* const v24 = &v20[0x40];
+
+        v3 = a2;
+        sub_1000F6F0((int*)&v20, (uint8_t*)key.arr_8.data(), (uint8_t*)key.arr_0.data(), key.dword_0, key.dword_4, 0, 0);
+        v4 = a3;
+        v5 = a1;
+        v6 = 0;
+        v15 = 0;
+        if (a3 >= 0x40)
+        {
+            v16 = a3 >> 6;
+            do
+            {
+                memcpy(&v17, &v20, 0x40u);
+                *v18 = ~v6;
+                sub_1000F8D0((int)v24, (int)&v17[0], 8);
+                v7 = 0;
+                do
+                {
+                    v3[0] = v5[0] ^ v24[v7];
+                    v7 += 4;
+                    v3[1] = v5[1] ^ v21[v7];
+                    v3[2] = v5[2] ^ v22[v7];
+                    v3[3] = v5[3] ^ v23[v7];
+                    v5 += 4;
+                    v3 += 4;
+                } while (v7 < 0x40);
+                a3 -= 64;
+                v6 = ++v15;
+            } while (v16-- != 1);
+            v4 = a3;
+        }
+        if (v4)
+        {
+            memcpy(&v17, &v20, 0x40u);
+            *v18 = ~v6;
+            sub_1000F8D0((int)v24, (int)&v17[0], 8);
+            v6 &= 0xffffffff00000000ull;        // LODWORD(v6) = 0;
+            if (a3)
+            {
+                do
+                {
+                    v6 &= (0xffffffff00000000ull & (v6 + 1)); // LODWORD(v6) = v6 + 1;
+                    *v3++ = *v5 ^ v24[v6];
+                    ++v5;
+                } while ((unsigned int)v6 < a3);
+            }
+        }
+        return v6;
+    }
+}
 
 
 UNCOMPRESS unCom;
@@ -176,7 +468,7 @@ std::vector<file_entry> EncryptedXP3::XP3ArcPraseEntryStage0(uint32_t extraMagic
                     return Entry;
                 }
                 break;
-                
+
             case TimeSection::MAGIC: {
                 assert(!(flag & flag_time));
                 uint32_t size;
@@ -426,6 +718,22 @@ bool EncryptedXP3::HasExtraSection(const std::vector<char>& plainBytes, uint32_t
     }
 }
 
+std::vector<char> EncryptedXP3::ExtractYuzuFileTable(const std::vector<char>& packedFileTable, size_t plainSize)
+{
+    vector<char> plain(plainSize);
+    for (size_t i = 0; i < YuzuKeys::AllSupportKeys.size(); ++i)
+    {
+        auto copy = packedFileTable;
+        YuzuKeys::Entrance((uint8_t*)copy.data(), (uint8_t*)copy.data(), 0x100, YuzuKeys::AllSupportKeys[i]);
+        int result = unCom(plain.data(), &plainSize, (char*)copy.data(), copy.size());
+        if (result == 0)
+        {
+            return plain;
+        }
+    }
+    return vector<char>();
+}
+
 std::vector<file_entry> EncryptedXP3::ParsePalette_9nine(const std::vector<char>& plainBytes)
 {
     std::vector<file_entry> nameList;
@@ -474,7 +782,7 @@ std::vector<file_entry> EncryptedXP3::ParsePalette_NekoparaEx(const std::vector<
     {
         file_entry fe;
         fe.checksum = es->Checksum;
-        fe.file_name.assign(es->NamePtr, es->NamePtr + es->NameInWords);        
+        fe.file_name.assign(es->NamePtr, es->NamePtr + es->NameInWords);
         nameList.push_back(fe);
 
         p += es->SizeOfData + 0xc;
@@ -494,6 +802,32 @@ std::vector<file_entry> EncryptedXP3::ParsePalette_NekoparaEx(const std::vector<
 
     assert(n == nameList.size());
     return Entry;
+}
+
+std::vector<file_entry> EncryptedXP3::ParseYuzu_HnfnThunk(const std::vector<char>& plainBytes)
+{
+    std::vector<file_entry> ve;
+    const char* ptr = plainBytes.data();
+    while (ptr < plainBytes.data() + plainBytes.size())
+    {
+        if (*(uint32_t*)ptr != MagicHnfn)
+            break;
+
+        file_entry e;
+
+        ptr += 4;
+        uint64_t size = *(uint64_t*)ptr;
+        ptr += 8;
+        e.checksum = *(uint32_t*)ptr;
+        ptr += 4;
+        uint16_t lengthInWord = *(uint16_t*)ptr;
+        ptr += 2;
+        e.file_name = wstring((wchar_t*)ptr, (wchar_t*)ptr + lengthInWord);
+        ve.push_back(e);
+        ptr += (lengthInWord + 1) * 2;
+        assert((lengthInWord + 1) * 2 + 2 + 4 == size);
+    }
+    return ve;
 }
 
 void EncryptedXP3::DumpEntriesToFile(const std::vector<file_entry>& entries, const std::wstring & path)
@@ -544,14 +878,37 @@ void EncryptedXP3::DumpEntriesToFile(const std::vector<file_entry>& entries, con
     out.close();
 }
 
-std::vector<file_entry> EncryptedXP3::ExtractEntries(const std::vector<char>& plainBytes)
+std::vector<file_entry> EncryptedXP3::ExtractEntries(const std::vector<char>& _plainBytes)
 {
+    std::vector<char> plainBytes = _plainBytes;
+
     uint32_t magic;
     if (HasExtraSection(plainBytes, &magic))
         mExtraSectionMagic = magic;
 
     switch (*(uint32_t*)plainBytes.data())
     {
+    case MagicYuzu: {
+        auto header = reinterpret_cast<const YuzuRiddleJokerFileNameHeader*>(plainBytes.data());
+        mStream.seekg(header->mFileTableOffset);
+        vector<char> fileTable(header->mPackSize);
+        mStream.read(fileTable.data(), fileTable.size());
+        vector<char> fileTablePlain = ExtractYuzuFileTable(fileTable, header->mPlainSize);
+
+        if (fileTablePlain.size() < sizeof(uint32_t) || *(uint32_t*)fileTablePlain.data() != MagicHnfn)
+            break;
+        vector<file_entry> fileNames = ParseYuzu_HnfnThunk(fileTablePlain);
+        vector<file_entry> entries   = XP3ArcPraseEntryStage0(0, vector<char>(plainBytes.begin() + sizeof(YuzuRiddleJokerFileNameHeader), plainBytes.end()));
+
+        for (auto& fn : fileNames)
+        {
+            auto it = find_if(entries.begin(), entries.end(), [&fn](const file_entry& e) { return fn.checksum == e.checksum; });
+            if (it != entries.end())
+                it->file_name = fn.file_name;
+        }
+
+        return entries;
+    }
     case MagicHnfn:
         return ParsePalette_9nine(plainBytes);
     case MagicNeko:
@@ -559,6 +916,8 @@ std::vector<file_entry> EncryptedXP3::ExtractEntries(const std::vector<char>& pl
     default:
         return XP3ArcPraseEntryStage0(mExtraSectionMagic, plainBytes);
     }
+
+    return std::vector<file_entry>();
 }
 
 bool EncryptedXP3::ReadEntryDataOfAllParts(const file_entry & fe, vector<char>& packedData, uint32_t* pOriginalLength)
