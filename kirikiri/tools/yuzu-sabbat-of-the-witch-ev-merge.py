@@ -8,7 +8,7 @@ from PIL import Image
 # 魔女的夜宴 cg 合并
 # 1、使用 EMoteDumperXmoe.exe 解出 pimg 的 psb 文件后得到 XXX.psb.tjs 和 XXX 文件夹
 # 2、将 tlg 文件转成 png 图像保存在原位置
-# 3、执行 "Merge.py XXX.psb.tjs" 进行合并
+# 3、执行 "yuzu-sabbat-of-the-witch-ev-merge.py XXX.psb.tjs" 进行合并
 
 tjs_name = sys.argv[1]
 folder = tjs_name[:tjs_name.find('.')]

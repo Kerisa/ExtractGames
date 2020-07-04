@@ -9,9 +9,9 @@ TJSDIR = ""
 BMPDIR = ""
 TJSBASE = ""
 
-# RIDDLE JOKER cg 合并
+# RIDDLE JOKER / 喫茶ステラと死神の蝶 cg 合并
 # 1、使用 EMoteDumperXmoe.exe 解出 pimg 的 psb 文件后得到 XXX.psb.tjs 和 XXX 文件夹
-# 2、执行 "Merge.py XXX.psb.tjs" 进行合并
+# 2、执行 "yuzu-riddle-joker-ev-merge.py XXX.psb.tjs" 进行合并
 
 def getCommonPrefix(s1, s2):
     length = 1
