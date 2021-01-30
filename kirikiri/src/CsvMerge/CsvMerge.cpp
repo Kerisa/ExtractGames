@@ -22,33 +22,20 @@ using namespace std;
 std::vector<std::string> Splite(const std::string& _str, const std::string& _delim)
 {
     std::vector<std::string> out;
-    std::set<wchar_t> delim;
-    std::transform(_delim.begin(), _delim.end(), std::inserter(delim, delim.end()), [](const std::wstring::value_type& c) { return c; });
-
     size_t iLastPos = 0;
     for (size_t i = 0; i < _str.size() && iLastPos < _str.size(); )
     {
-        auto it = delim.find(_str[i]);
-        if (it != delim.end())
-        {
-            if (i > iLastPos)
-            {
-                out.push_back(_str.substr(iLastPos, i - iLastPos));
-            }
+        size_t it = _str.find(_delim, iLastPos);
+        if (it == std::string::npos)
+          break;
 
-            // iLastPos移至下一个非delim字符上
-            for (iLastPos = i + 1; iLastPos < _str.size() && delim.find(_str[iLastPos]) != delim.end(); ++iLastPos)
-                ;
-            i = iLastPos + 1;
-            continue;
-        }
-        ++i;
+        out.push_back(_str.substr(iLastPos, it - iLastPos));
+        iLastPos += (it - iLastPos) + _delim.size();
     }
     if (iLastPos < _str.size())
     {
         out.push_back(_str.substr(iLastPos, _str.size() - iLastPos));
     }
-
     return out;
 }
 
@@ -69,6 +56,22 @@ std::string GetFolderOfPath(const std::string & fullPath)
         return string(tmp.data()) + "\\";
     else
         return std::string();
+}
+
+std::string GetValidFileName(const std::string& in)
+{
+    int i = 1;
+    size_t suffix = in.rfind('.');
+    while (i < 1000)
+    {
+        std::string out = in.substr(0, suffix) + "." + std::to_string(i) + in.substr(suffix);
+        std::ifstream infile;
+        infile.open(out, std::ios::binary);
+        if (!infile.is_open())
+            return out;
+        ++i;
+    }
+    return "";
 }
 
 int main(int argc, char** argv)
@@ -102,35 +105,37 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    auto lines = Splite(csvData.data(), "\r\n");
+    cout << "[+] valid csv file\n";
+    const int columns = 9;
+    auto lines = Splite(string(csvData.begin(), csvData.end()), "\r\n");
     for (size_t i = 1; i < lines.size(); ++i)
     {
         auto param = Splite(lines[i], ",");
-        if (param.size() == 8)
-        {
-            continue;
-        }
-        else if (param.size() < 9)
+        if (param.size() != columns)
         {
             cout << "skip invalid line [" << lines[i] << "].\n";
             continue;
         }
         if (param[2].empty())
-            continue;
-
-        string baseImg = csvDir + param[1] + ".bmp";
-        string diffImg = csvDir + param[2] + ".bmp";
-        Alisa::Image bimg;
-        if (!bimg.Open(baseImg))
         {
-            cout << baseImg << " open failed.\n";
-            return 1;
+            cout << "skip base file [" << lines[i] << "].\n";
+            continue;
+        }
+
+        string baseImgName = csvDir + param[1] + ".bmp";
+        string diffImgName = csvDir + param[2] + ".bmp";
+        string saveImgName = GetValidFileName(csvDir + param[2] + ".bmp");
+        Alisa::Image bimg;
+        if (!bimg.Open(baseImgName))
+        {
+            cout << "[-] " << baseImgName << " open failed.\n";
+            continue;
         }
         Alisa::Image dimg;
-        if (!dimg.Open(diffImg))
+        if (!dimg.Open(diffImgName))
         {
-            cout << diffImg << " open failed.\n";
-            return 1;
+            cout << "[-] " << diffImgName << " open failed.\n";
+            continue;
         }
 
         int x = atoi(param[4].c_str());
@@ -138,9 +143,12 @@ int main(int argc, char** argv)
         int h = atoi(param[6].c_str());
         for (int k = 0; k < h; ++k)
             bimg.CopyPixelInLine(x + k, y, &dimg, k, 0);
-        bimg.SaveTo(diffImg, Alisa::E_ImageType_Bmp);
+        if (bimg.SaveTo(saveImgName, Alisa::E_ImageType_Bmp))
+            cout << "[+] save " << saveImgName << " success.\n";
+        else
+            cout << "[-] save " << saveImgName << " failed.\n";
     }
-
+    cout << "[+] " << csvPath << " finished\n";
     return 0;
 }
 
