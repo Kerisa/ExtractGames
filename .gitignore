@@ -77,3 +77,6 @@ Release
 /kirikiri/bin/BlackSheep.lib
 /kirikiri/pdb/BlackSheep.pdb
 /kirikiri/pdb/Loader.pdb
+/kirikiri/bin/ExtractChTxt_d.exe
+/kirikiri/pdb/ExtractChTxt.pdb
+/kirikiri/pdb/ExtractChTxt_d.pdb
