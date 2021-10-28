@@ -71,11 +71,7 @@
     <ClCompile Include="pfs.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="pfs.rc" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="pfs.h" />
-    <ClInclude Include="resource.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
