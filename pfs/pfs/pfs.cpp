@@ -24,28 +24,16 @@ int SplitFileNameAndSave(const string& cur_dir, const string& file_name, const v
     CreateDirectoryA(buf.substr(0, p).c_str(), 0);
   }
 
-  HANDLE hFile;
-  int ret = 0;
-  do {
-    hFile = CreateFileA(buf.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
-    if (hFile == INVALID_HANDLE_VALUE)
-    {
-      ret = GetLastError();
-      break;
-    }
-
+  HANDLE hFile{ INVALID_HANDLE_VALUE };
+  int ret{ -1 };
+  hFile = CreateFileA(buf.c_str(), GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, 0);
+  if (hFile != INVALID_HANDLE_VALUE) {
     BOOL success = WriteFile(hFile, unpackData.data(), unpackData.size(), &ByteWrite, NULL);
-
-    if (success && ByteWrite == unpackData.size())
-    {
-      ret = ERROR_SUCCESS;
-    }
-    else
-    {
-      ret = GetLastError();
-    }
-  } while (0);
-
+    ret = (success && ByteWrite == unpackData.size()) ? ERROR_SUCCESS : GetLastError();
+  }
+  else {
+    ret = GetLastError();
+  }
   CloseHandle(hFile);
   return ret;
 }
