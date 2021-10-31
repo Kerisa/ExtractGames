@@ -21,6 +21,9 @@
     <ClCompile Include="LiLiM.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="picture.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="main.rc">

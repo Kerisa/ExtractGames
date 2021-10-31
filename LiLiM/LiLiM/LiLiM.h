@@ -20,5 +20,4 @@ typedef struct
 
 extern void AppendMsg(const wchar_t *szBuffer);
 
-int SplitFileNameAndSave(const wchar_t *cur_dir, const wchar_t *file_name, void* unpack, unsigned long file_length);
 int Entrance(const wchar_t *PackName, const wchar_t *CurDir);
