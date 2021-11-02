@@ -1193,6 +1193,7 @@ int Mangekyoo_4_5::ExtractResource(const PACKHEADER& ph, const HANDLE hPack, con
 
     bool is_mangekyou4 = string((char*)(pKeyFile.data() + 0x20)).find("BisyoujyoMangekyou_TumiToBatu") != string::npos;
     bool is_mangekyou5 = string((char*)(pKeyFile.data() + 0x20)).find("bisyoujyomangekyou_kotowari") != string::npos;
+    bool is_annabelmaidgarden = string((char*)(pKeyFile.data() + 0x20)).find("AnnabelMaidGarden 2020 DL") != string::npos;
 
 
     for (DWORD i = 0; i < Idx.size(); ++i)
@@ -1258,6 +1259,8 @@ int Mangekyoo_4_5::ExtractResource(const PACKHEADER& ph, const HANDLE hPack, con
                     extra = Mangekyoo5;
                 else if (is_mangekyou4)
                     extra = Mangekyoo4;
+                else if (is_annabelmaidgarden)
+                    extra = extra = AnnabelMaidGarden.data();
                 else
                 {
                     AppendMsg(L"找不到对应解密表，暂不支持的游戏\r\n");
