@@ -111,7 +111,7 @@ int main(int argc, char** argv)
     for (size_t i = 1; i < lines.size(); ++i)
     {
         auto param = Splite(lines[i], ",");
-        if (param.size() != columns)
+        if (param.size() < columns)
         {
             cout << "skip invalid line [" << lines[i] << "].\n";
             continue;
@@ -128,14 +128,24 @@ int main(int argc, char** argv)
         Alisa::Image bimg;
         if (!bimg.Open(baseImgName))
         {
-            cout << "[-] " << baseImgName << " open failed.\n";
-            continue;
+            cout << "[*] " << baseImgName << " open failed, try jpg.\n";
+            baseImgName = csvDir + param[1] + ".jpg";
+            if (!bimg.Open(baseImgName))
+            {
+                cout << "[-] " << baseImgName << " open failed.\n";
+                continue;
+            }
         }
         Alisa::Image dimg;
         if (!dimg.Open(diffImgName))
         {
-            cout << "[-] " << diffImgName << " open failed.\n";
-            continue;
+            cout << "[*] " << diffImgName << " open failed, try jpg.\n";
+            diffImgName = csvDir + param[2] + ".jpg";
+            if (!dimg.Open(diffImgName))
+            {
+                cout << "[-] " << diffImgName << " open failed.\n";
+                continue;
+            }
         }
 
         int x = atoi(param[4].c_str());
