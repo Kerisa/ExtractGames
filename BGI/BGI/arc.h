@@ -32,8 +32,8 @@ extern void AppendMsg(wchar_t* szBuffer);
 
 extern int Is_DSC(const u8* in);
 extern int DecodeDSC(u8** raw_data, u8* in, int in_size);
-extern int Is_DSC_Image(const u8 const *raw_data, u32 len);
-extern u8* Save_DSC_Bmp(const u8 const *raw_data, u32 len, u32 *bmp_len);
+extern int Is_DSC_Image(const u8 *raw_data, u32 len);
+extern u8* Save_DSC_Bmp(const u8 *raw_data, u32 len, u32 *bmp_len);
 
 extern int Is_CBG(const u8* in);
 extern int DecodeCBG(u8** raw_data, u8* in, int in_size);

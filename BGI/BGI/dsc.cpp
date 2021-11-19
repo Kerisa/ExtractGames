@@ -161,7 +161,7 @@ int DecodeDSC(u8** raw_data, u8* in, int in_size)
 	return out_size;
 }
 
-int Is_DSC_Image(const u8 const *raw_data, u32 len)
+int Is_DSC_Image(const u8 *raw_data, u32 len)
 {
 	do{
 		if (len < 16) break;

@@ -4,7 +4,7 @@
 #include "arc.h"
 #include "resource.h"
 
-#define MAX_PATH 400
+#define MAX_PATH_2 400
 
 HWND hEdit;
 CRITICAL_SECTION cs;
@@ -86,7 +86,7 @@ int callback(struct CB* pcb, PTSTR path)
 
 		EnterCriticalSection(&cs);
 		{
-			lstrcpy((PTSTR)((PBYTE)*pcb->ptp[pcb->cnt].queue + pcb->ptp[pcb->cnt].tail*MAX_PATH), path);
+			lstrcpy((PTSTR)((PBYTE)*pcb->ptp[pcb->cnt].queue + pcb->ptp[pcb->cnt].tail*MAX_PATH_2), path);
 		
 			if (pcb->ptp[pcb->cnt].tail == pcb->ptp[pcb->cnt].front)		// 原先队列为空，置位
 				SetEvent(pcb->ptp[pcb->cnt].hEvent);
@@ -102,8 +102,8 @@ int callback(struct CB* pcb, PTSTR path)
 
 int ExpandDirectory(PTSTR lpszPath, CallBack callback, struct CB* pcb)
 {
-	static const DWORD MemAllocStep = 1024*MAX_PATH;
-	TCHAR			lpFind[MAX_PATH], lpSearch[MAX_PATH], lpPath[MAX_PATH];
+	static const DWORD MemAllocStep = 1024*MAX_PATH_2;
+	TCHAR			lpFind[MAX_PATH_2], lpSearch[MAX_PATH_2], lpPath[MAX_PATH_2];
 	HANDLE			hFindFile;
 	WIN32_FIND_DATA FindData;
 	int				cnt = 0;
@@ -160,7 +160,7 @@ DWORD AppendFileToQueue(PTSTR pInBuf, CallBack callback, struct CB *pcb)
 void OnDropFiles(HDROP hDrop, HWND hwnd, thread_param* ptp)
 {
 	struct CB cb;
-	TCHAR FileName[MAX_PATH];
+	TCHAR FileName[MAX_PATH_2];
 	DWORD i;
 	DWORD FileNum;
 
@@ -172,7 +172,7 @@ void OnDropFiles(HDROP hDrop, HWND hwnd, thread_param* ptp)
 
 	for (i=0; i<FileNum; ++i)
 	{
-		DragQueryFile(hDrop, i, (LPTSTR)FileName, MAX_PATH);
+		DragQueryFile(hDrop, i, (LPTSTR)FileName, MAX_PATH_2);
 		AppendFileToQueue(FileName, callback, &cb);
 	}
 	DragFinish(hDrop);
@@ -203,7 +203,7 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
 				AppendMsg(TEXT("内存分配错误！"));
 				EndDialog(hDlg, 0);
 			}
-			if (!(*(tp[i].queue) = (wchar_t*)VirtualAlloc(NULL, tp[i].QUEUE_SIZE*MAX_PATH, MEM_COMMIT, PAGE_READWRITE)))
+			if (!(*(tp[i].queue) = (wchar_t*)VirtualAlloc(NULL, tp[i].QUEUE_SIZE*MAX_PATH_2, MEM_COMMIT, PAGE_READWRITE)))
 			{
 				AppendMsg(TEXT("内存分配错误！"));
 				EndDialog(hDlg, 0);
@@ -242,7 +242,7 @@ DWORD WINAPI Thread(PVOID pv)
 {
 	HANDLE hFile;
 	struct IDX *arc_idx;
-	TCHAR szBuffer[MAX_PATH], cur_dir[MAX_PATH];
+	TCHAR szBuffer[MAX_PATH_2], cur_dir[MAX_PATH_2];
 	LPTSTR CurrentFile;
 	DWORD dwNowProcess = 0;
 	int ret;
@@ -255,7 +255,7 @@ DWORD WINAPI Thread(PVOID pv)
 
 		if (ptp->thread_exit) break;
 
-		CurrentFile = (PTSTR)((PBYTE)*ptp->queue + ptp->front*MAX_PATH);
+		CurrentFile = (PTSTR)((PBYTE)*ptp->queue + ptp->front*MAX_PATH_2);
 
 		lstrcpy(cur_dir, CurrentFile);
 
