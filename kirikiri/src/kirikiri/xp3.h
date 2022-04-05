@@ -86,6 +86,8 @@ struct ExtraSection
     wchar_t  NamePtr[1];
 };
 
+using FilenameSection = ExtraSection;
+
 #pragma pack(pop)
 
 struct file_entry
@@ -93,8 +95,8 @@ struct file_entry
     DWORD checksum{ 0 };
     DWORD encryption_flag{ 0 };    // info
     std::vector<SegmSection> mInfo;
-    std::wstring file_name;         // 一般是 info section 的名字，或者有额外节的 krkrz
-    std::wstring internal_name;     // info section 里的名字
+    std::wstring file_name;         // 涓�鑸槸 info section 鐨勫悕瀛楋紝鎴栬�呮湁棰濆鑺傜殑 krkrz
+    std::wstring internal_name;     // info section 閲岀殑鍚嶅瓧
     ExtraSection mExtra;
     uint64_t mFileTime{ 0 };
 
@@ -112,10 +114,11 @@ struct file_entry
 class EncryptedXP3
 {
     static UNCOMPRESS unCom;
-    static constexpr uint32_t MagicHnfn = 'nfnh';
-    static constexpr uint32_t MagicFeng = 'gnef';
-    static constexpr uint32_t MagicNeko = 'oken';
-    static constexpr uint32_t MagicYuzu = ':zuy';   // RiddleJoker
+    static constexpr uint32_t MagicHnfn       = 'nfnh';
+    static constexpr uint32_t MagicFeng       = 'gnef';
+    static constexpr uint32_t MagicNeko       = 'oken';
+    static constexpr uint32_t MagicYuzu       = ':zuy';   // RiddleJoker
+    static constexpr uint32_t MagicYuzuSenren = ':nes';   // SenrenBanka
 
 #pragma pack(1)
     struct YuzuRiddleJokerFileNameHeader {
@@ -150,6 +153,7 @@ protected:
     std::vector<file_entry> ParsePalette_9nine(const std::vector<char>& plainBytes);
     std::vector<file_entry> ParsePalette_NekoparaEx(const std::vector<char>& plainBytes);
     std::vector<file_entry> ParseYuzu_HnfnThunk(const std::vector<char>& plainBytes);
+    std::vector<file_entry> ParseYuzu_SenrenBanka(const std::vector<char>& plainBytes);
 
     bool ParseFileSection(const uint8_t* ptr, uint32_t* secSize, uint32_t* entrySize);
     bool ParseSegmSection(const uint8_t* ptr, file_entry& fe, uint32_t* secSize);
@@ -158,9 +162,11 @@ protected:
     bool ParseTimeSection(const uint8_t* ptr, file_entry& fe, uint32_t* secSize);
     bool ParseExtraSection(const uint8_t* ptr, uint32_t extraMagic, file_entry& fe, uint32_t* secSize);
     bool ParseProtectWarning(const uint8_t* ptr, uint32_t* secSize);
+    bool ParseYuzuFilenameTable(const uint8_t* ptr, file_entry& fe, uint32_t* secSize);
     bool HasExtraSection(const std::vector<char>& plainBytes, uint32_t* magic);
 
     std::vector<char> ExtractYuzuFileTable(const std::vector<char>& packedFileTable, size_t plainSize);
+    std::vector<char> ExtractYuzuFilenameTable2(const YuzuRiddleJokerFileNameHeader* header);
 
 private:
     xp3_file_header mHeader;

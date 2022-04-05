@@ -658,6 +658,11 @@ bool EncryptedXP3::ParseProtectWarning(const uint8_t * ptr, uint32_t * secSize)
     return false;
 }
 
+bool EncryptedXP3::ParseYuzuFilenameTable(const uint8_t* ptr, file_entry& fe, uint32_t* secSize)
+{
+  return false;
+}
+
 bool EncryptedXP3::HasExtraSection(const std::vector<char>& plainBytes, uint32_t * magic)
 {
     uint32_t size;
@@ -732,6 +737,19 @@ std::vector<char> EncryptedXP3::ExtractYuzuFileTable(const std::vector<char>& pa
         }
     }
     return vector<char>();
+}
+
+std::vector<char> EncryptedXP3::ExtractYuzuFilenameTable2(const YuzuRiddleJokerFileNameHeader* header)
+{
+  mStream.seekg(header->mFileTableOffset);
+  std::vector<char> compressed(header->mPackSize);
+  std::vector<char> plain(header->mPlainSize);
+  mStream.read(compressed.data(), compressed.size());
+  size_t plainSize = plain.size();
+  int result = unCom(plain.data(), &plainSize, compressed.data(), compressed.size());
+  if (result != 0)
+    return {};
+  return plain;
 }
 
 std::vector<file_entry> EncryptedXP3::ParsePalette_9nine(const std::vector<char>& plainBytes)
@@ -830,6 +848,41 @@ std::vector<file_entry> EncryptedXP3::ParseYuzu_HnfnThunk(const std::vector<char
     return ve;
 }
 
+std::vector<file_entry> EncryptedXP3::ParseYuzu_SenrenBanka(const std::vector<char>& plainBytes)
+{
+  YuzuRiddleJokerFileNameHeader* es = (YuzuRiddleJokerFileNameHeader*)plainBytes.data();
+  assert(es->mMagic == MagicYuzuSenren);
+  std::vector<char> name_table = ExtractYuzuFilenameTable2(es);
+  if (name_table.size() < 4)
+    return {};
+  std::vector<file_entry> nameList;
+  for (char* ptr = name_table.data(); ptr < name_table.data() + name_table.size(); ) {
+    FilenameSection* fs = (FilenameSection*)ptr;
+    assert(fs->Magic == MagicHnfn);
+    assert(fs->SizeOfData == 4 + 2 + (fs->NameInWords + 1) * 2);
+    file_entry fe;
+    fe.file_name = fs->NamePtr;
+    fe.checksum = fs->Checksum;
+    assert(fe.file_name.size() == fs->NameInWords);
+    nameList.push_back(fe);
+    ptr += 0xc + fs->SizeOfData;
+  }
+
+  std::vector<file_entry> Entry = XP3ArcPraseEntryStage0(0, { plainBytes.begin() + 0xc + es->mHeaderSize, plainBytes.end() });
+  assert(Entry.size() >= nameList.size());
+  size_t n = 0;
+  for (size_t i = 0; i < Entry.size(); ++i)
+  {
+    if (Entry[i].checksum != nameList[n].checksum)
+      continue;
+    Entry[i].file_name = nameList[n].file_name;
+    ++n;
+  }
+
+  assert(n == nameList.size());
+  return Entry;
+}
+
 void EncryptedXP3::DumpEntriesToFile(const std::vector<file_entry>& entries, const std::wstring & path)
 {
     ofstream out(path, ios::binary);
@@ -882,7 +935,7 @@ std::vector<file_entry> EncryptedXP3::ExtractEntries(const std::vector<char>& _p
 {
     std::vector<char> plainBytes = _plainBytes;
 
-    uint32_t magic;
+    uint32_t magic = 0;
     if (HasExtraSection(plainBytes, &magic))
         mExtraSectionMagic = magic;
 
@@ -909,6 +962,8 @@ std::vector<file_entry> EncryptedXP3::ExtractEntries(const std::vector<char>& _p
 
         return entries;
     }
+    case MagicYuzuSenren:
+      return ParseYuzu_SenrenBanka(plainBytes);
     case MagicHnfn:
         return ParsePalette_9nine(plainBytes);
     case MagicNeko:
