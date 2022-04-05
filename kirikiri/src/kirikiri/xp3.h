@@ -162,11 +162,10 @@ protected:
     bool ParseTimeSection(const uint8_t* ptr, file_entry& fe, uint32_t* secSize);
     bool ParseExtraSection(const uint8_t* ptr, uint32_t extraMagic, file_entry& fe, uint32_t* secSize);
     bool ParseProtectWarning(const uint8_t* ptr, uint32_t* secSize);
-    bool ParseYuzuFilenameTable(const uint8_t* ptr, file_entry& fe, uint32_t* secSize);
     bool HasExtraSection(const std::vector<char>& plainBytes, uint32_t* magic);
 
     std::vector<char> ExtractYuzuFileTable(const std::vector<char>& packedFileTable, size_t plainSize);
-    std::vector<char> ExtractYuzuFilenameTable2(const YuzuRiddleJokerFileNameHeader* header);
+    std::vector<file_entry> ExtractYuzuFilenameTable2(const YuzuRiddleJokerFileNameHeader* header);
 
 private:
     xp3_file_header mHeader;

@@ -658,11 +658,6 @@ bool EncryptedXP3::ParseProtectWarning(const uint8_t * ptr, uint32_t * secSize)
     return false;
 }
 
-bool EncryptedXP3::ParseYuzuFilenameTable(const uint8_t* ptr, file_entry& fe, uint32_t* secSize)
-{
-  return false;
-}
-
 bool EncryptedXP3::HasExtraSection(const std::vector<char>& plainBytes, uint32_t * magic)
 {
     uint32_t size;
@@ -739,8 +734,11 @@ std::vector<char> EncryptedXP3::ExtractYuzuFileTable(const std::vector<char>& pa
     return vector<char>();
 }
 
-std::vector<char> EncryptedXP3::ExtractYuzuFilenameTable2(const YuzuRiddleJokerFileNameHeader* header)
+std::vector<file_entry> EncryptedXP3::ExtractYuzuFilenameTable2(const YuzuRiddleJokerFileNameHeader* header)
 {
+  assert(header->mMagic == MagicYuzuSenren && header->mHeaderSize >= 0x10);
+  if (header->mMagic != MagicYuzuSenren || header->mHeaderSize < 0x10)
+    return {};
   mStream.seekg(header->mFileTableOffset);
   std::vector<char> compressed(header->mPackSize);
   std::vector<char> plain(header->mPlainSize);
@@ -749,7 +747,21 @@ std::vector<char> EncryptedXP3::ExtractYuzuFilenameTable2(const YuzuRiddleJokerF
   int result = unCom(plain.data(), &plainSize, compressed.data(), compressed.size());
   if (result != 0)
     return {};
-  return plain;
+  if (plain.size() < 4)
+    return {};
+  std::vector<file_entry> nameList;
+  for (char* ptr = plain.data(); ptr < plain.data() + plain.size(); ) {
+    FilenameSection* fs = (FilenameSection*)ptr;
+    assert(fs->Magic == MagicHnfn);
+    assert(fs->SizeOfData == 4 + 2 + (fs->NameInWords + 1) * 2);
+    file_entry fe;
+    fe.file_name = fs->NamePtr;
+    fe.checksum = fs->Checksum;
+    assert(fe.file_name.size() == fs->NameInWords);
+    nameList.push_back(fe);
+    ptr += 0xc + fs->SizeOfData;
+  }
+  return nameList;
 }
 
 std::vector<file_entry> EncryptedXP3::ParsePalette_9nine(const std::vector<char>& plainBytes)
@@ -850,36 +862,20 @@ std::vector<file_entry> EncryptedXP3::ParseYuzu_HnfnThunk(const std::vector<char
 
 std::vector<file_entry> EncryptedXP3::ParseYuzu_SenrenBanka(const std::vector<char>& plainBytes)
 {
-  YuzuRiddleJokerFileNameHeader* es = (YuzuRiddleJokerFileNameHeader*)plainBytes.data();
-  assert(es->mMagic == MagicYuzuSenren);
-  std::vector<char> name_table = ExtractYuzuFilenameTable2(es);
-  if (name_table.size() < 4)
-    return {};
-  std::vector<file_entry> nameList;
-  for (char* ptr = name_table.data(); ptr < name_table.data() + name_table.size(); ) {
-    FilenameSection* fs = (FilenameSection*)ptr;
-    assert(fs->Magic == MagicHnfn);
-    assert(fs->SizeOfData == 4 + 2 + (fs->NameInWords + 1) * 2);
-    file_entry fe;
-    fe.file_name = fs->NamePtr;
-    fe.checksum = fs->Checksum;
-    assert(fe.file_name.size() == fs->NameInWords);
-    nameList.push_back(fe);
-    ptr += 0xc + fs->SizeOfData;
-  }
-
+  auto es = (YuzuRiddleJokerFileNameHeader*)plainBytes.data();
+  std::vector<file_entry> name_table = ExtractYuzuFilenameTable2(es);
   std::vector<file_entry> Entry = XP3ArcPraseEntryStage0(0, { plainBytes.begin() + 0xc + es->mHeaderSize, plainBytes.end() });
-  assert(Entry.size() >= nameList.size());
+  assert(Entry.size() >= name_table.size());
   size_t n = 0;
   for (size_t i = 0; i < Entry.size(); ++i)
   {
-    if (Entry[i].checksum != nameList[n].checksum)
+    if (Entry[i].checksum != name_table[n].checksum)
       continue;
-    Entry[i].file_name = nameList[n].file_name;
+    Entry[i].file_name = name_table[n].file_name;
     ++n;
   }
 
-  assert(n == nameList.size());
+  assert(n == name_table.size());
   return Entry;
 }
 
