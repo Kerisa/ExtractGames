@@ -964,6 +964,16 @@ std::vector<file_entry> EncryptedXP3::ExtractEntries(const std::vector<char>& _p
         return ParsePalette_9nine(plainBytes);
     case MagicNeko:
         return ParsePalette_NekoparaEx(plainBytes);
+    case MagicAmbitious: {
+      uint32_t offset{ 0 };
+      if (plainBytes.size() > sizeof(uint32_t) + sizeof(uint64_t)) {
+        offset = sizeof(uint32_t) + sizeof(uint64_t) + *(uint64_t*)&plainBytes[sizeof(uint32_t)];
+        if (offset >= plainBytes.size())
+          offset = 0;
+      }
+      mExtraSectionMagic = 0;
+      return XP3ArcPraseEntryStage0(mExtraSectionMagic, { plainBytes.begin() + offset, plainBytes.end() });
+    }
     default:
         return XP3ArcPraseEntryStage0(mExtraSectionMagic, plainBytes);
     }

@@ -119,6 +119,7 @@ class EncryptedXP3
     static constexpr uint32_t MagicNeko       = 'oken';
     static constexpr uint32_t MagicYuzu       = ':zuy';   // RiddleJoker
     static constexpr uint32_t MagicYuzuSenren = ':nes';   // SenrenBanka
+    static constexpr uint32_t MagicAmbitious  = '4vxH';   // SAGA Planets - Ambitious Mission
 
 #pragma pack(1)
     struct YuzuRiddleJokerFileNameHeader {
