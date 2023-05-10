@@ -158,7 +158,7 @@ void DumpResource(tTJSBinaryStream* ibs, const ttstr& ts, tjs_uint32 flag) {
   wstring save_dir;
   LOG_INFO("saving: " << Utility::UnicodeToUTF8(ToString(ts)));
   tjs_uint64 saved_pos = ibs->Seek(0, TJS_BS_SEEK_CUR);
-  std::vector<char> buffer(ibs->GetSize(), 0);
+  std::vector<char> buffer((size_t)ibs->GetSize(), 0);
   ibs->Seek(0, TJS_BS_SEEK_SET);
   bool success = buffer.size() > 0 && ibs->Read(buffer.data(), buffer.size()) == buffer.size();
   if (success) {
@@ -212,7 +212,7 @@ void HandleXp3File(const wstring& xp3Path) {
       LOG_ERROR("failed reading stream state: " << Utility::UnicodeToUTF8(fe.file_name));
       continue;
     }
-    size_t fileSize = state.cbSize.QuadPart;
+    size_t fileSize = (size_t)state.cbSize.QuadPart;
     LPVOID buf = VirtualAlloc(NULL, fileSize, MEM_COMMIT, PAGE_READWRITE);
     ULONG R{ 0 };
     if (SUCCEEDED(stream->Read(buf, fileSize, &R)) && R == fileSize) {

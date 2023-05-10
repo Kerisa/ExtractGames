@@ -93,7 +93,7 @@ int main(int argc, char** argv)
     }
 
     csv.seekg(0, ios::end);
-    size_t length = csv.tellg();
+    size_t length = (size_t)csv.tellg();
     csv.seekg(0, ios::beg);
     vector<char> csvData(length + 1);
     csv.read(csvData.data(), length);

@@ -2,7 +2,7 @@
 #include "TLGDecoder.h"
 #include "resource.h"
 
-#define MAX_PATH 402
+#define PATH_MAX 402
 
 HWND hEdit;
 CRITICAL_SECTION cs;
@@ -79,7 +79,7 @@ int callback(struct CB* pcb, PTSTR path)
 
         EnterCriticalSection(&cs);
         {
-            lstrcpy((PTSTR)((PBYTE)*pcb->ptp[pcb->cnt].queue + pcb->ptp[pcb->cnt].tail*MAX_PATH), path);
+            lstrcpy((PTSTR)((PBYTE)*pcb->ptp[pcb->cnt].queue + pcb->ptp[pcb->cnt].tail*PATH_MAX), path);
         
             if (pcb->ptp[pcb->cnt].tail == pcb->ptp[pcb->cnt].front)        // 原先队列为空，置位
                 SetEvent(pcb->ptp[pcb->cnt].hEvent);
@@ -95,8 +95,8 @@ int callback(struct CB* pcb, PTSTR path)
 
 int ExpandDirectory(PTSTR lpszPath, CallBack callback, struct CB* pcb)
 {
-    static const DWORD MemAllocStep = 1024*MAX_PATH;
-    TCHAR            lpFind[MAX_PATH], lpSearch[MAX_PATH], lpPath[MAX_PATH];
+    static const DWORD MemAllocStep = 1024*PATH_MAX;
+    TCHAR            lpFind[PATH_MAX], lpSearch[PATH_MAX], lpPath[PATH_MAX];
     HANDLE            hFindFile;
     WIN32_FIND_DATA FindData;
     int                cnt = 0;
@@ -149,7 +149,7 @@ DWORD AppendFileToQueue(PTSTR pInBuf, CallBack callback, struct CB *pcb)
 void OnDropFiles(HDROP hDrop, HWND hwnd, thread_param* ptp)
 {
     struct CB cb;
-    TCHAR FileName[MAX_PATH];
+    TCHAR FileName[PATH_MAX];
     DWORD i;
     DWORD FileNum;
 
@@ -161,7 +161,7 @@ void OnDropFiles(HDROP hDrop, HWND hwnd, thread_param* ptp)
 
     for (i=0; i<FileNum; ++i)
     {
-        DragQueryFile(hDrop, i, (LPTSTR)FileName, MAX_PATH);
+        DragQueryFile(hDrop, i, (LPTSTR)FileName, PATH_MAX);
         AppendFileToQueue(FileName, callback, &cb);
     }
     DragFinish(hDrop);
@@ -192,7 +192,7 @@ BOOL CALLBACK DlgProc(HWND hDlg, UINT msg, WPARAM wParam, LPARAM lParam)
                 AppendMsg(TEXT("内存分配错误！"));
                 EndDialog(hDlg, 0);
             }
-            if (!(*(tp[i].queue) = (PTSTR)VirtualAlloc(NULL, tp[i].QUEUE_SIZE*MAX_PATH, MEM_COMMIT, PAGE_READWRITE)))
+            if (!(*(tp[i].queue) = (PTSTR)VirtualAlloc(NULL, tp[i].QUEUE_SIZE*PATH_MAX, MEM_COMMIT, PAGE_READWRITE)))
             {
                 AppendMsg(TEXT("内存分配错误！"));
                 EndDialog(hDlg, 0);
@@ -242,7 +242,7 @@ int AlphaBlending(unsigned char *bmp, unsigned long Width, unsigned long Height)
 DWORD WINAPI Thread(PVOID pv)
 {
     HANDLE hFile;
-    TCHAR szBuffer[MAX_PATH];
+    TCHAR szBuffer[PATH_MAX];
     LPTSTR CurrentFile;
     thread_param * ptp = (thread_param*) pv;
     DWORD ByteRead, dwNowProcess = 0, dwFileProcessed = 0;
@@ -256,7 +256,7 @@ DWORD WINAPI Thread(PVOID pv)
 
 //*****************************************************************************
 
-        CurrentFile = (PTSTR)((PBYTE)*ptp->queue + ptp->front*MAX_PATH);
+        CurrentFile = (PTSTR)((PBYTE)*ptp->queue + ptp->front*PATH_MAX);
         hFile = CreateFile(CurrentFile, GENERIC_READ, FILE_SHARE_READ,
                             NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
         if (hFile == INVALID_HANDLE_VALUE)
@@ -275,10 +275,10 @@ DWORD WINAPI Thread(PVOID pv)
         
         if (FileLen <= 5) goto FILE_FORMAT_ERR;
         PVOID p = FileBuf;
-        while ((PBYTE)p-(PBYTE)FileBuf < FileLen-5 && memcmp(p, "TLG6.0", 6) && memcmp(p, "TLG5.0", 6))
+        while ((PBYTE)p-(PBYTE)FileBuf < (int)(FileLen-5) && memcmp(p, "TLG6.0", 6) && memcmp(p, "TLG5.0", 6))
             p = (PBYTE)p + 1;
 
-        if ((PBYTE)p-(PBYTE)FileBuf >= FileLen-5)
+        if ((PBYTE)p-(PBYTE)FileBuf >= (int)(FileLen-5))
         {
 FILE_FORMAT_ERR:
             wsprintf(szBuffer, TEXT("文件不对错误，跳过%s\r\n"), CurrentFile);

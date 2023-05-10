@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
 
     ifstream ifile(in, ios::binary);
     ifile.seekg(0, ios::end);
-    vector<char> idata(ifile.tellg());
+    vector<char> idata(size_t(ifile.tellg()));
     ifile.seekg(0, ios::beg);
     ifile.read(idata.data(), idata.size());
     ifile.close();

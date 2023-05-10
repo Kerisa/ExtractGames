@@ -296,7 +296,7 @@ namespace YuzuKeys
                 } while ((unsigned int)v6 < a3);
             }
         }
-        return v6;
+        return static_cast<int>(v6);
     }
 }
 
@@ -400,14 +400,14 @@ std::vector<char> EncryptedXP3::GetPlainIndexBytes()
         idx_uncom = idx_size;
     }
 
-    vector<char> idx(idx_size);
-    vector<char> idx_raw(idx_uncom);
+    vector<char> idx((size_t)idx_size);
+    vector<char> idx_raw((size_t)idx_uncom);
 
     mStream.read(idx.data(), idx.size());
     if (idx_flag)
     {
         uint32_t detLen = (uint32_t)idx_uncom;
-        unCom(idx_raw.data(), &detLen, idx.data(), idx_size);
+        unCom(idx_raw.data(), &detLen, idx.data(), (uint32_t)idx_size);
     }
     else
     {
@@ -566,7 +566,7 @@ bool EncryptedXP3::ParseFileSection(const uint8_t * ptr, uint32_t * secSize, uin
         return false;
 
     *secSize = sizeof(FileSection);
-    *entrySize = sizeof(FileSection) + file->SizeOfData;
+    *entrySize = sizeof(FileSection) + (uint32_t)file->SizeOfData;
     return true;
 }
 
@@ -578,7 +578,7 @@ bool EncryptedXP3::ParseSegmSection(const uint8_t * ptr, file_entry& fe, uint32_
         return false;
 
     assert(segm->SizeOfData % 0x1c == 0);
-    int part = segm->SizeOfData / 0x1c;
+    int part = (int)(segm->SizeOfData / 0x1c);
     fe.mInfo.push_back(*segm);
     ptr += sizeof(SegmSection);
     for (int i = 0; i < part - 1; ++i)
@@ -608,7 +608,7 @@ bool EncryptedXP3::ParseInfoSection(const uint8_t * ptr, file_entry& fe, uint32_
 
     fe.encryption_flag = info->EncryptFlag;
     fe.internal_name.assign(info->NamePtr, info->NamePtr + info->NameInWords);
-    *secSize = info->SizeOfData + 0xc;
+    *secSize = (uint32_t)(info->SizeOfData + 0xc);
     return true;
 }
 
@@ -640,7 +640,7 @@ bool EncryptedXP3::ParseExtraSection(const uint8_t * ptr, uint32_t extraMagic, f
     if (ex->Magic != extraMagic)
         return false;
 
-    *secSize = ex->SizeOfData + 0xc;
+    *secSize = (uint32_t)(ex->SizeOfData + 0xc);
     fe.mExtra = *ex;
     fe.file_name = ex->NamePtr;
     assert(fe.file_name.size() == ex->NameInWords);
@@ -864,7 +864,7 @@ std::vector<file_entry> EncryptedXP3::ParseYuzu_SenrenBanka(const std::vector<ch
 {
   auto es = (YuzuRiddleJokerFileNameHeader*)plainBytes.data();
   std::vector<file_entry> name_table = ExtractYuzuFilenameTable2(es);
-  std::vector<file_entry> Entry = XP3ArcPraseEntryStage0(0, { plainBytes.begin() + 0xc + es->mHeaderSize, plainBytes.end() });
+  std::vector<file_entry> Entry = XP3ArcPraseEntryStage0(0, { plainBytes.begin() + 0xc + (int)es->mHeaderSize, plainBytes.end() });
   assert(Entry.size() >= name_table.size());
   size_t n = 0;
   for (size_t i = 0; i < Entry.size(); ++i)
@@ -1161,7 +1161,7 @@ std::vector<file_entry> palette_9_nine::XP3ArcPraseEntryStage0(const std::vector
                 SegmSection* segm = (SegmSection*)p;
                 assert(!(flag & flag_segm));
                 assert(segm->SizeOfData % 0x1c == 0);
-                int part = segm->SizeOfData / 0x1c;
+                int part = (int)(segm->SizeOfData / 0x1c);
                 fe.mInfo.push_back(*segm);
                 p += sizeof(SegmSection);
                 if (part > 1)

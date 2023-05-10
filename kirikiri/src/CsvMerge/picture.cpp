@@ -371,10 +371,10 @@ Alisa::Pixel Alisa::ImageImpl::AlphaBlend(const Pixel & src, const Pixel & dst) 
     float dstA = (float)dst.A / 0xff;
 
     Pixel blend;
-    blend.R = src.R * srcA + dst.R * (1 - srcA);
-    blend.G = src.G * srcA + dst.G * (1 - srcA);
-    blend.B = src.B * srcA + dst.B * (1 - srcA);
-    blend.A = (srcA + dstA * (1 - srcA)) * 0xff;
+    blend.R = (uint8_t)(src.R * srcA + dst.R * (1 - srcA));
+    blend.G = (uint8_t)(src.G * srcA + dst.G * (1 - srcA));
+    blend.B = (uint8_t)(src.B * srcA + dst.B * (1 - srcA));
+    blend.A = (uint8_t)((srcA + dstA * (1 - srcA)) * 0xff);
 
     return blend;
 }
@@ -505,7 +505,7 @@ bool Alisa::ImageImpl::LocalMeans(ImageImpl *dst, int width, int height) const
                 {
                     for (int i = 0; i < (int)k1; ++i)
                     {
-                        const Pixel & p = Pixels[y * k2 + j][x * k1 + i];
+                        const Pixel & p = Pixels[(uint32_t)(y * k2 + j)][(uint32_t)(x * k1 + i)];
                         r += p.R;
                         g += p.G;
                         b += p.B;
@@ -554,10 +554,10 @@ bool Alisa::ImageImpl::BilinearInterpolation(ImageImpl *dst, int width, int heig
     {
         for (int x = 0; x < BaseInfo.Width; ++x)
         {
-            int top = y * k2;
-            int bottom = (y + 1) * k2;
-            int left = x * k1;
-            int right = (x + 1) * k1;
+            int top = (int)(y * k2);
+            int bottom = (int)((y + 1) * k2);
+            int left = (int)(x * k1);
+            int right = (int)((x + 1) * k1);
 
             int block = (bottom - top) * (right - left);
 
@@ -577,10 +577,10 @@ bool Alisa::ImageImpl::BilinearInterpolation(ImageImpl *dst, int width, int heig
                     float f3 = (float)(j - top) * (right - i) / block;          // (1-u)v
                     float f4 = (float)(j - top) * (i - left) / block;           // uv
 
-                    int r = f1 * p1.R + f2 * p2.R + f3 * p3.R + f4 * p4.R;
-                    int g = f1 * p1.G + f2 * p2.G + f3 * p3.G + f4 * p4.G;
-                    int b = f1 * p1.B + f2 * p2.B + f3 * p3.B + f4 * p4.B;
-                    int a = f1 * p1.A + f2 * p2.A + f3 * p3.A + f4 * p4.A;
+                    int r = (int)(f1 * p1.R + f2 * p2.R + f3 * p3.R + f4 * p4.R);
+                    int g = (int)(f1 * p1.G + f2 * p2.G + f3 * p3.G + f4 * p4.G);
+                    int b = (int)(f1 * p1.B + f2 * p2.B + f3 * p3.B + f4 * p4.B);
+                    int a = (int)(f1 * p1.A + f2 * p2.A + f3 * p3.A + f4 * p4.A);
 
                     assert(r < 0x100);
                     assert(g < 0x100);

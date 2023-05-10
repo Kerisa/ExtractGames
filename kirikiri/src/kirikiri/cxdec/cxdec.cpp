@@ -217,9 +217,9 @@ static void __cxdec_decode(struct cxdec_callback *callback, DWORD hash, DWORD of
     //else
         cxdec_execute_xcode(callback, hash, &ret[0], &ret[1]);
     
-    key[8] = ret[0] >> 8;
-    key[9] = ret[0] >> 16;
-    key[10] = ret[0];
+    key[8] = (BYTE)(ret[0] >> 8);
+    key[9] = (BYTE)(ret[0] >> 16);
+    key[10] = (BYTE)ret[0];
     DWORD key1 = ret[1] >> 16;
     DWORD key2 = ret[1] & 0xffff;
     *(unsigned int *)&key[0] = key1;
