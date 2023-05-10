@@ -3,11 +3,13 @@
 #include <cstdint>
 #include <Windows.h>
 #include <string>
+#include <vector>
 
 namespace Utility
 {
-    int SearchMemory(HANDLE hProcess, uint32_t from, uint32_t to, uint32_t value, uint32_t* result, uint32_t arrayCount);
-    int SearchMemory(HANDLE hProcess, uint32_t from, uint32_t to, const char* str, uint32_t strLength, uint32_t* result, uint32_t arrayCount);
+    int          SearchMemory(HANDLE hProcess, uint32_t from, uint32_t to, uint32_t value, uint32_t* result, uint32_t arrayCount);
+    int          SearchMemory(HANDLE hProcess, uint32_t from, uint32_t to, const char* str, uint32_t strLength, uint32_t* result, uint32_t arrayCount);
+    uint8_t*     SearchSequence(uint8_t* search_start, uint32_t search_length, const std::vector<char>& pattern);
 
     bool         SplitPath(const std::string& full, std::string& drive = std::string(), std::string& dir = std::string(), std::string& file = std::string(), std::string& ext = std::string());
     bool         SplitPath(const std::wstring& full, std::wstring& drive = std::wstring(), std::wstring& dir = std::wstring(), std::wstring& file = std::wstring(), std::wstring& ext = std::wstring());
@@ -22,4 +24,25 @@ namespace Utility
     std::wstring UTF8ToUnicode(const std::string& str);
     std::string  UnicodeToGBK(const std::wstring& str);
     std::string  UnicodeToUTF8(const std::wstring& str);
+
+    std::string  GetTimeString();
+    std::string  GetTimeFmtString(const char* fmt);
+
+    void         ResumeOtherThread();
+
+    template <class T>
+    void AddHook(T* original_func, T detoured_func) {
+      if (DetourTransactionBegin() == NO_ERROR) {
+        DetourAttach((PVOID*)original_func, detoured_func);
+        DetourTransactionCommit();
+      }
+    }
+
+    template <class T>
+    void RemoveHook(T* original_func, T detoured_func) {
+      if (DetourTransactionBegin() == NO_ERROR) {
+        DetourDetach((PVOID*)original_func, detoured_func);
+        DetourTransactionCommit();
+      }
+    }
 }

@@ -2,8 +2,10 @@
 
 #include "utility.h"
 #include <cassert>
+#include <chrono>
 #include <vector>
 #include <Windows.h>
+#include <tlhelp32.h>
 
 using namespace std;
 
@@ -76,6 +78,20 @@ int SearchMemory(HANDLE hProcess, uint32_t from, uint32_t to, const char* str, u
         from += length;
     }
     return index;
+}
+
+uint8_t* SearchSequence(uint8_t* search_start, uint32_t search_length, const vector<char>& pattern) {
+
+  for (uint8_t* search_end = search_start + search_length; search_start < search_end - pattern.size(); ++search_start)
+  {
+    bool found = std::equal(search_start, search_start + pattern.size(), pattern.begin(), pattern.end(), [](char L, char R) {
+      return L == R || R == '?';
+      });
+    if (found)
+      return search_start;
+  }
+
+  return nullptr;
 }
 
 bool SplitPath(const std::string & full, std::string & drive, std::string & dir, std::string & file, std::string & ext)
@@ -190,5 +206,49 @@ std::string UnicodeToUTF8(const std::wstring & str)
 	return mbs.data();
 }
 
+std::string GetTimeString() {
+  std::time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+  std::string s(32, '\0');
+  tm tmmmmm;
+  localtime_s(&tmmmmm, &now);
+  std::strftime(&s[0], s.size(), "%Y-%m-%d %H:%M:%S", &tmmmmm);
+  return s.c_str();
+}
+
+std::string GetTimeFmtString(const char* fmt)
+{
+  time_t tv;
+  struct tm tm;
+  char buf[32] = { 0 };
+
+  time(&tv);
+  localtime_s(&tm, &tv);
+  strftime(buf, _countof(buf), fmt, &tm);
+  return buf;
+}
+
+void ResumeOtherThread()
+{
+  HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+  THREADENTRY32 te;
+  te.dwSize = sizeof(te);
+  if (Thread32First(hSnap, &te))
+  {
+    do
+    {
+      if (te.th32OwnerProcessID == GetCurrentProcessId() && te.th32ThreadID != GetCurrentThreadId())
+      {
+        HANDLE t = OpenThread(THREAD_SUSPEND_RESUME, FALSE, te.th32ThreadID);
+        assert(t);
+        BOOL b = ResumeThread(t);
+        assert(b != -1);
+        CloseHandle(t);
+      }
+    } while (Thread32Next(hSnap, &te));
+  }
+
+  CloseHandle(hSnap);
+  return;
+}
 
 }

@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="log">
+      <UniqueIdentifier>{2ee71ecd-b2b7-43d7-bb2b-0662dc9a2b84}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="detours">
+      <UniqueIdentifier>{48051384-7eef-4590-894c-d299a9643291}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -33,6 +39,15 @@
     <ClInclude Include="ShareMem.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Detours\detours.h">
+      <Filter>detours</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Detours\detver.h">
+      <Filter>detours</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\log\log.h">
+      <Filter>log</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -49,6 +64,42 @@
     </ClCompile>
     <ClCompile Include="..\kirikiri\xp3.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\Detours\creatwth.cpp">
+      <Filter>detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\Detours\detours.cpp">
+      <Filter>detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\Detours\disasm.cpp">
+      <Filter>detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\Detours\disolarm.cpp">
+      <Filter>detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\Detours\disolarm64.cpp">
+      <Filter>detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\Detours\disolia64.cpp">
+      <Filter>detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\Detours\disolx64.cpp">
+      <Filter>detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\Detours\disolx86.cpp">
+      <Filter>detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\Detours\image.cpp">
+      <Filter>detours</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\Detours\modules.cpp">
+      <Filter>detours</Filter>
+    </ClCompile>
+    <ClCompile Include="PassiveDump.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\include\log\log.cpp">
+      <Filter>log</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

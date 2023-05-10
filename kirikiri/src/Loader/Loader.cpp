@@ -18,7 +18,8 @@ int main(int argc, char** argv)
     {
         string file;
         Utility::SplitPath(argv[0], string(), string(), file);
-        cout << "usage: " << file << " <game exe> <xp3 file1> <xp3 file2>...\n";
+        cout << "usage: " << file << " <game exe> [--passive] <xp3 file1> <xp3 file2>...\n"
+          << "   passive    dump all resources while playing game instead of extract them directly\n";
         return 1;
     }
     else if (argc > _countof(MapObj::Path) + 2)
@@ -34,8 +35,9 @@ int main(int argc, char** argv)
 #else
     wstring dllPath(Utility::GetExeDirW() + L"BlackSheep.dll");
 #endif
+    const bool passive_mode = (string(argv[2]) == "--passive");
     vector<wstring> allXp3Path;
-    for (int i = 2; i < argc; ++i)
+    for (int i = passive_mode ? 3 : 2; i < argc; ++i)
     {
         allXp3Path.push_back(Utility::MakeFullPath(Utility::GBKToUnicode(argv[i])));
         if (allXp3Path.back().size() >= _countof(MapObj::Path[0]))
@@ -78,6 +80,7 @@ int main(int argc, char** argv)
     MapObj* mo = (MapObj*)Addr;
     mo->Access = false;
     mo->Count = allXp3Path.size();
+    mo->PassiveMode = passive_mode;
     for (size_t i = 0; i < allXp3Path.size(); ++i)
     {
         wcscpy_s(mo->Path[i], _countof(mo->Path[i]), allXp3Path[i].c_str());

@@ -106,6 +106,9 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\Detours\detours.h" />
+    <ClInclude Include="..\..\include\Detours\detver.h" />
+    <ClInclude Include="..\..\include\log\log.h" />
     <ClInclude Include="..\..\include\utility\utility.h" />
     <ClInclude Include="..\kirikiri\xp3.h" />
     <ClInclude Include="ShareMem.h" />
@@ -114,9 +117,21 @@
     <ClInclude Include="tp_stub.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\include\Detours\creatwth.cpp" />
+    <ClCompile Include="..\..\include\Detours\detours.cpp" />
+    <ClCompile Include="..\..\include\Detours\disasm.cpp" />
+    <ClCompile Include="..\..\include\Detours\disolarm.cpp" />
+    <ClCompile Include="..\..\include\Detours\disolarm64.cpp" />
+    <ClCompile Include="..\..\include\Detours\disolia64.cpp" />
+    <ClCompile Include="..\..\include\Detours\disolx64.cpp" />
+    <ClCompile Include="..\..\include\Detours\disolx86.cpp" />
+    <ClCompile Include="..\..\include\Detours\image.cpp" />
+    <ClCompile Include="..\..\include\Detours\modules.cpp" />
+    <ClCompile Include="..\..\include\log\log.cpp" />
     <ClCompile Include="..\..\include\utility\utility.cpp" />
     <ClCompile Include="..\kirikiri\xp3.cpp" />
     <ClCompile Include="BlackSheep.cpp" />
+    <ClCompile Include="PassiveDump.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="tp_stub.cpp" />
   </ItemGroup>
