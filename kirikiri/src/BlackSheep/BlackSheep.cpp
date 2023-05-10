@@ -134,7 +134,7 @@ void DumpResource(tTJSBinaryStream* ibs, const ttstr& ts, tjs_uint32 flag) {
     LR"(arc://./(.+))",
     LR"(archive://./(.+))",
     LR"(bres://./(.+))",
-    LR"((^[_a-zA-Z0-9]+\.[a-zA-Z0-9]+$))",
+    LR"(([-\._a-zA-Z0-9]+))",
   };
 
   if (!ibs)
@@ -161,17 +161,18 @@ void DumpResource(tTJSBinaryStream* ibs, const ttstr& ts, tjs_uint32 flag) {
   std::vector<char> buffer((size_t)ibs->GetSize(), 0);
   ibs->Seek(0, TJS_BS_SEEK_SET);
   bool success = buffer.size() > 0 && ibs->Read(buffer.data(), buffer.size()) == buffer.size();
+  int error_code = -1;
   if (success) {
     buffer = TryDecode(buffer);
     save_dir = GetSaveFolder(true);
     CreateDirectoryW(save_dir.c_str(), 0);
-    success = (ERROR_SUCCESS == EncryptedXP3::SplitFileNameAndSave(save_dir, filename, buffer));
+    error_code = EncryptedXP3::SplitFileNameAndSave(save_dir, filename, buffer);
   }
   ibs->Seek(saved_pos, TJS_BS_SEEK_SET);
-  if (success)
+  if (error_code == ERROR_SUCCESS)
     LOG_INFO("saved to: " << Utility::UnicodeToUTF8(save_dir) << "\\" << Utility::UnicodeToUTF8(filename));
   else
-    LOG_ERROR("saved " << Utility::UnicodeToUTF8(filename) << " failed");
+    LOG_ERROR("saved " << Utility::UnicodeToUTF8(filename) << " failed, error code: " << error_code);
 }
 
 tTJSBinaryStream* __fastcall DetouredCreateIStream2(const ttstr& ts, tjs_uint32 flag) {
