@@ -80,3 +80,9 @@ Release
 /kirikiri/bin/ExtractChTxt_d.exe
 /kirikiri/pdb/ExtractChTxt.pdb
 /kirikiri/pdb/ExtractChTxt_d.pdb
+/kirikiri/bin/BlackSheep.dll
+/kirikiri/bin/CsvMerge.exe
+/kirikiri/bin/ExtractChTxt.exe
+/kirikiri/bin/Loader.exe
+/kirikiri/bin/TLG.exe
+/kirikiri/tools/__pycache__
