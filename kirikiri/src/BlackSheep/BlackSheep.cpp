@@ -262,9 +262,20 @@ HRESULT __stdcall DetouredV2Link(iTVPFunctionExporter* exporter) {
   return result;
 }
 
+bool IsReadable(LPCSTR ptr) {
+  MEMORY_BASIC_INFORMATION mbi;
+  if (VirtualQuery(ptr, &mbi, sizeof(MEMORY_BASIC_INFORMATION)) == 0)
+    return false;
+  if (mbi.State != MEM_COMMIT)
+    return false;
+  if (mbi.Protect == PAGE_NOACCESS)
+    return false;
+  return true;
+}
+
 FARPROC WINAPI DetouredGetProcAddress(HMODULE hModule, LPCSTR lpProcName) {
   auto fn = pfnGetProcAddress(hModule, lpProcName);
-  if (string(lpProcName) == "V2Link") {
+  if (IsReadable(lpProcName) && string(lpProcName) == "V2Link") {
     pfnV2Link = (FN_V2Link)fn;
     LOG_INFO("add hook for V2Link");
     Utility::AddHook(&pfnV2Link, DetouredV2Link);
