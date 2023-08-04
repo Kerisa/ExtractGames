@@ -140,8 +140,8 @@ std::wstring MakeFullPath(const std::wstring & relative)
 
 std::string GetPathDir(const std::string& path)
 {
-	string drv, dir;
-	if (!SplitPath(MakeFullPath(path), drv, dir))
+	string drv, dir, dummy;
+	if (!SplitPath(MakeFullPath(path), drv, dir, dummy, dummy))
 		return std::string();
 
 	return drv + dir;
@@ -149,8 +149,8 @@ std::string GetPathDir(const std::string& path)
 
 std::wstring GetPathDir(const std::wstring& path)
 {
-    wstring drv, dir;
-    if (!SplitPath(MakeFullPath(path), drv, dir))
+    wstring drv, dir, dummy;
+    if (!SplitPath(MakeFullPath(path), drv, dir, dummy, dummy))
         return std::wstring();
 
     return drv + dir;
@@ -249,6 +249,17 @@ void ResumeOtherThread()
 
   CloseHandle(hSnap);
   return;
+}
+
+std::string GenTmpFilePath()
+{
+  char tmp_buf[MAX_PATH] = { 0 };
+  char out_name[MAX_PATH] = { 0 };
+  DWORD result = GetTempPathA(_countof(tmp_buf), tmp_buf);
+  if (result == 0)
+    return "";
+  result = GetTempFileNameA(tmp_buf, "", 0, out_name);
+  return result != 0 ? out_name : "";
 }
 
 }

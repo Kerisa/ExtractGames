@@ -16,8 +16,8 @@ int main(int argc, char** argv)
 {
     if (argc < 3)
     {
-        string file;
-        Utility::SplitPath(argv[0], string(), string(), file);
+        string file, dummy;
+        Utility::SplitPath(argv[0], string(), string(), file, dummy);
         cout << "usage: " << file << " <game exe> [--passive] <xp3 file1> <xp3 file2>...\n"
           << "   passive    dump all resources while playing game instead of extract them directly\n";
         return 1;

@@ -4,6 +4,7 @@
 #include <Windows.h>
 #include <string>
 #include <vector>
+#include "detours/detours.h"
 
 namespace Utility
 {
@@ -11,8 +12,8 @@ namespace Utility
     int          SearchMemory(HANDLE hProcess, uint32_t from, uint32_t to, const char* str, uint32_t strLength, uint32_t* result, uint32_t arrayCount);
     uint8_t*     SearchSequence(uint8_t* search_start, uint32_t search_length, const std::vector<char>& pattern);
 
-    bool         SplitPath(const std::string& full, std::string& drive = std::string(), std::string& dir = std::string(), std::string& file = std::string(), std::string& ext = std::string());
-    bool         SplitPath(const std::wstring& full, std::wstring& drive = std::wstring(), std::wstring& dir = std::wstring(), std::wstring& file = std::wstring(), std::wstring& ext = std::wstring());
+    bool         SplitPath(const std::string& full, std::string& drive, std::string& dir, std::string& file, std::string& ext);
+    bool         SplitPath(const std::wstring& full, std::wstring& drive, std::wstring& dir, std::wstring& file, std::wstring& ext);
     std::string  MakeFullPath(const std::string& relative);
     std::wstring MakeFullPath(const std::wstring& relative);
     std::string  GetPathDir(const std::string& path);
@@ -29,6 +30,8 @@ namespace Utility
     std::string  GetTimeFmtString(const char* fmt);
 
     void         ResumeOtherThread();
+
+    std::string  GenTmpFilePath();
 
     template <class T>
     void AddHook(T* original_func, T detoured_func) {
